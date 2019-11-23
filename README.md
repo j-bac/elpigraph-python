@@ -24,7 +24,7 @@ Citation
 
 When using this package, please cite our preprint:
 
-Albergante, L.  et al . Robust and Scalable  Learning of Data Manifold with Complex Topologies via ElPiGraph.
+Albergante, L.  et al . Robust And Scalable Learning Of Complex Dataset Topologies Via Elpigraph
 arXiv: [1804.07580](https://arxiv.org/abs/1804.07580) (2018)
 
 Requirements
