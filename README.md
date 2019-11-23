@@ -41,6 +41,7 @@ This code was tested with Python 3.7.1, and requires the following packages:
 
 And to enable GPU support :
 - cupy
+https://docs-cupy.chainer.org/en/stable/install.html#
 
 The requirements.txt file provides the versions this package has been tested with
 
