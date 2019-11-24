@@ -46,8 +46,8 @@ https://docs-cupy.chainer.org/en/stable/install.html#
 
 The requirements.txt file provides the versions this package has been tested with
 
-Installation & Usage
+Installation
 ====================
 ```bash
-pip install git+https://github.com/j-bac/ElPiGraph.Python.git
+pip install git+https://github.com/j-bac/ElPiGraph_Python.git
 ```
