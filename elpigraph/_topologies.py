@@ -1,6 +1,6 @@
 import numpy as np
 import elpigraph
-from elpigraph.src.PCA import PCA, TruncPCA, PCA_gpu, TruncSVD_gpu
+from .src.PCA import PCA, TruncPCA, PCA_gpu, TruncSVD_gpu
 
 def computeElasticPrincipalCircle(X,
                                  NumNodes,
