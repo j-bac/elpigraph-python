@@ -5,10 +5,12 @@ https://github.com/pypa/sampleproject
 """
 
 from setuptools import setup, find_packages
+from distutils import util
 from os import path
 from io import open
 
 here = path.abspath(path.dirname(__file__))
+path_src = util.convert_path('elpigraph/src')
 
 # Get the long description from the README file
 with open(path.join(here, 'README.md'), encoding='utf-8') as f:
@@ -37,7 +39,10 @@ setup(
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)'],
 
     keywords='machine_learning graphs dimension_reduction single_cell',  # Optional
-    packages=find_packages("."),
+    packages=['elpigraph.src','elpigraph'],
+    package_dir = {
+            'elpigraph': 'elpigraph',
+            'elpigraph.src': path_src},
     package_data={'elpigraph': ['data/*.csv']},
     install_requires=['numpy','pandas','scipy','scikit_learn','python_igraph','plotnine'],
     project_urls={  # Optional
