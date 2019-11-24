@@ -1,5 +1,6 @@
 import numpy as np
 import multiprocessing as mp
+from .core import PartitionData, DecodeElasticMatrix, PrimitiveElasticGraphEmbedment
 
 def proxy(Dict):
     return PrimitiveElasticGraphEmbedment(**Dict)

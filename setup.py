@@ -18,7 +18,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 # Fields marked as "Optional" may be commented out.
 
 setup(
-    name='python-elpigraph',  # Required
+    name='elpigraph',  # Required
     version='1.0',  # Required
     description='',  # Optional
     long_description=long_description,  # Optional
@@ -37,12 +37,12 @@ setup(
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)'],
 
     keywords='machine_learning graphs dimension_reduction single_cell',  # Optional
-    package_dir={'': 'src'},  # Optional
-    packages=find_packages(where='src'),  # Required
+    packages=['elpigraph'],
+#     package_dir={'elpigraph': 'elpigraph'},
+    package_data={'elpigraph': ['data/*.csv']},
     install_requires=['numpy','pandas','scipy','scikit_learn','python_igraph','plotnine'],
     project_urls={  # Optional
         'Bug Reports': 'https://github.com/j-bac/ElPiGraph.Python/issues',
-
         'Source': 'https://github.com/j-bac/ElPiGraph.Python/',
     },
 )

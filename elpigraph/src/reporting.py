@@ -1,4 +1,6 @@
 import numpy as np
+from .core import DecodeElasticMatrix, PartitionData
+from .distutils import ComputePrimitiveGraphElasticEnergy
 
 def getPrimitiveGraphStructureBarCode(ElasticMatrix):
     Mus = ElasticMatrix.diagonal()

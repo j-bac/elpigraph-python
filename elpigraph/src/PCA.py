@@ -71,7 +71,7 @@ def PCA_gpu(data):
     return evecs, data.dot(evecs), evals
 
 
-def randomized_svd_gpu(M, n_components, n_oversamples=10, n_iter='auto',
+def TruncSVD_gpu(M, n_components, n_oversamples=10, n_iter='auto',
                        transpose='auto', random_state=0):
     """Computes a truncated randomized SVD on GPU. Adapted from Sklearn.
     Taken from : https://vip.readthedocs.io/en/latest/_modules/vip_hci/pca/svd.html

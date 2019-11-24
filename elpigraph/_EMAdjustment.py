@@ -1,3 +1,5 @@
+import numpy as np
+
 def AdjustByConstant(EM,AdjustVect, k = 2, divMu = 10, divLambda = 10,verbose=False):
     '''
     #' Adjust elastic matrix by dividing the values of lambda and mu of stars

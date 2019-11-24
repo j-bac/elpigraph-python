@@ -1,6 +1,6 @@
 import numpy as np
 import numba as nb
-
+from .distutils import *
 
 # Base functions: Distance and energy computation --------------------------
 
