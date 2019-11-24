@@ -37,7 +37,7 @@ setup(
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)'],
 
     keywords='machine_learning graphs dimension_reduction single_cell',  # Optional
-    packages=['elpigraph'],
+    packages=['elpigraph','elpigraph.src'],
 #     package_dir={'elpigraph': 'elpigraph'},
     package_data={'elpigraph': ['data/*.csv']},
     install_requires=['numpy','pandas','scipy','scikit_learn','python_igraph','plotnine'],
