@@ -38,7 +38,8 @@ setup(
 
     keywords='machine_learning graphs dimension_reduction single_cell',  # Optional
     packages=['elpigraph','elpigraph.src'],
-    package_dir={'elpigraph': 'elpigraph'},
+    package_dir={'elpigraph': 'elpigraph',
+                 'src':'elpigraph/src'},
     package_data={'elpigraph': ['data/*.csv']},
     install_requires=['numpy','pandas','scipy','scikit_learn','python_igraph','plotnine'],
     project_urls={  # Optional
