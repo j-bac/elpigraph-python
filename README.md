@@ -1,4 +1,3 @@
-# ElPiGraph_Python
 Python implementation of the ElPiGraph algorithm with multi-cpu and gpu support
 
 Description
@@ -49,5 +48,5 @@ The requirements.txt file provides the versions this package has been tested wit
 Installation
 ====================
 ```bash
-pip install git+https://github.com/j-bac/ElPiGraph_Python.git
+pip install git+https://github.com/j-bac/elpigraph-python.git
 ```
