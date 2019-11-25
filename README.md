@@ -34,8 +34,8 @@ This code was tested with Python 3.7.1, and requires the following packages:
 - scipy
 - numba
 - numpy
-- python_igraph
-- scikit_learn
+- python-igraph
+- scikit-learn
 - plotnine
 
 In addition, to enable respectively multi-cpu, gpu support:
