@@ -8,16 +8,15 @@ def getPrimitiveGraphStructureBarCode(ElasticMatrix):
     np.fill_diagonal(Lambda, 0)
     indL = Lambda > 0
     Connectivities = indL.sum(axis=0)
-    Mcon = max(Connectivities)
+    Mcon = np.max(Connectivities)
 
-    #N = table(factor(Connectivities, levels = range(Mcon)))
-    values, counts = np.unique(Connectivities, return_counts=True)
+    counts = np.bincount(Connectivities)[1:]
     code = '||'+str(ElasticMatrix.shape[0])
 
     if Mcon <= 2:
         code = '0'+code
     else:
-        code = '|'.join([str(c) for c in counts[values>=3][::-1]])+code
+        code = '|'.join([str(c) for c in counts[2:][::-1]])+code
     return code
                          
 
