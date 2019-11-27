@@ -11,7 +11,7 @@ from io import open
 
 here = path.abspath(path.dirname(__file__))
 path_src = util.convert_path('elpigraph/src')
-
+path_srcgpu = util.convert_path('elpigraphgpu/src')
 # Get the long description from the README file
 with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
@@ -25,7 +25,7 @@ setup(
     description='',  # Optional
     long_description=long_description,  # Optional
     long_description_content_type='text/markdown',  # Optional (see note above)
-    url='https://github.com/j-bac/ElPiGraph.Python',  # Optional
+    url='https://github.com/j-bac/elpigraph-merge',  # Optional
     author='Jonathan Bac',  # Optional
     author_email='',  # Optional
     classifiers=[  # Optional
@@ -39,14 +39,17 @@ setup(
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)'],
 
     keywords='machine_learning graphs dimension_reduction single_cell',  # Optional
-    packages=['elpigraph.src','elpigraph'],
+    packages=['elpigraph.src','elpigraph',
+              'elpigraphgpu.src','elpigraphgpu'],
     package_dir = {
             'elpigraph': 'elpigraph',
-            'elpigraph.src': path_src},
-    package_data={'elpigraph': ['data/*.csv']},
+            'elpigraphgpu':'elpigraphgpu',
+            'elpigraph.src': path_src,
+            'elpigraphgpu.src': path_srcgpu},
+    package_data={'': ['data/']},
     install_requires=['numpy','pandas','scipy','scikit_learn','python_igraph','plotnine'],
     project_urls={  # Optional
-        'Bug Reports': 'https://github.com/j-bac/ElPiGraph.Python/issues',
-        'Source': 'https://github.com/j-bac/ElPiGraph.Python/',
+        'Bug Reports': 'https://github.com/j-bac/elpigraph-merge/issues',
+        'Source': 'https://github.com/j-bac/elpigraph-merge/',
     },
 )

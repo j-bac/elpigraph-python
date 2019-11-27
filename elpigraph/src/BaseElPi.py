@@ -519,7 +519,7 @@ def computeElasticPrincipalGraph(Data,
                     DataCenters = np.mean(Data,axis=0)
                     Data = Data - DataCenters
                     InitNodePositions = InitNodePositions - DataCenters
-                PCAData, explainedVariances, U, S, Vt = TruncPCA(data_centered,algorithm='arpack',n_components=max(ReduceDimension+1))
+                PCAData, explainedVariances, U, S, Vt = TruncPCA(data_centered,algorithm='randomized',n_components=max(ReduceDimension+1))
                 ExpVariance = np.sum(np.var(Data, axis=0))
                 perc = np.sum(explainedVariances)/ExpVariance*100
                 
