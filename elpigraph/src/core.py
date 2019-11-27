@@ -342,7 +342,7 @@ def PrimitiveElasticGraphEmbedment(X, NodePositions, ElasticMatrix,
                     NodePositions, NewNodePositions)
         elif Mode == 2:
             diff = (OldElasticEnergy - ElasticEnergy)/ElasticEnergy
-            
+
         # Print Info
         if verbose:
             print("Iteration ", (i+1), " difference of node position=", np.around(diff,5),
