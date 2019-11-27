@@ -44,12 +44,12 @@ def PartitionData(Xcp, NodePositions, MaxBlockSize,SquaredXcp,
         # Calculate distances
         d = SquaredXcp[i:last] + centrLength-2*cp.dot(Xcp[i:last, ], cent)
         tmp = d.argmin(axis=1)
-        partition[i:last] = tmp[:, cp.newaxis]
+        partition[i:last] = tmp[:, cp.newaxis]+1
         dists[i:last] = d[cp.arange(d.shape[0]), tmp][:, cp.newaxis]
     # Apply trimming
     if not cp.isinf(TrimmingRadius):
         ind = dists > (TrimmingRadius**2)
-        partition[ind] = -1
+        partition[ind] = 0
         dists[ind] = TrimmingRadius**2
     
     
