@@ -1,5 +1,6 @@
 import numpy as np
 import igraph
+import copy
 
 # Construct igraph objects -------------------------------------------------------------
 

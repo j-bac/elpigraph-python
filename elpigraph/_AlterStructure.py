@@ -1,6 +1,10 @@
 import numpy as np
 import igraph
 import scipy
+import copy
+from .src.graphs import ConstructGraph, GetSubGraph, GetBranches
+
+
 
 def ExtendLeaves(X, PG,
                 Mode = "QuantDists",
