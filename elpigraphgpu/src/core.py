@@ -49,7 +49,7 @@ def PartitionData(Xcp, NodePositions, MaxBlockSize,SquaredXcp,
     # Apply trimming
     if not cp.isinf(TrimmingRadius):
         ind = dists > (TrimmingRadius**2)
-        partition[ind] = 0
+        partition[ind] = -1
         dists[ind] = TrimmingRadius**2
     
     

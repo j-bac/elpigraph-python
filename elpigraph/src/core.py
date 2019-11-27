@@ -47,7 +47,7 @@ def PartitionData(X, NodePositions, MaxBlockSize,SquaredX,
     # Apply trimming
     if not np.isinf(TrimmingRadius):
         ind = dists > (TrimmingRadius**2)
-        partition[ind] = 0
+        partition[ind] = -1
         dists[ind] = TrimmingRadius**2
     return partition, dists
 
