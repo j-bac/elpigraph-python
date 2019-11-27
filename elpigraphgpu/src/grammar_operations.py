@@ -188,7 +188,7 @@ def AddNode2Node(X, NodePositions, ElasticMatrix, partition, AdjustVect, Max_K =
             else:
                 # Otherwise take the mean of the points associated with the
                 # central node
-                NewNodePosition = X[(partition[partition>-1] == i).ravel()].mean(axis=0)
+                NewNodePosition = X[(partition == i).ravel()].mean(axis=0)
         # fill node position
         NodePositionsArray[j][nNodes, :] = NewNodePosition
         np.fill_diagonal(ElasticMatrices[j],MuProt)
