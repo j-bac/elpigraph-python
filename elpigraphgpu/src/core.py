@@ -353,7 +353,6 @@ def PrimitiveElasticGraphEmbedment(X, NodePositions, ElasticMatrix,
 
         # Have we converged?
         if not np.isfinite(diff):
-            print('difference in nodePositions change is not finite. Setting diff=0')
             diff=0
             
         if diff < eps:
