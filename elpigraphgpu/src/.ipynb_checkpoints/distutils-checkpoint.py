@@ -196,7 +196,7 @@ def ComputeWeightedAverage(X, partition, PointWeights, NumberOfNodes):
     X = X * PointWeights
     # Auxiliary calculations
     M = X.shape[1]
-    part = partition.ravel()
+    part = partition.ravel() + 1
     # Calculate total weights
     TotalWeight = PointWeights.sum()
     # Calculate weights for Relative size

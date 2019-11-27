@@ -134,7 +134,7 @@ def AddNode2Node(X, NodePositions, ElasticMatrix, partition, AdjustVect, Max_K =
     indL = Lambda > 0
     Connectivities = indL.sum(axis=0)
     # add pointweights here if added
-    assoc = np.bincount(partition.ravel(), minlength=nNodes)[1:]
+    assoc = np.bincount(partition[partition>-1].ravel(), minlength=nNodes)
     # Create prototypes for new NodePositions, ElasticMatrix and inds
     npProt = np.vstack((NodePositions, np.zeros((1, NodePositions.shape[1]))))
     emProt = np.vstack((np.hstack((Lambda, np.zeros((nNodes, 1)))),
@@ -469,7 +469,7 @@ def ApplyOptimalGraphGrammarOperation(X,
                              SquaredX = SquaredX,
                              TrimmingRadius = TrimmingRadius
                               )[0]
-            if all(np.isin(np.array(range(NodePositionsArrayAll[i].shape[0])),partition)):
+            if all(np.isin(np.array(range(NodePositionsArrayAll[i].shape[0])),partition[partition>-1])):
                 Valid_configurations.append(i)
 
         if verbose:
