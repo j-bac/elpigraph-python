@@ -20,12 +20,12 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 # Fields marked as "Optional" may be commented out.
 
 setup(
-    name='elpigraph',  # Required
+    name='elpigraph-python',  # Required
     version='1.0',  # Required
     description='',  # Optional
     long_description=long_description,  # Optional
     long_description_content_type='text/markdown',  # Optional (see note above)
-    url='https://github.com/j-bac/elpigraph-merge',  # Optional
+    url='https://github.com/j-bac/elpigraph-python',  # Optional
     author='Jonathan Bac',  # Optional
     author_email='',  # Optional
     classifiers=[  # Optional
@@ -46,10 +46,10 @@ setup(
             'elpigraphgpu':'elpigraphgpu',
             'elpigraph.src': path_src,
             'elpigraphgpu.src': path_srcgpu},
-    package_data={'': ['data/']},
+#     package_data={'': ['data/']},
     install_requires=['numpy','pandas','scipy','scikit_learn','python_igraph','plotnine'],
     project_urls={  # Optional
-        'Bug Reports': 'https://github.com/j-bac/elpigraph-merge/issues',
-        'Source': 'https://github.com/j-bac/elpigraph-merge/',
+        'Bug Reports': 'https://github.com/j-bac/elpigraph-python/issues',
+        'Source': 'https://github.com/j-bac/elpigraph-python/',
     },
 )

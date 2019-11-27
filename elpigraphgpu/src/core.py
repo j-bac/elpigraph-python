@@ -47,10 +47,10 @@ def PartitionData(Xcp, NodePositions, MaxBlockSize,SquaredXcp,
         partition[i:last] = tmp[:, cp.newaxis]
         dists[i:last] = d[cp.arange(d.shape[0]), tmp][:, cp.newaxis]
     # Apply trimming
-    if TrimmingRadius is not float('inf'):
-        ind = dists > TrimmingRadius
+    if not cp.isinf(TrimmingRadius):
+        ind = dists > (TrimmingRadius**2)
         partition[ind] = 0
-        dists[ind] = TrimmingRadius
+        dists[ind] = TrimmingRadius**2
     
     
     return cp.asnumpy(partition), cp.asnumpy(dists)
