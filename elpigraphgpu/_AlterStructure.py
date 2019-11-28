@@ -1,14 +1,18 @@
 import numpy as np
 import igraph
-import scipy
-import copy 
+import scipy.optimize
+import copy
+import warnings
 from .src.graphs import ConstructGraph, GetSubGraph, GetBranches
+from .src.core import PartitionData
+from .src.distutils import PartialDistance
+from .src.reporting import project_point_onto_graph, project_point_onto_edge
 
 def ExtendLeaves(X, PG,
                 Mode = "QuantDists",
                 ControlPar = .9,
                 DoSA = True,
-                DoSA_maxiter = 1000,
+                DoSA_maxiter = 2000,
                 LeafIDs = None,
                 TrimmingRadius = float('inf'),
                 PlotSelected = False):
@@ -197,7 +201,7 @@ def ExtendLeaves(X, PG,
                                                     Edge = [0,1], ExtProj = True)
 
                 SelId = np.argmax(
-                    distutils.PartialDistance(Projections['X_Projected'],
+                    PartialDistance(Projections['X_Projected'],
                                               np.array([TargetPG['NodePositions'][NodesMat[i,0],:]]))
                 )
 
@@ -311,7 +315,7 @@ def CollapseBranches(X,
                                          Partition = PartStruct[0])
 
     # get branches
-    # Branches = GetSubGraph(Net = Net, Structure = 'branches')
+    Branches = GetSubGraph(Net = Net, Structure = 'branches')
 
     # get the number of points on the different branches
     AllBrInfo = []
@@ -415,11 +419,11 @@ def CollapseBranches(X,
 
     if(Mode == "EdgesLength"):
         ToFilter = np.array([i['EdgesLen'] for i in AllBrInfo]) < ControlPar
-    print(ToFilter)
+
 
     # Nothing to filter
     if(sum(ToFilter)==0):
-        print(
+        return(
             dict(
                 Edges = TargetPG['Edges'][0],
                 Nodes = TargetPG['NodePositions']
@@ -446,15 +450,15 @@ def CollapseBranches(X,
                 print("Removing the terminal branch with nodes:", NodeNames)
 
                 if(len(NodeNames) > 2):
-                    NodeNames_Ext = [
-                        NodeNames[0],
-                        np.repeat(NodeNames[1:-1], 2),
-                        NodeNames[-1]]
+                    NodeNames_Ext = [NodeNames[0]]
+                    NodeNames_Ext.extend(list(np.repeat(NodeNames[1:-1], 2)))
+                    NodeNames_Ext.append(NodeNames[-1])
                 else :
                     NodeNames_Ext = NodeNames
                 # Set edges to be removed
-                for e in Net.get_eids([NodeNames_Ext]):
-                    Net.es[e]['status'] = "remove"
+                for e in range(0,len(NodeNames_Ext),2):
+                    rm_eid = Net.get_eid(NodeNames_Ext[e],NodeNames_Ext[e+1])
+                    Net.es[rm_eid]['status'] = "remove"
 
             else:
                 # It's a "bridge". We cannot simply remove nodes. Need to introduce a new one by "fusing" two stars
@@ -487,7 +491,7 @@ def CollapseBranches(X,
             # Add a new vertex
             Ret_Net = Ret_Net.add_vertex(Ret_Net.vcount())
             # Add a new element to the contraction vector
-            CVet.append(len(CVet))
+            CVet = np.append(CVet,len(CVet))
             #specify the nodes that will collapse on the new node
             CVet[Vertex_Comps[i]] = len(CVet)
 
@@ -618,7 +622,7 @@ def ShiftBranching(X,
             Neival = np.array(list(map(lambda x: np.sum(PD[0]==x), Neis)))
 
         if(SelectionMode == "NodeDensity"):
-            Dists = distutils.PartialDistance(X, TargetPG['NodePositions'][Neis])
+            Dists = PartialDistance(X, TargetPG['NodePositions'][Neis])
 
             if(DensityRadius is None):
                 raise ValueError("DensityRadius needs to be specified when SelectionMode = 'NodeDensity'")

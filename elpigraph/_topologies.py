@@ -199,7 +199,8 @@ def computeElasticPrincipalCircle(X,
                                              AdjustElasticMatrix = AdjustElasticMatrix,
                                              AdjustElasticMatrix_Initial = AdjustElasticMatrix_Initial,
                                              Lambda_Initial = Lambda_Initial, Mu_Initial = Mu_Initial,
-                                             DisplayWarnings = DisplayWarnings
+                                             DisplayWarnings = DisplayWarnings,
+                                             MaxSteps = MaxSteps
                                              ))
 
 
@@ -394,14 +395,13 @@ def computeElasticPrincipalTree(X,
                                              AdjustElasticMatrix = AdjustElasticMatrix,
                                              AdjustElasticMatrix_Initial = AdjustElasticMatrix_Initial,
                                              Lambda_Initial = Lambda_Initial, Mu_Initial = Mu_Initial,
-                                             DisplayWarnings = DisplayWarnings
+                                             DisplayWarnings = DisplayWarnings,
+                                             MaxSteps = MaxSteps
                                              ))
 
 
 
 def computeElasticPrincipalCurve(X,
-                                 GrowGrammars,
-                                 ShrinkGrammars,
                                  NumNodes,
                                  NumEdges = float('inf'),
                                  InitNodes = 2,
@@ -593,14 +593,13 @@ def computeElasticPrincipalCurve(X,
                                              AdjustElasticMatrix = AdjustElasticMatrix,
                                              AdjustElasticMatrix_Initial = AdjustElasticMatrix_Initial,
                                              Lambda_Initial = Lambda_Initial, Mu_Initial = Mu_Initial,
-                                             DisplayWarnings = DisplayWarnings
+                                             DisplayWarnings = DisplayWarnings,
+                                             MaxSteps = MaxSteps
                                              ))
 
 
 
-def finetuneBR(X,
-             GrowGrammars,
-             ShrinkGrammars,
+def fineTuneBR(X,
              NumNodes,
              NumEdges = float('inf'),
              InitNodes = 2,
@@ -812,8 +811,6 @@ def finetuneBR(X,
 
 
 def GrowLeaves(X,
-             GrowGrammars,
-             ShrinkGrammars,
              NumNodes,
              NumEdges = float('inf'),
              InitNodes = 2,

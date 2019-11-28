@@ -84,19 +84,19 @@ def f_get_star(NodePositions, ElasticMatrix, NodeCenter):
 def GraphGrammarOperation(X, NodePositions, ElasticMatrix, AdjustVect, Type, partition):
     if Type == "addnode2node":
         return AddNode2Node(X, NodePositions, ElasticMatrix, partition, AdjustVect)
-    elif Type == "addnode2node1":
+    elif Type == "addnode2node_1":
         return AddNode2Node(X, NodePositions, ElasticMatrix, partition, AdjustVect, Max_K = 1)
-    elif Type == "addnode2node2":
+    elif Type == "addnode2node_2":
         return AddNode2Node(X, NodePositions, ElasticMatrix, partition, AdjustVect, Max_K = 2)
     elif Type == "removenode":
         return RemoveNode(NodePositions, ElasticMatrix, AdjustVect)
     elif Type == "bisectedge":
         return BisectEdge(NodePositions, ElasticMatrix, AdjustVect)
-    elif Type == "bisectedge3":
+    elif Type == "bisectedge_3":
         return BisectEdge(NodePositions, ElasticMatrix, AdjustVect, Min_K=3)
     elif Type == "shrinkedge":
         return ShrinkEdge(NodePositions, ElasticMatrix, AdjustVect)
-    elif Type == "shrinkedge3":
+    elif Type == "shrinkedge_3":
         return ShrinkEdge(NodePositions, ElasticMatrix, AdjustVect, Min_K=3)
     else:
         raise ValueError("Operation " + Type + " is not defined")
@@ -218,7 +218,7 @@ def BisectEdge(NodePositions, ElasticMatrix, AdjustVect, Min_K=1):
     nNodes = NodePositions.shape[0]
     if Min_K>1:
         Degree = np.bincount(Edges.flatten())
-        EdgDegree = np.max(Degree[Edges],axis=0)
+        EdgDegree = np.max(Degree[Edges],axis=1)
         nGraphs = np.where(EdgDegree >= Min_K)[0]
     else:
         nGraphs = np.array(range(Edges.shape[0]))
