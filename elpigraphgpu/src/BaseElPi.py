@@ -4,8 +4,8 @@ import datetime
 import time
 import copy
 from .PCA import PCA, TruncPCA, PCA_gpu, TruncSVD_gpu
-from .core import PrimitiveElasticGraphEmbedment, PartitionData, Encode2ElasticMatrix
-from .grammar_operations import ApplyOptimalGraphGrammarOperation, DecodeElasticMatrix
+from .core import PrimitiveElasticGraphEmbedment, PartitionData, Encode2ElasticMatrix, DecodeElasticMatrix
+from .grammar_operations import ApplyOptimalGraphGrammarOperation
 from .reporting import ReportOnPrimitiveGraphEmbedment
 from .._plotting import PlotPG
 
