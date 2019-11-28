@@ -1,6 +1,6 @@
 import numpy as np
 import multiprocessing as mp
-from .core import PartitionData, DecodeElasticMatrix, PrimitiveElasticGraphEmbedment
+from .core import PartitionData, PrimitiveElasticGraphEmbedment, DecodeElasticMatrix2
 
 def proxy(Dict):
     return PrimitiveElasticGraphEmbedment(**Dict)
@@ -212,7 +212,7 @@ def BisectEdge(NodePositions, ElasticMatrix, AdjustVect, Min_K=1):
     # Decompose Elastic Matrix: Mus
     Mus = ElasticMatrix.diagonal()
     # Get list of edges
-    Edges, _, _ = DecodeElasticMatrix(ElasticMatrix)
+    Edges, _, _ = DecodeElasticMatrix2(ElasticMatrix)
 
     # Define some constants
     nNodes = NodePositions.shape[0]

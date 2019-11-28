@@ -231,6 +231,21 @@ def DecodeElasticMatrix(ElasticMatrix):
 
     return Edges, Lambdas, Mus
 
+def DecodeElasticMatrix2(ElasticMatrix):
+    Mus = ElasticMatrix.diagonal()
+    Lambda = ElasticMatrix.copy()
+    np.fill_diagonal(Lambda, 0)
+
+    Edges_i, Edges_j = np.where(Lambda>0)
+    Edges = np.concatenate((Edges_i[:,None],Edges_j[:,None]),axis=1)
+    inds = np.where(Edges_i<Edges_j)
+
+    Edges = Edges[inds]
+
+    Lambdas = Lambda[Edges[:,0],Edges[:,1]]
+
+    return Edges, Lambdas, Mus
+
 # def ComputeRelativeChangeOfNodePositions(NodePositions, NewNodePositions):
 #     '''
 #     #' Estimates the relative difference between two node configurations
