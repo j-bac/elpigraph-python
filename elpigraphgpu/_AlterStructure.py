@@ -515,7 +515,7 @@ def CollapseBranches(X,
 
     NodeMat = NodeMat[Ret_Net.vs['name'],:]
 
-    return(dict(Edges = Ret_Net.get_edgelist(),
+    return(dict(Edges = np.array(Ret_Net.get_edgelist()),
                 Nodes = NodeMat))
 
 

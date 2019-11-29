@@ -38,6 +38,9 @@ If you downloaded the original R package and notice a difference with this one, 
 	- BrIds = intersect(BrIds, BrIds) -> BrIds = intersect(BrIds, BrPoints)
 - getPrimitiveGraphStructureBarCode :
 	- barcode error : N[names(N)>=3] -> N[as.integer(names(N))>=3]
+- ShrinkEdge :
+	- (Connectivities[Edges[i,1]]>=Min_K | Connectivities[Edges[i,1]]>=Min_K)) -> (Connectivities[Edges[i,1]]>=Min_K | Connectivities[Edges[i,2]]>=Min_K))
+
 
 ### R version bugs found but not corrected yet
 - PrimitiveElasticGraphEmbdment : 
