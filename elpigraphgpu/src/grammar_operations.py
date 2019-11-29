@@ -617,6 +617,6 @@ def ApplyOptimalGraphGrammarOperation(X,
                 EP = ep
                 RP = rp
                 Dist = dist
-        
+
     return dict(NodePositions = NewNodePositions, ElasticMatrix = NewElasticMatrix, 
                 ElasticEnergy = minEnergy, MSE = MSE, EP = EP, RP = RP, AdjustVect = AdjustVect, Dist = Dist)

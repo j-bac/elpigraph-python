@@ -52,3 +52,6 @@ If you downloaded the original R package and notice a difference with this one, 
 
 - AdjustElasticMatrix_initial :
 	- does not update AdjustVect in addition to ElasticMatrix ?
+
+- computeElasticPrincipalGraph:
+	- if(is.null(ReduceDimension)){ReduceDimension <- 1:min(dim(Data))} -> 1:ncol(Data) ?

@@ -293,9 +293,7 @@ def CollapseBranches(X,
     #' @export
     #'
     '''
-    
-    TargetPG=copy.deepcopy(PG)
-
+    TargetPG = copy.deepcopy(PG)
     # Generate net
     Net = ConstructGraph(PrintGraph = TargetPG)
 
@@ -423,7 +421,7 @@ def CollapseBranches(X,
 
     # Nothing to filter
     if(sum(ToFilter)==0):
-        return(
+        print(
             dict(
                 Edges = TargetPG['Edges'][0],
                 Nodes = TargetPG['NodePositions']
@@ -476,10 +474,9 @@ def CollapseBranches(X,
     if(tNet.vcount()>0):
         # Get the different connected components
         CC = tNet.components()
-
         # Get the nodes associated with the connected components
-        Member_Comps = Net.components().membership
-        Vertex_Comps = [np.where(Member_Comps==i)[0] for i in np.unique(Member_Comps)]
+        Member_Comps = CC.membership
+        Vertex_Comps = [np.array(tNet.vs['name'])[np.where(Member_Comps==i)[0]] for i in np.unique(Member_Comps)]
         # Get the centroid of the different connected components
         Centroids = np.array([np.mean(TargetPG['NodePositions'][np.array(i)],axis=0) for i in Vertex_Comps])
 
@@ -489,21 +486,23 @@ def CollapseBranches(X,
         # For each centroid
         for i in range(len(Vertex_Comps)):
             # Add a new vertex
-            Ret_Net = Ret_Net.add_vertex(Ret_Net.vcount())
+            Ret_Net.add_vertex(Ret_Net.vcount())
             # Add a new element to the contraction vector
             CVet = np.append(CVet,len(CVet))
             #specify the nodes that will collapse on the new node
-            CVet[Vertex_Comps[i]] = len(CVet)
+            CVet[Vertex_Comps[i]] = len(CVet)-1
 
         # collapse the network
         Ret_Net.contract_vertices(mapping = CVet)
+
 
     # delete edges belonging to the terminal branches
     edge_list = Ret_Net.get_edgelist()
     Ret_Net.delete_edges([edge_list[i] for i in range(len(edge_list)) if Ret_Net.es['status'][i] =='remove'])
     # remove loops that may have been introduced because of the collapse
     Ret_Net.simplify(loops = True)
-    # Remove empty nodes
+    # # Remove empty nodes
+    names = np.array(Ret_Net.vs.indices)[np.array(Ret_Net.degree())>0]
     Ret_Net = Ret_Net.induced_subgraph(np.array(Ret_Net.vs.indices)[np.array(Ret_Net.degree())>0])
 
     if(tNet.vcount()>0):
@@ -513,7 +512,7 @@ def CollapseBranches(X,
         NodeMat = TargetPG['NodePositions']
 
 
-    NodeMat = NodeMat[Ret_Net.vs['name'],:]
+    NodeMat = NodeMat[names,:]
 
     return(dict(Edges = np.array(Ret_Net.get_edgelist()),
                 Nodes = NodeMat))
@@ -631,7 +630,7 @@ def ShiftBranching(X,
                 Neival = np.sum(Dists < DensityRadius,axis=0)
 
         NeiDist = np.array(Net.shortest_paths(br, Neis, mode='all'))
-        Neival = Neival[np.argsort(NeiDist)]
+        Neival = Neival[np.argsort(NeiDist,kind='mergesort')]
         NewBR = Neis[np.min(np.where(Neival.squeeze() == np.max(Neival))[0])]
 
         if(NewBR != br):
