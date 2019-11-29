@@ -421,7 +421,7 @@ def CollapseBranches(X,
 
     # Nothing to filter
     if(sum(ToFilter)==0):
-        print(
+        return(
             dict(
                 Edges = TargetPG['Edges'][0],
                 Nodes = TargetPG['NodePositions']
