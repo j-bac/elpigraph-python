@@ -1,9 +1,7 @@
-Python implementation of the ElPiGraph algorithm with multi-cpu and gpu support
-
 Description
 ===========
 
-This package provides a Python implementation of the ElPiGraph algorithm. A
+This package provides a Python implementation of the ElPiGraph algorithm with multi-cpu and gpu support. A
 self-contained description of the algorithm is available
 [here](https://github.com/auranic/Elastic-principal-graphs/blob/master/ElPiGraph_Methods.pdf)
 or on this [arXiv paper](https://arxiv.org/abs/1804.07580)
@@ -15,8 +13,6 @@ A native MATLAB implementation of the algorithm (coded by [Andrei
 Zinovyev](https://github.com/auranic/) and [Evgeny
 Mirkes](https://github.com/Mirkes)) is also
 [available](https://github.com/auranic/Elastic-principal-graphs)
-
-
 
 Citation
 ========
