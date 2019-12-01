@@ -140,7 +140,7 @@ def computeElasticPrincipalGraphWithGrammars(X,
 
     # Generate a dummy subset is not specified
     if(Subsets == list()):
-        Subsets = [np.array(range(X.shape[1])))]
+        Subsets = [np.array(range(X.shape[1]))]
 
 
     # Prepare the list to be returned
