@@ -1061,7 +1061,7 @@ def generateInitialConfiguration(X, Nodes, Configuration = "Line",
 
     if(Configuration == "Circle"):
         # Chain of nodes along the first principal component direction
-        print("Creating a circle in the plane induced buy the 1st and 2nd PCs with", Nodes, "nodes")
+        print("Creating a circle in the plane induced by the 1st and 2nd PCs with", Nodes, "nodes")
         
         if X.shape[1] < 3:
             if CenterDataDensity:
