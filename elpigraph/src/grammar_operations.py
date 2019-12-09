@@ -385,7 +385,8 @@ def ApplyOptimalGraphGrammarOperation(X,
                                      DisplayWarnings = True,
                                      n_cores = 1,
                                      MinParOp = 20,
-                                     multiproc_shared_variables = None):
+                                     multiproc_shared_variables = None,
+                                     pool = None):
 
     '''
     # Multiple grammar application --------------------------------------------
@@ -515,8 +516,7 @@ def ApplyOptimalGraphGrammarOperation(X,
                 
 #                 results = pool.map(proxy_multiproc,Valid_configurations)
                 
-            with mp.Pool(n_cores) as pool:
-                results=pool.map(proxy,[dict(X=X,
+            results=pool.map(proxy,[dict(X=X,
                                        NodePositions = NodePositionsArrayAll[i],
                                        ElasticMatrix = ElasticMatricesAll[i], 
                                        MaxNumberOfIterations = MaxNumberOfIterations,eps=eps,

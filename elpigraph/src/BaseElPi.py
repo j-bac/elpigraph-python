@@ -1,3 +1,4 @@
+import multiprocessing as mp
 import numpy as np
 import datetime
 import time
@@ -178,7 +179,11 @@ def ElPrincGraph(X,
 #         var_dict = {}
         
 #         print('Done')
-
+    if n_cores > 1:
+        print('Creating a Pool with '+str(n_cores)+' processes')
+        pool = mp.Pool(n_cores)
+    else:
+        pool = None
             
     if verbose:
         print('BARCODE\tENERGY\tNNODES\tNEDGES\tNRIBS\tNSTARS\tNRAYS\tNRAYS2\tMSE\tMSEP\tFVE\tFVEP\tUE\tUR\tURN\tURN2\tURSD\n')
@@ -237,7 +242,7 @@ def ElPrincGraph(X,
                                                                   AdjustElasticMatrix = AdjustElasticMatrix,
                                                                   DisplayWarnings = DisplayWarnings,
                                                                   n_cores=n_cores, MinParOp = MinParOp,
-                                                                  )
+                                                                  pool = pool)
 
                     if UpdatedPG == 'failed operation':
                         print('failed operation')
@@ -284,7 +289,7 @@ def ElPrincGraph(X,
                                                                   AdjustElasticMatrix = AdjustElasticMatrix,
                                                                   DisplayWarnings = DisplayWarnings,
                                                                   n_cores=n_cores,MinParOp=MinParOp,
-                                                                  )
+                                                                  pool=pool)
 
                     if UpdatedPG == 'failed operation':
                         print('failed operation')
@@ -345,7 +350,9 @@ def ElPrincGraph(X,
     if CompileReport:
         ReportTable={k:[d[k] for d in ReportTable] for k in ReportTable[0]}
                                        
-#     if n_cores > 1:
+    if n_cores > 1:
+        pool.close()
+        pool.join()
 #         ray.shutdown()
 
     return dict(NodePositions = UpdatedPG['NodePositions'], ElasticMatrix = UpdatedPG['ElasticMatrix'],ReportTable = ReportTable, FinalReport = FinalReport, Lambda = Lambda, Mu = Mu,Mode = Mode, MaxNumberOfIterations = MaxNumberOfIterations,eps = eps)

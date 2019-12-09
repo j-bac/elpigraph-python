@@ -1,6 +1,6 @@
 import numpy as np
 import multiprocessing as mp
-from .core import PartitionData, DecodeElasticMatrix, PrimitiveElasticGraphEmbedment
+from .core import PartitionData, PrimitiveElasticGraphEmbedment, DecodeElasticMatrix2
 
 def proxy(Dict):
     return PrimitiveElasticGraphEmbedment(**Dict)
@@ -84,19 +84,19 @@ def f_get_star(NodePositions, ElasticMatrix, NodeCenter):
 def GraphGrammarOperation(X, NodePositions, ElasticMatrix, AdjustVect, Type, partition):
     if Type == "addnode2node":
         return AddNode2Node(X, NodePositions, ElasticMatrix, partition, AdjustVect)
-    elif Type == "addnode2node1":
+    elif Type == "addnode2node_1":
         return AddNode2Node(X, NodePositions, ElasticMatrix, partition, AdjustVect, Max_K = 1)
-    elif Type == "addnode2node2":
+    elif Type == "addnode2node_2":
         return AddNode2Node(X, NodePositions, ElasticMatrix, partition, AdjustVect, Max_K = 2)
     elif Type == "removenode":
         return RemoveNode(NodePositions, ElasticMatrix, AdjustVect)
     elif Type == "bisectedge":
         return BisectEdge(NodePositions, ElasticMatrix, AdjustVect)
-    elif Type == "bisectedge3":
+    elif Type == "bisectedge_3":
         return BisectEdge(NodePositions, ElasticMatrix, AdjustVect, Min_K=3)
     elif Type == "shrinkedge":
         return ShrinkEdge(NodePositions, ElasticMatrix, AdjustVect)
-    elif Type == "shrinkedge3":
+    elif Type == "shrinkedge_3":
         return ShrinkEdge(NodePositions, ElasticMatrix, AdjustVect, Min_K=3)
     else:
         raise ValueError("Operation " + Type + " is not defined")
@@ -212,13 +212,13 @@ def BisectEdge(NodePositions, ElasticMatrix, AdjustVect, Min_K=1):
     # Decompose Elastic Matrix: Mus
     Mus = ElasticMatrix.diagonal()
     # Get list of edges
-    Edges, _, _ = DecodeElasticMatrix(ElasticMatrix)
+    Edges, _, _ = DecodeElasticMatrix2(ElasticMatrix)
 
     # Define some constants
     nNodes = NodePositions.shape[0]
     if Min_K>1:
         Degree = np.bincount(Edges.flatten())
-        EdgDegree = np.max(Degree[Edges],axis=0)
+        EdgDegree = np.max(Degree[Edges],axis=1)
         nGraphs = np.where(EdgDegree >= Min_K)[0]
     else:
         nGraphs = np.array(range(Edges.shape[0]))
@@ -385,7 +385,8 @@ def ApplyOptimalGraphGrammarOperation(X,
                                      DisplayWarnings = True,
                                      n_cores = 1,
                                      MinParOp = 20,
-                                     multiproc_shared_variables = None):
+                                     multiproc_shared_variables = None,
+                                     pool = None):
 
     '''
     # Multiple grammar application --------------------------------------------
@@ -515,8 +516,7 @@ def ApplyOptimalGraphGrammarOperation(X,
                 
 #                 results = pool.map(proxy_multiproc,Valid_configurations)
                 
-            with mp.Pool(n_cores) as pool:
-                results=pool.map(proxy,[dict(X=X,
+            results=pool.map(proxy,[dict(X=X,
                                        NodePositions = NodePositionsArrayAll[i],
                                        ElasticMatrix = ElasticMatricesAll[i], 
                                        MaxNumberOfIterations = MaxNumberOfIterations,eps=eps,
@@ -611,6 +611,6 @@ def ApplyOptimalGraphGrammarOperation(X,
                 EP = ep
                 RP = rp
                 Dist = dist
-        
+
     return dict(NodePositions = NewNodePositions, ElasticMatrix = NewElasticMatrix, 
                 ElasticEnergy = minEnergy, MSE = MSE, EP = EP, RP = RP, AdjustVect = AdjustVect, Dist = Dist)
