@@ -200,6 +200,9 @@ def ElPrincGraph(X,
     FailedOperations = 0
     Steps = 0
     FirstPrint = True
+    
+    start = time.time()
+    times = {}
     while (UpdatedPG['NodePositions'].shape[0] < NumNodes) or GrammarOptimization:
         nEdges = len(np.triu(UpdatedPG['ElasticMatrix'], 1).nonzero()[0])
         if (((UpdatedPG['NodePositions'].shape[0]) >= NumNodes) or (nEdges >= NumEdges)) and not GrammarOptimization:
@@ -325,6 +328,8 @@ def ElPrincGraph(X,
         # If the number of execution steps is larger than MaxSteps stop the algorithm
         if Steps > MaxSteps or FailedOperations > MaxFailedOperations:
             break
+            
+        times[UpdatedPG['NodePositions'].shape[0]] = time.time()-start
 
     if not verbose:
         if not CompileReport:
@@ -356,7 +361,7 @@ def ElPrincGraph(X,
 #     if n_cores > 1:
 #         ray.shutdown()
 
-    return dict(NodePositions = UpdatedPG['NodePositions'], ElasticMatrix = UpdatedPG['ElasticMatrix'],ReportTable = ReportTable, FinalReport = FinalReport, Lambda = Lambda, Mu = Mu,Mode = Mode, MaxNumberOfIterations = MaxNumberOfIterations,eps = eps)
+    return dict(NodePositions = UpdatedPG['NodePositions'], ElasticMatrix = UpdatedPG['ElasticMatrix'],ReportTable = ReportTable, FinalReport = FinalReport, Lambda = Lambda, Mu = Mu,Mode = Mode, MaxNumberOfIterations = MaxNumberOfIterations,eps = eps, times = times)
 
 
 
@@ -602,7 +607,7 @@ def computeElasticPrincipalGraph(Data,
                       Lambda = ElData['Lambda'], Mu = ElData['Mu'], TrimmingRadius = TrimmingRadius,
                       Mode = ElData['Mode'],
                       MaxNumberOfIterations = ElData['MaxNumberOfIterations'],
-                      eps = ElData['eps'], Date = ST, TicToc = EndTimer)
+                      eps = ElData['eps'], Date = ST, TicToc = EndTimer, times = ElData['times'])
 
     if drawPCAView:
         print(PlotPG(Data, FinalPG))

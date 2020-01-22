@@ -1,10 +1,11 @@
 import numpy as np
+import cupy as cp
 import datetime
 import time
 import copy
 from .PCA import PCA, TruncPCA, PCA_gpu, TruncSVD_gpu
-from .core import PrimitiveElasticGraphEmbedment, PartitionData
-from .grammar_operations import ApplyOptimalGraphGrammarOperation, DecodeElasticMatrix
+from .core import PrimitiveElasticGraphEmbedment, PartitionData, Encode2ElasticMatrix, DecodeElasticMatrix
+from .grammar_operations import ApplyOptimalGraphGrammarOperation
 from .reporting import ReportOnPrimitiveGraphEmbedment
 from .._plotting import PlotPG
 
@@ -146,9 +147,9 @@ def ElPrincGraph(X,
         ElasticMatrix, _ = AdjustElasticMatrix_Initial(ElasticMatrix,AdjustVect,verbose=True)
 
     ReportTable = []
-    SquaredX = np.sum(X**2,axis=1,keepdims=1)
+    SquaredX = (X**2).sum(axis=1,keepdims=1)
     Xcp = cp.asarray(X)
-    SquaredXcp = Xcp.sum(axis=1,keepdims=1)
+    SquaredXcp = (Xcp**2).sum(axis=1,keepdims=1)
     
     InitNodePositions = PrimitiveElasticGraphEmbedment(X = X, NodePositions = NodePositions,
                                                        MaxNumberOfIterations = MaxNumberOfIterations,
@@ -199,6 +200,9 @@ def ElPrincGraph(X,
     FailedOperations = 0
     Steps = 0
     FirstPrint = True
+    
+    start = time.time()
+    times = {}
     while (UpdatedPG['NodePositions'].shape[0] < NumNodes) or GrammarOptimization:
         nEdges = len(np.triu(UpdatedPG['ElasticMatrix'], 1).nonzero()[0])
         if (((UpdatedPG['NodePositions'].shape[0]) >= NumNodes) or (nEdges >= NumEdges)) and not GrammarOptimization:
@@ -306,7 +310,7 @@ def ElPrincGraph(X,
                         print(np.round(elapsed,4))  
 
         if CompileReport:
-            tReport = ReportOnPrimitiveGraphEmbedment(X = X, NodePositions = UpdatedPG['NodePositions'],ElasticMatrix = UpdatedPG['ElasticMatrix'],PartData = PartitionData(X = X,NodePositions = UpdatedPG['NodePositions'],MaxBlockSize=1000000000,SquaredX = SquaredX,TrimmingRadius = TrimmingRadius),ComputeMSEP = ComputeMSEP)
+            tReport = ReportOnPrimitiveGraphEmbedment(X = X, NodePositions = UpdatedPG['NodePositions'],ElasticMatrix = UpdatedPG['ElasticMatrix'],PartData = PartitionData(Xcp,NodePositions = UpdatedPG['NodePositions'],MaxBlockSize=1000000000,SquaredXcp = SquaredXcp,TrimmingRadius = TrimmingRadius),ComputeMSEP = ComputeMSEP)
 
             FinalReport = copy.deepcopy(tReport)
             for k, v in tReport.items():
@@ -324,14 +328,16 @@ def ElPrincGraph(X,
         # If the number of execution steps is larger than MaxSteps stop the algorithm
         if Steps > MaxSteps or FailedOperations > MaxFailedOperations:
             break
+            
+        times[UpdatedPG['NodePositions'].shape[0]] = time.time()-start
 
     if not verbose:
         if not CompileReport:
             tReport = ReportOnPrimitiveGraphEmbedment(X = X, NodePositions = UpdatedPG['NodePositions'],
                                                      ElasticMatrix = UpdatedPG['ElasticMatrix'],
-                                                     PartData = PartitionData(X = X,
+                                                     PartData = PartitionData(Xcp = Xcp,
                                                                               NodePositions = UpdatedPG['NodePositions'],
-                                                                              SquaredX = SquaredX,
+                                                                              SquaredXcp = SquaredXcp,
                                                                               TrimmingRadius = TrimmingRadius,
                                                                               MaxBlockSize = MaxBlockSize),
                                                      ComputeMSEP = ComputeMSEP)
@@ -355,7 +361,7 @@ def ElPrincGraph(X,
 #     if n_cores > 1:
 #         ray.shutdown()
 
-    return dict(NodePositions = UpdatedPG['NodePositions'], ElasticMatrix = UpdatedPG['ElasticMatrix'],ReportTable = ReportTable, FinalReport = FinalReport, Lambda = Lambda, Mu = Mu,Mode = Mode, MaxNumberOfIterations = MaxNumberOfIterations,eps = eps)
+    return dict(NodePositions = UpdatedPG['NodePositions'], ElasticMatrix = UpdatedPG['ElasticMatrix'],ReportTable = ReportTable, FinalReport = FinalReport, Lambda = Lambda, Mu = Mu,Mode = Mode, MaxNumberOfIterations = MaxNumberOfIterations,eps = eps, times = times)
 
 
 
@@ -526,7 +532,7 @@ def computeElasticPrincipalGraph(Data,
                     DataCenters = np.mean(Data,axis=0)
                     Data = Data - DataCenters
                     InitNodePositions = InitNodePositions - DataCenters
-                PCAData, explainedVariances, U, S, Vt = TruncPCA(data_centered,algorithm='arpack',n_components=max(ReduceDimension+1))
+                PCAData, explainedVariances, U, S, Vt = TruncPCA(data_centered,algorithm='randomized',n_components=max(ReduceDimension+1))
                 ExpVariance = np.sum(np.var(Data, axis=0))
                 perc = np.sum(explainedVariances)/ExpVariance*100
                 
@@ -601,7 +607,7 @@ def computeElasticPrincipalGraph(Data,
                       Lambda = ElData['Lambda'], Mu = ElData['Mu'], TrimmingRadius = TrimmingRadius,
                       Mode = ElData['Mode'],
                       MaxNumberOfIterations = ElData['MaxNumberOfIterations'],
-                      eps = ElData['eps'], Date = ST, TicToc = EndTimer)
+                      eps = ElData['eps'], Date = ST, TicToc = EndTimer, times = ElData['times'])
 
     if drawPCAView:
         print(PlotPG(Data, FinalPG))
