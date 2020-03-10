@@ -1,7 +1,7 @@
 Description
 ===========
 
-This package provides a Python implementation of the ElPiGraph algorithm with multi-cpu and gpu support. A
+This package provides a Python implementation of the ElPiGraph algorithm with cpu and gpu support. A
 self-contained description of the algorithm is available
 [here](https://github.com/auranic/Elastic-principal-graphs/blob/master/ElPiGraph_Methods.pdf)
 or on this [arXiv paper](https://arxiv.org/abs/1804.07580)
