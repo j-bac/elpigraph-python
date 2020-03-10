@@ -17,10 +17,9 @@ Mirkes](https://github.com/Mirkes)) is also
 Citation
 ========
 
-When using this package, please cite our preprint:
+When using this package, please cite our [paper](https://www.mdpi.com/1099-4300/22/3/296):
 
-Albergante, L.  et al . Robust and Scalable Learning of Complex Intrinsic Dataset Geometry via ElPiGraph
-[paper](https://www.mdpi.com/1099-4300/22/3/296) (2020)
+Albergante, L.  et al . Robust and Scalable Learning of Complex Intrinsic Dataset Geometry via ElPiGraph (2020)
 
 Requirements
 ============
