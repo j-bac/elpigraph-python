@@ -4,7 +4,7 @@ Description
 This package provides a Python implementation of the ElPiGraph algorithm with cpu and gpu support. A
 self-contained description of the algorithm is available
 [here](https://github.com/auranic/Elastic-principal-graphs/blob/master/ElPiGraph_Methods.pdf)
-or on this [arXiv paper](https://arxiv.org/abs/1804.07580)
+or in the [paper](https://www.mdpi.com/1099-4300/22/3/296)
 
 It replicates the [R implementation](https://github.com/j-bac/ElPiGraph.R),
 coded by [Luca Albergante](https://github.com/Albluca) and should return exactly the same results. Please open an issue if you do  notice different output. Differences between the two versions are detailed in [differences.md](differences.md). This package extends initial work by [Louis Faure](https://github.com/LouisFaure/ElPiGraph.P) and [Alexis Martin](https://github.com/AlexiMartin/ElPiGraph.P).
@@ -19,8 +19,8 @@ Citation
 
 When using this package, please cite our preprint:
 
-Albergante, L.  et al . Robust And Scalable Learning Of Complex Dataset Topologies Via Elpigraph
-arXiv: [1804.07580](https://arxiv.org/abs/1804.07580) (2018)
+Albergante, L.  et al . Robust and Scalable Learning of Complex Intrinsic Dataset Geometry via ElPiGraph
+[paper](https://www.mdpi.com/1099-4300/22/3/296) (2020)
 
 Requirements
 ============
