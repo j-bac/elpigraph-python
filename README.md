@@ -33,8 +33,7 @@ This code was tested with Python 3.7.1, and requires the following packages:
 - scikit-learn
 - plotnine
 
-In addition, to enable respectively multi-cpu, gpu support:
-- multiprocessing
+In addition, to enable gpu support:
 - cupy
 https://docs-cupy.chainer.org/en/stable/install.html#
 
