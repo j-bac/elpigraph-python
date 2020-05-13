@@ -52,7 +52,8 @@ def computeElasticPrincipalCircle(X,
                                  AdjustElasticMatrix_Initial = None,
                                  Lambda_Initial = None, 
                                  Mu_Initial = None,
-                                 DisplayWarnings = False):
+                                 DisplayWarnings = False,
+                                 StoreGraphEvolution = False):
     
     
     '''
@@ -199,7 +200,9 @@ def computeElasticPrincipalCircle(X,
                                              AdjustElasticMatrix = AdjustElasticMatrix,
                                              AdjustElasticMatrix_Initial = AdjustElasticMatrix_Initial,
                                              Lambda_Initial = Lambda_Initial, Mu_Initial = Mu_Initial,
-                                             DisplayWarnings = DisplayWarnings
+                                             DisplayWarnings = DisplayWarnings,
+                                             MaxSteps = MaxSteps,
+                                             StoreGraphEvolution=StoreGraphEvolution
                                              ))
 
 
@@ -253,7 +256,8 @@ def computeElasticPrincipalTree(X,
                                  AdjustElasticMatrix_Initial = None,
                                  Lambda_Initial = None, 
                                  Mu_Initial = None,
-                                 DisplayWarnings = False):
+                                 DisplayWarnings = False,
+                                 StoreGraphEvolution = False):
     '''
     #' Construct a principal elastic tree
     #'
@@ -394,14 +398,14 @@ def computeElasticPrincipalTree(X,
                                              AdjustElasticMatrix = AdjustElasticMatrix,
                                              AdjustElasticMatrix_Initial = AdjustElasticMatrix_Initial,
                                              Lambda_Initial = Lambda_Initial, Mu_Initial = Mu_Initial,
-                                             DisplayWarnings = DisplayWarnings
+                                             DisplayWarnings = DisplayWarnings,
+                                             MaxSteps = MaxSteps,
+                                             StoreGraphEvolution=StoreGraphEvolution
                                              ))
 
 
 
 def computeElasticPrincipalCurve(X,
-                                 GrowGrammars,
-                                 ShrinkGrammars,
                                  NumNodes,
                                  NumEdges = float('inf'),
                                  InitNodes = 2,
@@ -450,7 +454,8 @@ def computeElasticPrincipalCurve(X,
                                  AdjustElasticMatrix_Initial = None,
                                  Lambda_Initial = None, 
                                  Mu_Initial = None,
-                                 DisplayWarnings = False):
+                                 DisplayWarnings = False,
+                                 StoreGraphEvolution = False):
     
     ''' 
     #' Construct a princial elastic curve
@@ -593,14 +598,14 @@ def computeElasticPrincipalCurve(X,
                                              AdjustElasticMatrix = AdjustElasticMatrix,
                                              AdjustElasticMatrix_Initial = AdjustElasticMatrix_Initial,
                                              Lambda_Initial = Lambda_Initial, Mu_Initial = Mu_Initial,
-                                             DisplayWarnings = DisplayWarnings
+                                             DisplayWarnings = DisplayWarnings,
+                                             MaxSteps = MaxSteps,
+                                             StoreGraphEvolution=StoreGraphEvolution
                                              ))
 
 
 
-def finetuneBR(X,
-             GrowGrammars,
-             ShrinkGrammars,
+def fineTuneBR(X,
              NumNodes,
              NumEdges = float('inf'),
              InitNodes = 2,
@@ -649,7 +654,8 @@ def finetuneBR(X,
              AdjustElasticMatrix_Initial = None,
              Lambda_Initial = None, 
              Mu_Initial = None,
-             DisplayWarnings = False):
+             DisplayWarnings = False,
+             StoreGraphEvolution = False):
 
     '''
     #' Expand the nodes around a branching point
@@ -805,15 +811,14 @@ def finetuneBR(X,
                                              AdjustElasticMatrix = AdjustElasticMatrix,
                                              AdjustElasticMatrix_Initial = AdjustElasticMatrix_Initial,
                                              Lambda_Initial = Lambda_Initial, Mu_Initial = Mu_Initial,
-                                             DisplayWarnings = DisplayWarnings
+                                             DisplayWarnings = DisplayWarnings,
+                                             StoreGraphEvolution=StoreGraphEvolution
                                              ))
 
 
 
 
 def GrowLeaves(X,
-             GrowGrammars,
-             ShrinkGrammars,
              NumNodes,
              NumEdges = float('inf'),
              InitNodes = 2,
@@ -860,7 +865,8 @@ def GrowLeaves(X,
              AdjustElasticMatrix_Initial = None,
              Lambda_Initial = None, 
              Mu_Initial = None,
-             DisplayWarnings = False):
+             DisplayWarnings = False,
+             StoreGraphEvolution = False):
     
     '''
     #' Extend the leaves of a graph
@@ -1006,7 +1012,8 @@ def GrowLeaves(X,
                                              AdjustElasticMatrix = AdjustElasticMatrix,
                                              AdjustElasticMatrix_Initial = AdjustElasticMatrix_Initial,
                                              Lambda_Initial = Lambda_Initial, Mu_Initial = Mu_Initial,
-                                             DisplayWarnings = DisplayWarnings
+                                             DisplayWarnings = DisplayWarnings,
+                                             StoreGraphEvolution=StoreGraphEvolution
                                              ))
 
 
@@ -1064,7 +1071,7 @@ def generateInitialConfiguration(X, Nodes, Configuration = "Line",
 
     if(Configuration == "Circle"):
         # Chain of nodes along the first principal component direction
-        print("Creating a circle in the plane induced buy the 1st and 2nd PCs with", Nodes, "nodes")
+        print("Creating a circle in the plane induced by the 1st and 2nd PCs with", Nodes, "nodes")
         
         if X.shape[1] < 3:
             if CenterDataDensity:

@@ -51,7 +51,8 @@ def ElPrincGraph(X,
                 EmbPointProb = 1,
                 AdjustElasticMatrix = None, 
                 AdjustElasticMatrix_Initial = None,
-                DisplayWarnings = False
+                DisplayWarnings = False,
+                StoreGraphEvolution = False
                 ):
     '''
     #' Core function to construct a principal elastic graph
@@ -203,6 +204,11 @@ def ElPrincGraph(X,
     
     start = time.time()
     times = {}
+    
+    AllNodePositions = {}
+    AllElasticMatrices = {}
+        
+    
     while (UpdatedPG['NodePositions'].shape[0] < NumNodes) or GrammarOptimization:
         nEdges = len(np.triu(UpdatedPG['ElasticMatrix'], 1).nonzero()[0])
         if (((UpdatedPG['NodePositions'].shape[0]) >= NumNodes) or (nEdges >= NumEdges)) and not GrammarOptimization:
@@ -330,6 +336,9 @@ def ElPrincGraph(X,
             break
             
         times[UpdatedPG['NodePositions'].shape[0]] = time.time()-start
+        if StoreGraphEvolution:
+            AllNodePositions[UpdatedPG['NodePositions'].shape[0]] = UpdatedPG['NodePositions']
+            AllElasticMatrices[UpdatedPG['NodePositions'].shape[0]] = UpdatedPG['ElasticMatrix']
 
     if not verbose:
         if not CompileReport:
@@ -361,7 +370,8 @@ def ElPrincGraph(X,
 #     if n_cores > 1:
 #         ray.shutdown()
 
-    return dict(NodePositions = UpdatedPG['NodePositions'], ElasticMatrix = UpdatedPG['ElasticMatrix'],ReportTable = ReportTable, FinalReport = FinalReport, Lambda = Lambda, Mu = Mu,Mode = Mode, MaxNumberOfIterations = MaxNumberOfIterations,eps = eps, times = times)
+    return dict(NodePositions = UpdatedPG['NodePositions'], ElasticMatrix = UpdatedPG['ElasticMatrix'],ReportTable = ReportTable, FinalReport = FinalReport, Lambda = Lambda, Mu = Mu,Mode = Mode, MaxNumberOfIterations = MaxNumberOfIterations,eps = eps, times = times, AllNodePositions = AllNodePositions, AllElasticMatrices = AllElasticMatrices)
+
 
 
 
@@ -406,7 +416,8 @@ def computeElasticPrincipalGraph(Data,
                                 AdjustElasticMatrix_Initial = None,
                                 Lambda_Initial = None,
                                 Mu_Initial = None,
-                                DisplayWarnings=False
+                                DisplayWarnings=False,
+                                StoreGraphEvolution = False
                                 ):
 
     '''
@@ -583,7 +594,8 @@ def computeElasticPrincipalGraph(Data,
                              EmbPointProb = EmbPointProb, AdjustElasticMatrix = AdjustElasticMatrix,
                              AdjustElasticMatrix_Initial = AdjustElasticMatrix_Initial,
                              DisplayWarnings=DisplayWarnings,
-                             n_cores=n_cores,MinParOp=MinParOp)
+                             n_cores=n_cores,MinParOp=MinParOp,
+                             StoreGraphEvolution = StoreGraphEvolution)
 
     NodePositions = ElData['NodePositions']
     Edges = DecodeElasticMatrix(ElData['ElasticMatrix'])
@@ -607,7 +619,8 @@ def computeElasticPrincipalGraph(Data,
                       Lambda = ElData['Lambda'], Mu = ElData['Mu'], TrimmingRadius = TrimmingRadius,
                       Mode = ElData['Mode'],
                       MaxNumberOfIterations = ElData['MaxNumberOfIterations'],
-                      eps = ElData['eps'], Date = ST, TicToc = EndTimer, times = ElData['times'])
+                      eps = ElData['eps'], Date = ST, TicToc = EndTimer, times = ElData['times'],
+                      AllNodePositions = ElData['AllNodePositions'], AllElasticMatrices = ElData['AllElasticMatrices'])
 
     if drawPCAView:
         print(PlotPG(Data, FinalPG))

@@ -54,7 +54,8 @@ def computeElasticPrincipalGraphWithGrammars(X,
                                              AdjustElasticMatrix_Initial = None,
                                              Lambda_Initial = None, 
                                              Mu_Initial = None,
-                                             DisplayWarnings = True): 
+                                             DisplayWarnings = True,
+                                             StoreGraphEvolution = False): 
 
     '''
     #' Construct a principal graph with the specified grammar
@@ -281,7 +282,8 @@ def computeElasticPrincipalGraphWithGrammars(X,
                                                         EmbPointProb = EmbPointProb, AdjustElasticMatrix = AdjustElasticMatrix,
                                                         AdjustElasticMatrix_Initial = AdjustElasticMatrix_Initial,
                                                         Lambda_Initial = Lambda_Initial, Mu_Initial = Mu_Initial,
-                                                        DisplayWarnings=DisplayWarnings
+                                                        DisplayWarnings=DisplayWarnings,
+                                                        StoreGraphEvolution = StoreGraphEvolution
                                                         )
                              )
 
@@ -345,7 +347,8 @@ def computeElasticPrincipalGraphWithGrammars(X,
                                                     EmbPointProb = EmbPointProb, AdjustElasticMatrix = AdjustElasticMatrix,
                                                     AdjustElasticMatrix_Initial = AdjustElasticMatrix_Initial,
                                                     Lambda_Initial = Lambda_Initial, Mu_Initial = Mu_Initial,
-                                                    DisplayWarnings=DisplayWarnings
+                                                    DisplayWarnings=DisplayWarnings,
+                                                    StoreGraphEvolution=StoreGraphEvolution
                                                     )
                          )
 

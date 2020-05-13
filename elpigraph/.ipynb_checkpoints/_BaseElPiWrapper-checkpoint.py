@@ -54,7 +54,8 @@ def computeElasticPrincipalGraphWithGrammars(X,
                                              AdjustElasticMatrix_Initial = None,
                                              Lambda_Initial = None, 
                                              Mu_Initial = None,
-                                             DisplayWarnings = True): 
+                                             DisplayWarnings = True,
+                                             StoreGraphEvolution = False): 
 
     '''
     #' Construct a principal graph with the specified grammar
@@ -139,8 +140,8 @@ def computeElasticPrincipalGraphWithGrammars(X,
     ComputeIC = False
 
     # Generate a dummy subset is not specified
-    if(len(Subsets) == 0):
-        Subsets.append(np.array(range(X.shape[1])))
+    if(Subsets == list()):
+        Subsets = [np.array(range(X.shape[1]))]
 
 
     # Prepare the list to be returned
@@ -281,7 +282,8 @@ def computeElasticPrincipalGraphWithGrammars(X,
                                                         EmbPointProb = EmbPointProb, AdjustElasticMatrix = AdjustElasticMatrix,
                                                         AdjustElasticMatrix_Initial = AdjustElasticMatrix_Initial,
                                                         Lambda_Initial = Lambda_Initial, Mu_Initial = Mu_Initial,
-                                                        DisplayWarnings=DisplayWarnings
+                                                        DisplayWarnings=DisplayWarnings,
+                                                        StoreGraphEvolution = StoreGraphEvolution
                                                         )
                              )
 
@@ -345,7 +347,8 @@ def computeElasticPrincipalGraphWithGrammars(X,
                                                     EmbPointProb = EmbPointProb, AdjustElasticMatrix = AdjustElasticMatrix,
                                                     AdjustElasticMatrix_Initial = AdjustElasticMatrix_Initial,
                                                     Lambda_Initial = Lambda_Initial, Mu_Initial = Mu_Initial,
-                                                    DisplayWarnings=DisplayWarnings
+                                                    DisplayWarnings=DisplayWarnings,
+                                                    StoreGraphEvolution=StoreGraphEvolution
                                                     )
                          )
 

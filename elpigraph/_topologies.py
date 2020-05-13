@@ -52,7 +52,8 @@ def computeElasticPrincipalCircle(X,
                                  AdjustElasticMatrix_Initial = None,
                                  Lambda_Initial = None, 
                                  Mu_Initial = None,
-                                 DisplayWarnings = False):
+                                 DisplayWarnings = False,
+                                 StoreGraphEvolution = False):
     
     
     '''
@@ -200,7 +201,8 @@ def computeElasticPrincipalCircle(X,
                                              AdjustElasticMatrix_Initial = AdjustElasticMatrix_Initial,
                                              Lambda_Initial = Lambda_Initial, Mu_Initial = Mu_Initial,
                                              DisplayWarnings = DisplayWarnings,
-                                             MaxSteps = MaxSteps
+                                             MaxSteps = MaxSteps,
+                                             StoreGraphEvolution=StoreGraphEvolution
                                              ))
 
 
@@ -254,7 +256,8 @@ def computeElasticPrincipalTree(X,
                                  AdjustElasticMatrix_Initial = None,
                                  Lambda_Initial = None, 
                                  Mu_Initial = None,
-                                 DisplayWarnings = False):
+                                 DisplayWarnings = False,
+                                 StoreGraphEvolution = False):
     '''
     #' Construct a principal elastic tree
     #'
@@ -396,7 +399,8 @@ def computeElasticPrincipalTree(X,
                                              AdjustElasticMatrix_Initial = AdjustElasticMatrix_Initial,
                                              Lambda_Initial = Lambda_Initial, Mu_Initial = Mu_Initial,
                                              DisplayWarnings = DisplayWarnings,
-                                             MaxSteps = MaxSteps
+                                             MaxSteps = MaxSteps,
+                                             StoreGraphEvolution=StoreGraphEvolution
                                              ))
 
 
@@ -450,7 +454,8 @@ def computeElasticPrincipalCurve(X,
                                  AdjustElasticMatrix_Initial = None,
                                  Lambda_Initial = None, 
                                  Mu_Initial = None,
-                                 DisplayWarnings = False):
+                                 DisplayWarnings = False,
+                                 StoreGraphEvolution = False):
     
     ''' 
     #' Construct a princial elastic curve
@@ -594,7 +599,8 @@ def computeElasticPrincipalCurve(X,
                                              AdjustElasticMatrix_Initial = AdjustElasticMatrix_Initial,
                                              Lambda_Initial = Lambda_Initial, Mu_Initial = Mu_Initial,
                                              DisplayWarnings = DisplayWarnings,
-                                             MaxSteps = MaxSteps
+                                             MaxSteps = MaxSteps,
+                                             StoreGraphEvolution=StoreGraphEvolution
                                              ))
 
 
@@ -648,7 +654,8 @@ def fineTuneBR(X,
              AdjustElasticMatrix_Initial = None,
              Lambda_Initial = None, 
              Mu_Initial = None,
-             DisplayWarnings = False):
+             DisplayWarnings = False,
+             StoreGraphEvolution = False):
 
     '''
     #' Expand the nodes around a branching point
@@ -804,7 +811,8 @@ def fineTuneBR(X,
                                              AdjustElasticMatrix = AdjustElasticMatrix,
                                              AdjustElasticMatrix_Initial = AdjustElasticMatrix_Initial,
                                              Lambda_Initial = Lambda_Initial, Mu_Initial = Mu_Initial,
-                                             DisplayWarnings = DisplayWarnings
+                                             DisplayWarnings = DisplayWarnings,
+                                             StoreGraphEvolution=StoreGraphEvolution
                                              ))
 
 
@@ -857,7 +865,8 @@ def GrowLeaves(X,
              AdjustElasticMatrix_Initial = None,
              Lambda_Initial = None, 
              Mu_Initial = None,
-             DisplayWarnings = False):
+             DisplayWarnings = False,
+             StoreGraphEvolution = False):
     
     '''
     #' Extend the leaves of a graph
@@ -1003,7 +1012,8 @@ def GrowLeaves(X,
                                              AdjustElasticMatrix = AdjustElasticMatrix,
                                              AdjustElasticMatrix_Initial = AdjustElasticMatrix_Initial,
                                              Lambda_Initial = Lambda_Initial, Mu_Initial = Mu_Initial,
-                                             DisplayWarnings = DisplayWarnings
+                                             DisplayWarnings = DisplayWarnings,
+                                             StoreGraphEvolution = StoreGraphEvolution
                                              ))
 
 
