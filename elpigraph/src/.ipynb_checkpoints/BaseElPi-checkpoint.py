@@ -594,6 +594,7 @@ def computeElasticPrincipalGraph(Data,
                              StoreGraphEvolution=StoreGraphEvolution)
 
     NodePositions = ElData['NodePositions']
+    AllNodePositions = ElData['AllNodePositions']
     Edges = DecodeElasticMatrix(ElData['ElasticMatrix'])
 
     if drawEnergy and ElData['ReportTable'] is not None:
@@ -606,6 +607,8 @@ def computeElasticPrincipalGraph(Data,
 
     if Do_PCA:
         NodePositions = NodePositions.dot(vglobal[:,ReduceDimension].T)
+        for k,nodep in AllNodePositions.items():
+            AllNodePositions[k] = nodep.dot(vglobal[:,ReduceDimension].T) 
 
     EndTimer = time.time() - t
     print(np.round(EndTimer,4), " seconds elapsed")
@@ -616,12 +619,14 @@ def computeElasticPrincipalGraph(Data,
                       Mode = ElData['Mode'],
                       MaxNumberOfIterations = ElData['MaxNumberOfIterations'],
                       eps = ElData['eps'], Date = ST, TicToc = EndTimer, times = ElData['times'],
-                      AllNodePositions = ElData['AllNodePositions'], AllElasticMatrices = ElData['AllElasticMatrices'])
+                      AllNodePositions = AllNodePositions, AllElasticMatrices = ElData['AllElasticMatrices'])
 
     if drawPCAView:
         print(PlotPG(Data, FinalPG))
         
     if Do_PCA or CenterData:
         FinalPG['NodePositions'] = NodePositions + DataCenters
-    
+        for k,nodep in FinalPG['AllNodePositions'].items():
+            FinalPG['AllNodePositions'][k] = nodep + DataCenters
+
     return FinalPG
