@@ -511,7 +511,7 @@ def PrimitiveElasticGraphEmbedment_cp(X, NodePositions, ElasticMatrix,
 
 
     # Main iterative EM cycle: partition, fit given the partition, repeat
-    partition, dists = PartitionData(Xcp, NodePositions, MaxBlockSize,
+    partition, dists = PartitionData_cp(Xcp, NodePositions, MaxBlockSize,
                                              SquaredXcp, TrimmingRadius)
     if verbose or Mode == 2:
         OldElasticEnergy, MSE, EP, RP = ComputePrimitiveGraphElasticEnergy(
@@ -548,7 +548,7 @@ def PrimitiveElasticGraphEmbedment_cp(X, NodePositions, ElasticMatrix,
             break
             
         elif i < MaxNumberOfIterations-1:
-            partition, dists = PartitionData(Xcp, NewNodePositions, MaxBlockSize,
+            partition, dists = PartitionData_cp(Xcp, NewNodePositions, MaxBlockSize,
                                              SquaredXcp, TrimmingRadius)
             NodePositions = NewNodePositions
             OldElasticEnergy = ElasticEnergy
