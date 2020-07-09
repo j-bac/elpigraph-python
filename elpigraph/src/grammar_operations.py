@@ -1,10 +1,13 @@
 import numpy as np
-#import multiprocessing as mp
-from .core import PartitionData, PrimitiveElasticGraphEmbedment, DecodeElasticMatrix2
+import multiprocessing as mp
 
+from .core import PartitionData, PartitionData_cp, PrimitiveElasticGraphEmbedment, PrimitiveElasticGraphEmbedment_cp, DecodeElasticMatrix2
+from .._EMAdjustment import AdjustByConstant
 def proxy(Dict):
     return PrimitiveElasticGraphEmbedment(**Dict)
 
+def proxy_cp(Dict):
+    return PrimitiveElasticGraphEmbedment_cp(**Dict)
 # Some elementary graph transformations -----------------------------------
 
 def f_RemoveNode(NodePositions, ElasticMatrix,NodeNumber):
@@ -12,7 +15,6 @@ def f_RemoveNode(NodePositions, ElasticMatrix,NodeNumber):
     remove from the graph node number NodeNumber
     '''
     idx = np.arange(len(NodePositions))!= NodeNumber
-    tmp=ElasticMatrix[idx,:]
     return NodePositions[idx,:],ElasticMatrix[idx,:][:,idx]
 
 def f_reattach_edges(ElasticMatrix, NodeNumber1, NodeNumber2):
@@ -21,7 +23,6 @@ def f_reattach_edges(ElasticMatrix, NodeNumber1, NodeNumber2):
     # and make a new star with an elasticity average of two merged stars
     '''
     ElasticMatrix2 = ElasticMatrix.copy()
-    Mus = ElasticMatrix.diagonal()
     Lambda = ElasticMatrix.copy()
     np.fill_diagonal(Lambda, 0)
 
@@ -314,7 +315,7 @@ def ShrinkEdge(NodePositions, ElasticMatrix, AdjustVect, Min_K=1):
     Connectivities = (Lambda > 0).sum(axis=0)
     # get list of edges
     start, stop = np.triu(ElasticMatrix, 1).nonzero()
-    Edges = np.concatenate((start[None], stop[None]))
+    #Edges = np.concatenate((start[None], stop[None]))
     # define size
     nNodes = NodePositions.shape[0]
     # identify edges with minimal connectivity > 1
@@ -386,7 +387,7 @@ def ApplyOptimalGraphGrammarOperation(X,
                                      n_cores = 1,
                                      MinParOp = 20,
                                      multiproc_shared_variables = None,
-                                     pool = None):
+                     Xcp = None, SquaredXcp = None):
 
     '''
     # Multiple grammar application --------------------------------------------
@@ -431,11 +432,15 @@ def ApplyOptimalGraphGrammarOperation(X,
     ElasticMatricesAll = []
     AdjustVectAll = []
 
-    if SquaredX is None:
-        SquaredX = (X**2).sum(axis=1,keepdims=1)
+#    if SquaredX is None and SquaredXcp is None:
+#        SquaredX = (X**2).sum(axis=1,keepdims=1)
 
-    partition, _ = PartitionData(X, NodePositions, MaxBlockSize, SquaredX,
-                                 TrimmingRadius)
+    if Xcp is None:
+        partition, _ = PartitionData(X, NodePositions, MaxBlockSize, SquaredX,
+                                    TrimmingRadius)
+    else:
+        partition, _ = PartitionData_cp(Xcp, NodePositions, MaxBlockSize, SquaredXcp,
+                                    TrimmingRadius)
     
 
     for i in range(len(opTypes)):
@@ -463,15 +468,27 @@ def ApplyOptimalGraphGrammarOperation(X,
 
     if AvoidSolitary:
         Valid_configurations = []
-        for i in range(len(NodePositionsArrayAll)):
-            partition = PartitionData(X = X,
-                             MaxBlockSize=MaxBlockSize,
-                             NodePositions = NodePositionsArrayAll[i],
-                             SquaredX = SquaredX,
-                             TrimmingRadius = TrimmingRadius
-                              )[0]
-            if all(np.isin(np.array(range(NodePositionsArrayAll[i].shape[0])),partition[partition>-1])):
-                Valid_configurations.append(i)
+        if Xcp is None:
+            for i in range(len(NodePositionsArrayAll)):
+                partition = PartitionData(X = X,
+                                MaxBlockSize=MaxBlockSize,
+                                NodePositions = NodePositionsArrayAll[i],
+                                SquaredX = SquaredX,
+                                TrimmingRadius = TrimmingRadius
+                                )[0]
+                if all(np.isin(np.array(range(NodePositionsArrayAll[i].shape[0])),partition[partition>-1])):
+                    Valid_configurations.append(i)
+
+        else:
+            for i in range(len(NodePositionsArrayAll)):
+                partition = PartitionData_cp(Xcp,
+                                MaxBlockSize,
+                                NodePositionsArrayAll[i],
+                                SquaredXcp,
+                                TrimmingRadius = TrimmingRadius
+                                        )[0]
+                if all(np.isin(np.array(range(NodePositionsArrayAll[i].shape[0])),partition[partition>-1])):
+                    Valid_configurations.append(i)
 
         if verbose:
             print(len(Valid_configurations), "configurations out of ", len(NodePositionsArrayAll), "used")
@@ -487,8 +504,6 @@ def ApplyOptimalGraphGrammarOperation(X,
             ElasticMatricesAll[i], AdjustVectAll[i] = AdjustByConstant(ElasticMatricesAll[i],AdjustVectAll[i])
 
             
-
-
     if(n_cores > 1 and len(Valid_configurations) // (MinParOp + 1) > 1):
             
 #             X_remote, X_shape, SquaredX_remote, SquaredX_shape = multiproc_shared_variables
@@ -513,26 +528,42 @@ def ApplyOptimalGraphGrammarOperation(X,
 #                                 None,
 #                                 MaxBlockSize,
 #                                 False)) as pool:
-                
+
 #                 results = pool.map(proxy_multiproc,Valid_configurations)
-                
-            results=pool.map(proxy,[dict(X=X,
-                                       NodePositions = NodePositionsArrayAll[i],
-                                       ElasticMatrix = ElasticMatricesAll[i], 
-                                       MaxNumberOfIterations = MaxNumberOfIterations,eps=eps,
-                                       Mode=Mode, FinalEnergy=FinalEnergy,
-                                       alpha=alpha,beta=beta,prob=EmbPointProb,
-                                       DisplayWarnings=DisplayWarnings,
-                                       PointWeights=None,
-                                       MaxBlockSize=MaxBlockSize,
-                                       verbose=False,
-                                       TrimmingRadius=TrimmingRadius, SquaredX=SquaredX) for i in Valid_configurations])
-            
-            list_energies = [r[1] for r in results]
-            idx = list_energies.index(min(list_energies))
-            NewNodePositions, minEnergy, partition, Dist, MSE, EP, RP = results[idx]
-            AdjustVect = AdjustVectAll[idx]
-            NewElasticMatrix = ElasticMatricesAll[idx]
+
+
+        with mp.Pool(n_cores) as pool:
+            if Xcp is None:
+                results=pool.map(proxy,[dict(X=X,
+                                        NodePositions = NodePositionsArrayAll[i],
+                                        ElasticMatrix = ElasticMatricesAll[i], 
+                                        MaxNumberOfIterations = MaxNumberOfIterations,eps=eps,
+                                        Mode=Mode, FinalEnergy=FinalEnergy,
+                                        alpha=alpha,beta=beta,prob=EmbPointProb,
+                                        DisplayWarnings=DisplayWarnings,
+                                        PointWeights=None,
+                                        MaxBlockSize=MaxBlockSize,
+                                        verbose=False,
+                                        TrimmingRadius=TrimmingRadius, SquaredX=SquaredX) for i in Valid_configurations])
+            else:
+                results=pool.map(proxy_cp,[dict(X=X,
+                                        NodePositions = NodePositionsArrayAll[i],
+                                        ElasticMatrix = ElasticMatricesAll[i], 
+                                        MaxNumberOfIterations = MaxNumberOfIterations,eps=eps,
+                                        Mode=Mode, FinalEnergy=FinalEnergy,
+                                        alpha=alpha,beta=beta,prob=EmbPointProb,
+                                        DisplayWarnings=DisplayWarnings,
+                                        PointWeights=None,
+                                        MaxBlockSize=MaxBlockSize,
+                                        verbose=False,
+                                        TrimmingRadius=TrimmingRadius, SquaredX=SquaredX,
+                                        Xcp = Xcp, SquaredXcp = SquaredXcp) for i in Valid_configurations])
+    
+        list_energies = [r[1] for r in results]
+        idx = list_energies.index(min(list_energies))
+        NewNodePositions, minEnergy, partition, Dist, MSE, EP, RP = results[idx]
+        AdjustVect = AdjustVectAll[idx]
+        NewElasticMatrix = ElasticMatricesAll[idx]
             
             
             ########################
@@ -587,30 +618,56 @@ def ApplyOptimalGraphGrammarOperation(X,
     else:
         minEnergy = np.inf
 
-        for i in Valid_configurations:    
+        if Xcp is None:
+            for i in Valid_configurations:    
+                # TODO add pointweights ?
+                nodep, ElasticEnergy, part, dist, mse, ep, rp = PrimitiveElasticGraphEmbedment(X,
+                                                    NodePositionsArrayAll[i],
+                                                    ElasticMatricesAll[i], MaxNumberOfIterations, eps,
+                                                    Mode=Mode, FinalEnergy=FinalEnergy,
+                                                    alpha=alpha,beta=beta,prob=EmbPointProb,
+                                                    DisplayWarnings=DisplayWarnings,
+                                                    PointWeights=None,
+                                                    MaxBlockSize=MaxBlockSize,
+                                                    verbose=False,
+                                                    TrimmingRadius=TrimmingRadius, SquaredX=SquaredX)
 
-            # TODO add pointweights ?
-            nodep, ElasticEnergy, part, dist, mse, ep, rp = PrimitiveElasticGraphEmbedment(X,
-                                                   NodePositionsArrayAll[i],
-                                                   ElasticMatricesAll[i], MaxNumberOfIterations, eps,
-                                                   Mode=Mode, FinalEnergy=FinalEnergy,
-                                                   alpha=alpha,beta=beta,prob=EmbPointProb,
-                                                   DisplayWarnings=DisplayWarnings,
-                                                   PointWeights=None,
-                                                   MaxBlockSize=MaxBlockSize,
-                                                   verbose=False,
-                                                   TrimmingRadius=TrimmingRadius, SquaredX=SquaredX)
+                if(ElasticEnergy < minEnergy):
+                    NewNodePositions = nodep
+                    NewElasticMatrix = ElasticMatricesAll[i]
+                    partition = part
+                    AdjustVect = AdjustVectAll[i]
+                    minEnergy = ElasticEnergy
+                    MSE = mse
+                    EP = ep
+                    RP = rp
+                    Dist = dist
 
-            if(ElasticEnergy < minEnergy):
-                NewNodePositions = nodep
-                NewElasticMatrix = ElasticMatricesAll[i]
-                partition = part
-                AdjustVect = AdjustVectAll[i]
-                minEnergy = ElasticEnergy
-                MSE = mse
-                EP = ep
-                RP = rp
-                Dist = dist
+        else:
+            for i in Valid_configurations:    
+                # TODO add pointweights ?
+                nodep, ElasticEnergy, part, dist, mse, ep, rp = PrimitiveElasticGraphEmbedment_cp(X,
+                                                    NodePositionsArrayAll[i],
+                                                    ElasticMatricesAll[i], MaxNumberOfIterations, eps,
+                                                    Mode=Mode, FinalEnergy=FinalEnergy,
+                                                    alpha=alpha,beta=beta,prob=EmbPointProb,
+                                                    DisplayWarnings=DisplayWarnings,
+                                                    PointWeights=None,
+                                                    MaxBlockSize=MaxBlockSize,
+                                                    verbose=False,
+                                                    TrimmingRadius=TrimmingRadius, SquaredX=SquaredX,
+                                                    Xcp = Xcp, SquaredXcp = SquaredXcp)
+
+                if(ElasticEnergy < minEnergy):
+                    NewNodePositions = nodep
+                    NewElasticMatrix = ElasticMatricesAll[i]
+                    partition = part
+                    AdjustVect = AdjustVectAll[i]
+                    minEnergy = ElasticEnergy
+                    MSE = mse
+                    EP = ep
+                    RP = rp
+                    Dist = dist
 
     return dict(NodePositions = NewNodePositions, ElasticMatrix = NewElasticMatrix, 
                 ElasticEnergy = minEnergy, MSE = MSE, EP = EP, RP = RP, AdjustVect = AdjustVect, Dist = Dist)

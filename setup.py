@@ -39,15 +39,15 @@ setup(
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)'],
 
     keywords='machine_learning graphs dimension_reduction single_cell',  # Optional
-    packages=['elpigraph.src','elpigraph',
-              'elpigraphgpu.src','elpigraphgpu'],
+    packages=['elpigraph.src','elpigraph'],
+              #'elpigraphgpu.src','elpigraphgpu'],
     package_dir = {
             'elpigraph': 'elpigraph',
-            'elpigraphgpu':'elpigraphgpu',
-            'elpigraph.src': path_src,
-            'elpigraphgpu.src': path_srcgpu},
+            #'elpigraphgpu':'elpigraphgpu',
+            'elpigraph.src': path_src},
+            #'elpigraphgpu.src': path_srcgpu},
 #     package_data={'': ['data/']},
-    install_requires=['numpy','pandas','scipy','scikit_learn','python_igraph','plotnine'],
+    install_requires=['numpy','pandas','scipy','scikit_learn','python_igraph'],
     project_urls={  # Optional
         'Bug Reports': 'https://github.com/j-bac/elpigraph-python/issues',
         'Source': 'https://github.com/j-bac/elpigraph-python/',

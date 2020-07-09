@@ -1,9 +1,9 @@
 import numpy as np
-#import multiprocessing as mp
-from .core import PartitionData, PrimitiveElasticGraphEmbedment, DecodeElasticMatrix2
+import multiprocessing as mp
+from .core import PartitionData, DecodeElasticMatrix, PrimitiveElasticGraphEmbedment
 
 def proxy(Dict):
-    return PrimitiveElasticGraphEmbedment(**Dict)
+    return PrimitiveElasticGraphEmbedment_lockGPU(**Dict)
 
 # Some elementary graph transformations -----------------------------------
 
@@ -84,19 +84,19 @@ def f_get_star(NodePositions, ElasticMatrix, NodeCenter):
 def GraphGrammarOperation(X, NodePositions, ElasticMatrix, AdjustVect, Type, partition):
     if Type == "addnode2node":
         return AddNode2Node(X, NodePositions, ElasticMatrix, partition, AdjustVect)
-    elif Type == "addnode2node_1":
+    elif Type == "addnode2node1":
         return AddNode2Node(X, NodePositions, ElasticMatrix, partition, AdjustVect, Max_K = 1)
-    elif Type == "addnode2node_2":
+    elif Type == "addnode2node2":
         return AddNode2Node(X, NodePositions, ElasticMatrix, partition, AdjustVect, Max_K = 2)
     elif Type == "removenode":
         return RemoveNode(NodePositions, ElasticMatrix, AdjustVect)
     elif Type == "bisectedge":
         return BisectEdge(NodePositions, ElasticMatrix, AdjustVect)
-    elif Type == "bisectedge_3":
+    elif Type == "bisectedge3":
         return BisectEdge(NodePositions, ElasticMatrix, AdjustVect, Min_K=3)
     elif Type == "shrinkedge":
         return ShrinkEdge(NodePositions, ElasticMatrix, AdjustVect)
-    elif Type == "shrinkedge_3":
+    elif Type == "shrinkedge3":
         return ShrinkEdge(NodePositions, ElasticMatrix, AdjustVect, Min_K=3)
     else:
         raise ValueError("Operation " + Type + " is not defined")
@@ -212,13 +212,13 @@ def BisectEdge(NodePositions, ElasticMatrix, AdjustVect, Min_K=1):
     # Decompose Elastic Matrix: Mus
     Mus = ElasticMatrix.diagonal()
     # Get list of edges
-    Edges, _, _ = DecodeElasticMatrix2(ElasticMatrix)
+    Edges, _, _ = DecodeElasticMatrix(ElasticMatrix)
 
     # Define some constants
     nNodes = NodePositions.shape[0]
     if Min_K>1:
         Degree = np.bincount(Edges.flatten())
-        EdgDegree = np.max(Degree[Edges],axis=1)
+        EdgDegree = np.max(Degree[Edges],axis=0)
         nGraphs = np.where(EdgDegree >= Min_K)[0]
     else:
         nGraphs = np.array(range(Edges.shape[0]))
@@ -386,7 +386,7 @@ def ApplyOptimalGraphGrammarOperation(X,
                                      n_cores = 1,
                                      MinParOp = 20,
                                      multiproc_shared_variables = None,
-                                     pool = None):
+                     Xcp = None, SquaredXcp = None):
 
     '''
     # Multiple grammar application --------------------------------------------
@@ -434,7 +434,7 @@ def ApplyOptimalGraphGrammarOperation(X,
     if SquaredX is None:
         SquaredX = (X**2).sum(axis=1,keepdims=1)
 
-    partition, _ = PartitionData(X, NodePositions, MaxBlockSize, SquaredX,
+    partition, _ = PartitionData(Xcp, NodePositions, MaxBlockSize, SquaredXcp,
                                  TrimmingRadius)
     
 
@@ -464,12 +464,13 @@ def ApplyOptimalGraphGrammarOperation(X,
     if AvoidSolitary:
         Valid_configurations = []
         for i in range(len(NodePositionsArrayAll)):
-            partition = PartitionData(X = X,
-                             MaxBlockSize=MaxBlockSize,
-                             NodePositions = NodePositionsArrayAll[i],
-                             SquaredX = SquaredX,
+            partition = PartitionData(Xcp,
+                             MaxBlockSize,
+                             NodePositionsArrayAll[i],
+                             SquaredXcp,
                              TrimmingRadius = TrimmingRadius
-                              )[0]
+                                     )[0]
+            
             if all(np.isin(np.array(range(NodePositionsArrayAll[i].shape[0])),partition[partition>-1])):
                 Valid_configurations.append(i)
 
@@ -513,10 +514,13 @@ def ApplyOptimalGraphGrammarOperation(X,
 #                                 None,
 #                                 MaxBlockSize,
 #                                 False)) as pool:
-                
+
 #                 results = pool.map(proxy_multiproc,Valid_configurations)
-                
-            results=pool.map(proxy,[dict(X=X,
+
+        with mp.Manager() as man:
+            barrier = man.Barrier(n_cores)
+            with mp.Pool(n_cores) as pool:
+                results=pool.map(proxy,[dict(lock=barrier,X=X,
                                        NodePositions = NodePositionsArrayAll[i],
                                        ElasticMatrix = ElasticMatricesAll[i], 
                                        MaxNumberOfIterations = MaxNumberOfIterations,eps=eps,
@@ -526,13 +530,14 @@ def ApplyOptimalGraphGrammarOperation(X,
                                        PointWeights=None,
                                        MaxBlockSize=MaxBlockSize,
                                        verbose=False,
-                                       TrimmingRadius=TrimmingRadius, SquaredX=SquaredX) for i in Valid_configurations])
-            
-            list_energies = [r[1] for r in results]
-            idx = list_energies.index(min(list_energies))
-            NewNodePositions, minEnergy, partition, Dist, MSE, EP, RP = results[idx]
-            AdjustVect = AdjustVectAll[idx]
-            NewElasticMatrix = ElasticMatricesAll[idx]
+                                       TrimmingRadius=TrimmingRadius, SquaredX=SquaredX,
+                                       Xcp = Xcp, SquaredXcp = SquaredXcp) for i in Valid_configurations])
+        
+        list_energies = [r[1] for r in results]
+        idx = list_energies.index(min(list_energies))
+        NewNodePositions, minEnergy, partition, Dist, MSE, EP, RP = results[idx]
+        AdjustVect = AdjustVectAll[idx]
+        NewElasticMatrix = ElasticMatricesAll[idx]
             
             
             ########################
@@ -599,7 +604,8 @@ def ApplyOptimalGraphGrammarOperation(X,
                                                    PointWeights=None,
                                                    MaxBlockSize=MaxBlockSize,
                                                    verbose=False,
-                                                   TrimmingRadius=TrimmingRadius, SquaredX=SquaredX)
+                                                   TrimmingRadius=TrimmingRadius, SquaredX=SquaredX,
+                                                   Xcp = Xcp, SquaredXcp = SquaredXcp)
 
             if(ElasticEnergy < minEnergy):
                 NewNodePositions = nodep
@@ -611,6 +617,6 @@ def ApplyOptimalGraphGrammarOperation(X,
                 EP = ep
                 RP = rp
                 Dist = dist
-
+        
     return dict(NodePositions = NewNodePositions, ElasticMatrix = NewElasticMatrix, 
                 ElasticEnergy = minEnergy, MSE = MSE, EP = EP, RP = RP, AdjustVect = AdjustVect, Dist = Dist)

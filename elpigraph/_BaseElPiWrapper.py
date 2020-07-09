@@ -1,7 +1,11 @@
 import numpy as np
+try:
+    import cupy
+except:
+    pass
 from ._topologies import generateInitialConfiguration
 from .src.distutils import PartialDistance
-from .src.core import Encode2ElasticMatrix, PrimitiveElasticGraphEmbedment
+from .src.core import Encode2ElasticMatrix, PrimitiveElasticGraphEmbedment, PrimitiveElasticGraphEmbedment_cp
 from .src.BaseElPi import computeElasticPrincipalGraph
 
 def computeElasticPrincipalGraphWithGrammars(X,
@@ -28,9 +32,9 @@ def computeElasticPrincipalGraphWithGrammars(X,
                                              verbose = False,
                                              ShowTimer = False,
                                              ReduceDimension = None,
-                                             drawAccuracyComplexity = True,
-                                             drawPCAView = True,
-                                             drawEnergy = True,
+#                                             drawAccuracyComplexity = True,
+#                                             drawPCAView = True,
+#                                             drawEnergy = True,
                                              n_cores = 1,
                                              #ClusType = "Sock",
                                              MinParOp = 20,
@@ -55,7 +59,8 @@ def computeElasticPrincipalGraphWithGrammars(X,
                                              Lambda_Initial = None, 
                                              Mu_Initial = None,
                                              DisplayWarnings = True,
-                                             StoreGraphEvolution = False): 
+                                             StoreGraphEvolution = False,
+                                             GPU = False): 
 
     '''
     #' Construct a principal graph with the specified grammar
@@ -155,11 +160,15 @@ def computeElasticPrincipalGraphWithGrammars(X,
 
         # Generate the appropriate matrix
         X = Base_X[:, Subsets[j]]
+        SquaredX = np.sum(X**2,axis=1,keepdims=1)
+        if GPU:
+            Xcp = cupy.asarray(X)
+            SquaredXcp = Xcp.sum(axis=1,keepdims=1)
 
         # Define temporary variable to avoid excessing plotting
-        Intermediate_drawPCAView = drawPCAView
-        Intermediate_drawAccuracyComplexity = drawAccuracyComplexity 
-        Intermediate_drawEnergy = drawEnergy   
+        #Intermediate_drawPCAView = drawPCAView
+        #Intermediate_drawAccuracyComplexity = drawAccuracyComplexity 
+        #Intermediate_drawEnergy = drawEnergy   
 
         Used = np.array([False] * len(X))
 
@@ -236,10 +245,16 @@ def computeElasticPrincipalGraphWithGrammars(X,
                 ElasticMatrix = Encode2ElasticMatrix(Edges = InitialConf['Edges'], Lambdas = Lambda, Mus = Mu)
 
                 # Compute the initial node position
-                InitNodePositions = PrimitiveElasticGraphEmbedment(
-                    X = X, NodePositions = InitialConf['NodePositions'],
-                    MaxNumberOfIterations = MaxNumberOfIterations, TrimmingRadius = TrimmingRadius, eps = eps,
-                    ElasticMatrix = ElasticMatrix, Mode = Mode)[0]
+                if GPU:
+                    InitNodePositions = PrimitiveElasticGraphEmbedment_cp(
+                        X = X, NodePositions = InitialConf['NodePositions'], 
+                        MaxNumberOfIterations = MaxNumberOfIterations, TrimmingRadius = TrimmingRadius, eps = eps,
+                        ElasticMatrix = ElasticMatrix, Mode = Mode, Xcp = Xcp, SquaredXcp = SquaredXcp, SquaredX=SquaredX)[0]
+                else:
+                    InitNodePositions = PrimitiveElasticGraphEmbedment(
+                        X = X, NodePositions = InitialConf['NodePositions'], 
+                        MaxNumberOfIterations = MaxNumberOfIterations, TrimmingRadius = TrimmingRadius, eps = eps,
+                        ElasticMatrix = ElasticMatrix, Mode = Mode, SquaredX=SquaredX)[0]
 
 
             # Do we need to compute AdjustVect?
@@ -248,11 +263,11 @@ def computeElasticPrincipalGraphWithGrammars(X,
 
 
             # Limit plotting after a few examples
-            if(len(ReturnList) == 3):
-                print("Graphical output will be suppressed for the remaining replicas")
-                Intermediate_drawPCAView = False
-                Intermediate_drawAccuracyComplexity = False 
-                Intermediate_drawEnergy = False
+            #if(len(ReturnList) == 3):
+            #    print("Graphical output will be suppressed for the remaining replicas")
+            #    Intermediate_drawPCAView = False
+            #    Intermediate_drawAccuracyComplexity = False 
+            #    Intermediate_drawEnergy = False
 
 
             print("Constructing tree", i+1, "of", nReps, "/ Subset", j+1, "of", len(Subsets))
@@ -271,9 +286,9 @@ def computeElasticPrincipalGraphWithGrammars(X,
                                                         verbose = verbose, ShowTimer = ShowTimer,
                                                         ReduceDimension = ReduceDimension, Mode = Mode,
                                                         FinalEnergy = FinalEnergy, alpha = alpha, beta = beta, #gamma = gamma,
-                                                        drawAccuracyComplexity = Intermediate_drawAccuracyComplexity,
-                                                        drawPCAView = Intermediate_drawPCAView,
-                                                        drawEnergy = Intermediate_drawEnergy,
+                                                        #drawAccuracyComplexity = Intermediate_drawAccuracyComplexity,
+                                                        #drawPCAView = Intermediate_drawPCAView,
+                                                        #drawEnergy = Intermediate_drawEnergy,
                                                         n_cores = n_cores, 
                                                         #ClusType = ClusType, 
                                                         MinParOp = MinParOp,
@@ -283,7 +298,8 @@ def computeElasticPrincipalGraphWithGrammars(X,
                                                         AdjustElasticMatrix_Initial = AdjustElasticMatrix_Initial,
                                                         Lambda_Initial = Lambda_Initial, Mu_Initial = Mu_Initial,
                                                         DisplayWarnings=DisplayWarnings,
-                                                        StoreGraphEvolution = StoreGraphEvolution
+                                                        StoreGraphEvolution=StoreGraphEvolution,
+                                                        GPU = GPU
                                                         )
                              )
 
@@ -319,11 +335,17 @@ def computeElasticPrincipalGraphWithGrammars(X,
             EM = Encode2ElasticMatrix(Edges = InitialConf['Edges'], Lambdas = Lambda, Mus = Mu)
 
             # Compute the initial node position
-            InitNodePositions = PrimitiveElasticGraphEmbedment(
-                X = X, NodePositions = InitialConf['NodePositions'],
-                MaxNumberOfIterations = MaxNumberOfIterations, TrimmingRadius = TrimmingRadius, eps = eps,
-                ElasticMatrix = EM, Mode = Mode)[0]
+            if GPU:
+                InitNodePositions = PrimitiveElasticGraphEmbedment_cp(
+                    X = X, NodePositions = InitialConf['NodePositions'],
+                    MaxNumberOfIterations = MaxNumberOfIterations, TrimmingRadius = TrimmingRadius, eps = eps,
+                    ElasticMatrix = EM, Mode = Mode, Xcp = Xcp, SquaredXcp = SquaredXcp)[0]
 
+            else:
+                InitNodePositions = PrimitiveElasticGraphEmbedment(
+                    X = X, NodePositions = InitialConf['NodePositions'],
+                    MaxNumberOfIterations = MaxNumberOfIterations, TrimmingRadius = TrimmingRadius, eps = eps,
+                    ElasticMatrix = EM, Mode = Mode)[0]
 
 
         ReturnList.append(computeElasticPrincipalGraph(Data = AllPoints, NumNodes = NumNodes, NumEdges = NumEdges,
@@ -337,8 +359,8 @@ def computeElasticPrincipalGraphWithGrammars(X,
                                                     verbose = verbose, ShowTimer = ShowTimer,
                                                     ReduceDimension = None, Mode = Mode,
                                                     FinalEnergy = FinalEnergy, alpha = alpha, beta = beta, #gamma = gamma,
-                                                    drawAccuracyComplexity = drawAccuracyComplexity,
-                                                    drawPCAView = drawPCAView, drawEnergy = drawEnergy,
+                                                    #drawAccuracyComplexity = drawAccuracyComplexity,
+                                                    #drawPCAView = drawPCAView, drawEnergy = drawEnergy,
                                                     n_cores = n_cores, 
                                                     #ClusType = ClusType, 
                                                     MinParOp = MinParOp,
@@ -348,7 +370,8 @@ def computeElasticPrincipalGraphWithGrammars(X,
                                                     AdjustElasticMatrix_Initial = AdjustElasticMatrix_Initial,
                                                     Lambda_Initial = Lambda_Initial, Mu_Initial = Mu_Initial,
                                                     DisplayWarnings=DisplayWarnings,
-                                                    StoreGraphEvolution=StoreGraphEvolution
+                                                    StoreGraphEvolution=StoreGraphEvolution,
+                                                    GPU=GPU
                                                     )
                          )
 

@@ -1,5 +1,5 @@
 import numpy as np
-import elpigraph
+import elpigraphgpu
 from .src.PCA import PCA, TruncPCA, PCA_gpu, TruncSVD_gpu
 from .src.distutils import PartialDistance
 
@@ -156,7 +156,7 @@ def computeElasticPrincipalCircle(X,
         print("The initial number of nodes must be at least 3. This will be fixed")
         InitNodes = 3
 
-    return(elpigraph.computeElasticPrincipalGraphWithGrammars(X = X,
+    return(elpigraphgpu.computeElasticPrincipalGraphWithGrammars(X = X,
                                              NumNodes = NumNodes,
                                              NumEdges = NumEdges,
                                              InitNodes = InitNodes,
@@ -354,7 +354,7 @@ def computeElasticPrincipalTree(X,
     else:
         Configuration = ICOver
 
-    return(elpigraph.computeElasticPrincipalGraphWithGrammars(X = X,
+    return(elpigraphgpu.computeElasticPrincipalGraphWithGrammars(X = X,
                                              NumNodes = NumNodes,
                                              NumEdges = NumEdges,
                                              InitNodes = InitNodes,
@@ -554,7 +554,7 @@ def computeElasticPrincipalCurve(X,
         Configuration = ICOver
 
 
-    return(elpigraph.computeElasticPrincipalGraphWithGrammars(X = X,
+    return(elpigraphgpu.computeElasticPrincipalGraphWithGrammars(X = X,
                                              NumNodes = NumNodes,
                                              NumEdges = NumEdges,
                                              InitNodes = InitNodes,
@@ -764,7 +764,7 @@ def fineTuneBR(X,
         ShrinkGrammars = np.array([['shrinkedge_3']])
         GrammarOrder = ["Shrink", "Grow"]
 
-    return(elpigraph.computeElasticPrincipalGraphWithGrammars(X = X,
+    return(elpigraphgpu.computeElasticPrincipalGraphWithGrammars(X = X,
                                              NumNodes = NumNodes,
                                              NumEdges = NumEdges,
                                              InitNodes = InitNodes,
@@ -965,7 +965,7 @@ def GrowLeaves(X,
         Configuration = ICOver
 
 
-    return(elpigraph.computeElasticPrincipalGraphWithGrammars(X = X,
+    return(elpigraphgpu.computeElasticPrincipalGraphWithGrammars(X = X,
                                              NumNodes = NumNodes,
                                              NumEdges = NumEdges,
                                              InitNodes = InitNodes,
@@ -1013,7 +1013,7 @@ def GrowLeaves(X,
                                              AdjustElasticMatrix_Initial = AdjustElasticMatrix_Initial,
                                              Lambda_Initial = Lambda_Initial, Mu_Initial = Mu_Initial,
                                              DisplayWarnings = DisplayWarnings,
-                                             StoreGraphEvolution = StoreGraphEvolution
+                                             StoreGraphEvolution=StoreGraphEvolution
                                              ))
 
 

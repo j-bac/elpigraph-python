@@ -25,9 +25,9 @@ def computeElasticPrincipalCircle(X,
                                  verbose = False,
                                  ShowTimer = False,
                                  ReduceDimension = None,
-                                 drawAccuracyComplexity = True,
-                                 drawPCAView = True,
-                                 drawEnergy = True,
+                                 #drawAccuracyComplexity = True,
+                                 #drawPCAView = True,
+                                 #drawEnergy = True,
                                  n_cores = 1,
                                  #ClusType = "Sock",
                                  MinParOp = 20,
@@ -53,7 +53,8 @@ def computeElasticPrincipalCircle(X,
                                  Lambda_Initial = None, 
                                  Mu_Initial = None,
                                  DisplayWarnings = False,
-                                 StoreGraphEvolution = False):
+                                 StoreGraphEvolution = False,
+                                 GPU = False):
     
     
     '''
@@ -177,9 +178,9 @@ def computeElasticPrincipalCircle(X,
                                              verbose = verbose,
                                              ShowTimer = ShowTimer,
                                              ReduceDimension = ReduceDimension,
-                                             drawAccuracyComplexity = drawAccuracyComplexity,
-                                             drawPCAView = drawPCAView,
-                                             drawEnergy = drawEnergy,
+                                             #drawAccuracyComplexity = drawAccuracyComplexity,
+                                             #drawPCAView = drawPCAView,
+                                             #drawEnergy = drawEnergy,
                                              n_cores = n_cores,
                                              MinParOp = MinParOp,
 #                                              ClusType = ClusType,
@@ -202,7 +203,8 @@ def computeElasticPrincipalCircle(X,
                                              Lambda_Initial = Lambda_Initial, Mu_Initial = Mu_Initial,
                                              DisplayWarnings = DisplayWarnings,
                                              MaxSteps = MaxSteps,
-                                             StoreGraphEvolution=StoreGraphEvolution
+                                             StoreGraphEvolution=StoreGraphEvolution,
+                                             GPU=GPU
                                              ))
 
 
@@ -229,9 +231,9 @@ def computeElasticPrincipalTree(X,
                                  verbose = False,
                                  ShowTimer = False,
                                  ReduceDimension = None,
-                                 drawAccuracyComplexity = True,
-                                 drawPCAView = True,
-                                 drawEnergy = True,
+                                 #drawAccuracyComplexity = True,
+                                 #drawPCAView = True,
+                                 #drawEnergy = True,
                                  n_cores = 1,
                                  #ClusType = "Sock",
                                  MinParOp = 20,
@@ -257,7 +259,8 @@ def computeElasticPrincipalTree(X,
                                  Lambda_Initial = None, 
                                  Mu_Initial = None,
                                  DisplayWarnings = False,
-                                 StoreGraphEvolution = False):
+                                 StoreGraphEvolution = False,
+                                 GPU = False):
     '''
     #' Construct a principal elastic tree
     #'
@@ -375,9 +378,9 @@ def computeElasticPrincipalTree(X,
                                              verbose = verbose,
                                              ShowTimer = ShowTimer,
                                              ReduceDimension = ReduceDimension,
-                                             drawAccuracyComplexity = drawAccuracyComplexity,
-                                             drawPCAView = drawPCAView,
-                                             drawEnergy = drawEnergy,
+                                             #drawAccuracyComplexity = drawAccuracyComplexity,
+                                             #drawPCAView = drawPCAView,
+                                             #drawEnergy = drawEnergy,
                                              n_cores = n_cores,
                                              MinParOp = MinParOp,
 #                                              ClusType = ClusType,
@@ -400,7 +403,8 @@ def computeElasticPrincipalTree(X,
                                              Lambda_Initial = Lambda_Initial, Mu_Initial = Mu_Initial,
                                              DisplayWarnings = DisplayWarnings,
                                              MaxSteps = MaxSteps,
-                                             StoreGraphEvolution=StoreGraphEvolution
+                                             StoreGraphEvolution=StoreGraphEvolution,
+                                             GPU=GPU
                                              ))
 
 
@@ -427,9 +431,9 @@ def computeElasticPrincipalCurve(X,
                                  verbose = False,
                                  ShowTimer = False,
                                  ReduceDimension = None,
-                                 drawAccuracyComplexity = True,
-                                 drawPCAView = True,
-                                 drawEnergy = True,
+                                 #drawAccuracyComplexity = True,
+                                 #drawPCAView = True,
+                                 #drawEnergy = True,
                                  n_cores = 1,
                                  #ClusType = "Sock",
                                  MinParOp = 20,
@@ -455,7 +459,8 @@ def computeElasticPrincipalCurve(X,
                                  Lambda_Initial = None, 
                                  Mu_Initial = None,
                                  DisplayWarnings = False,
-                                 StoreGraphEvolution = False):
+                                 StoreGraphEvolution = False,
+                                 GPU = False):
     
     ''' 
     #' Construct a princial elastic curve
@@ -575,9 +580,9 @@ def computeElasticPrincipalCurve(X,
                                              verbose = verbose,
                                              ShowTimer = ShowTimer,
                                              ReduceDimension = ReduceDimension,
-                                             drawAccuracyComplexity = drawAccuracyComplexity,
-                                             drawPCAView = drawPCAView,
-                                             drawEnergy = drawEnergy,
+                                             #drawAccuracyComplexity = drawAccuracyComplexity,
+                                             #drawPCAView = drawPCAView,
+                                             #drawEnergy = drawEnergy,
                                              n_cores = n_cores,
                                              MinParOp = MinParOp,
 #                                              ClusType = ClusType,
@@ -600,7 +605,8 @@ def computeElasticPrincipalCurve(X,
                                              Lambda_Initial = Lambda_Initial, Mu_Initial = Mu_Initial,
                                              DisplayWarnings = DisplayWarnings,
                                              MaxSteps = MaxSteps,
-                                             StoreGraphEvolution=StoreGraphEvolution
+                                             StoreGraphEvolution=StoreGraphEvolution,
+                                             GPU=GPU
                                              ))
 
 
@@ -627,9 +633,9 @@ def fineTuneBR(X,
              verbose = False,
              ShowTimer = False,
              ReduceDimension = None,
-             drawAccuracyComplexity = True,
-             drawPCAView = True,
-             drawEnergy = True,
+             #drawAccuracyComplexity = True,
+             #drawPCAView = True,
+             #drawEnergy = True,
              n_cores = 1,
              #ClusType = "Sock",
              MinParOp = 20,
@@ -655,7 +661,8 @@ def fineTuneBR(X,
              Lambda_Initial = None, 
              Mu_Initial = None,
              DisplayWarnings = False,
-             StoreGraphEvolution = False):
+             StoreGraphEvolution = False,
+             GPU = False):
 
     '''
     #' Expand the nodes around a branching point
@@ -788,9 +795,9 @@ def fineTuneBR(X,
                                              verbose = verbose,
                                              ShowTimer = ShowTimer,
                                              ReduceDimension = ReduceDimension,
-                                             drawAccuracyComplexity = drawAccuracyComplexity,
-                                             drawPCAView = drawPCAView,
-                                             drawEnergy = drawEnergy,
+                                             #drawAccuracyComplexity = drawAccuracyComplexity,
+                                             #drawPCAView = drawPCAView,
+                                             #drawEnergy = drawEnergy,
                                              n_cores = n_cores,
                                              MinParOp = MinParOp,
 #                                              ClusType = ClusType,
@@ -812,7 +819,8 @@ def fineTuneBR(X,
                                              AdjustElasticMatrix_Initial = AdjustElasticMatrix_Initial,
                                              Lambda_Initial = Lambda_Initial, Mu_Initial = Mu_Initial,
                                              DisplayWarnings = DisplayWarnings,
-                                             StoreGraphEvolution=StoreGraphEvolution
+                                             StoreGraphEvolution=StoreGraphEvolution,
+                                             GPU = GPU
                                              ))
 
 
@@ -838,9 +846,9 @@ def GrowLeaves(X,
              verbose = False,
              ShowTimer = False,
              ReduceDimension = None,
-             drawAccuracyComplexity = True,
-             drawPCAView = True,
-             drawEnergy = True,
+             #drawAccuracyComplexity = True,
+             #drawPCAView = True,
+             #drawEnergy = True,
              n_cores = 1,
              #ClusType = "Sock",
              MinParOp = 20,
@@ -866,7 +874,8 @@ def GrowLeaves(X,
              Lambda_Initial = None, 
              Mu_Initial = None,
              DisplayWarnings = False,
-             StoreGraphEvolution = False):
+             StoreGraphEvolution = False,
+             GPU=False):
     
     '''
     #' Extend the leaves of a graph
@@ -989,9 +998,9 @@ def GrowLeaves(X,
                                              verbose = verbose,
                                              ShowTimer = ShowTimer,
                                              ReduceDimension = ReduceDimension,
-                                             drawAccuracyComplexity = drawAccuracyComplexity,
-                                             drawPCAView = drawPCAView,
-                                             drawEnergy = drawEnergy,
+                                             #drawAccuracyComplexity = drawAccuracyComplexity,
+                                             #drawPCAView = drawPCAView,
+                                             #drawEnergy = drawEnergy,
                                              n_cores = n_cores,
                                              MinParOp = MinParOp,
 #                                              ClusType = ClusType,
@@ -1013,7 +1022,8 @@ def GrowLeaves(X,
                                              AdjustElasticMatrix_Initial = AdjustElasticMatrix_Initial,
                                              Lambda_Initial = Lambda_Initial, Mu_Initial = Mu_Initial,
                                              DisplayWarnings = DisplayWarnings,
-                                             StoreGraphEvolution = StoreGraphEvolution
+                                             StoreGraphEvolution = StoreGraphEvolution,
+                                             GPU = GPU
                                              ))
 
 

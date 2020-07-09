@@ -5,14 +5,14 @@ Created on Fri Feb  9 10:11:02 2018
 @author: Alexis Martin
 """
 import numpy as np
+try:
+    import cupy
+except:
+    pass
 from scipy import linalg as la
 from sklearn.decomposition import TruncatedSVD
 from sklearn.utils import check_random_state
 
-try:
-    import cupy as cp
-except:
-    pass
 
 def PCA(data):
     """
@@ -55,13 +55,13 @@ def PCA_gpu(data):
     # mean center the data
     # data -= data.mean(axis=0)
     # calculate the covariance matrix
-    R = cp.cov(data, rowvar=False)
+    R = cupy.cov(data, rowvar=False)
     # calculate eigenvectors & eigenvalues of the covariance matrix
     # use 'eigh' rather than 'eig' since R is symmetric,
     # the performance gain is substantial
-    evals, evecs = cp.linalg.eigh(R)
+    evals, evecs = cupy.linalg.eigh(R)
     # sort eigenvalue in decreasing order
-    idx = cp.argsort(evals)[::-1]
+    idx = cupy.argsort(evals)[::-1]
     evecs = evecs[:, idx]
     # sort eigenvectors according to same index
     evals = evals[idx]
@@ -105,7 +105,7 @@ def TruncSVD_gpu(M, n_components, n_oversamples=10, n_iter='auto',
         generator; If RandomState instance, random_state is the random number
         generator; If None, the random number generator is the RandomState
         instance used by `np.random`.
-    lib : {'cupy', 'pytorch'}, str optional
+    lib : {'cp', 'pytorch'}, str optional
         Chooses the GPU library to be used.
 
     Notes

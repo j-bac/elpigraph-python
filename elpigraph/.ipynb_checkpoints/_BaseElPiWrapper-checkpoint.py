@@ -1,4 +1,5 @@
 import numpy as np
+import cupy as cp
 from ._topologies import generateInitialConfiguration
 from .src.distutils import PartialDistance
 from .src.core import Encode2ElasticMatrix, PrimitiveElasticGraphEmbedment
@@ -155,6 +156,9 @@ def computeElasticPrincipalGraphWithGrammars(X,
 
         # Generate the appropriate matrix
         X = Base_X[:, Subsets[j]]
+        SquaredX = np.sum(X**2,axis=1,keepdims=1)
+        Xcp = cupy.asarray(X)
+        SquaredXcp = Xcp.sum(axis=1,keepdims=1)
 
         # Define temporary variable to avoid excessing plotting
         Intermediate_drawPCAView = drawPCAView
@@ -237,9 +241,9 @@ def computeElasticPrincipalGraphWithGrammars(X,
 
                 # Compute the initial node position
                 InitNodePositions = PrimitiveElasticGraphEmbedment(
-                    X = X, NodePositions = InitialConf['NodePositions'],
+                    X = X, NodePositions = InitialConf['NodePositions'], 
                     MaxNumberOfIterations = MaxNumberOfIterations, TrimmingRadius = TrimmingRadius, eps = eps,
-                    ElasticMatrix = ElasticMatrix, Mode = Mode)[0]
+                    ElasticMatrix = ElasticMatrix, Mode = Mode, Xcp = Xcp, SquaredXcp = SquaredXcp, SquaredX=SquaredX)[0]
 
 
             # Do we need to compute AdjustVect?
@@ -283,7 +287,7 @@ def computeElasticPrincipalGraphWithGrammars(X,
                                                         AdjustElasticMatrix_Initial = AdjustElasticMatrix_Initial,
                                                         Lambda_Initial = Lambda_Initial, Mu_Initial = Mu_Initial,
                                                         DisplayWarnings=DisplayWarnings,
-                                                        StoreGraphEvolution = StoreGraphEvolution
+                                                        StoreGraphEvolution=StoreGraphEvolution
                                                         )
                              )
 
@@ -322,7 +326,7 @@ def computeElasticPrincipalGraphWithGrammars(X,
             InitNodePositions = PrimitiveElasticGraphEmbedment(
                 X = X, NodePositions = InitialConf['NodePositions'],
                 MaxNumberOfIterations = MaxNumberOfIterations, TrimmingRadius = TrimmingRadius, eps = eps,
-                ElasticMatrix = EM, Mode = Mode)[0]
+                ElasticMatrix = EM, Mode = Mode, Xcp = Xcp, SquaredXcp = SquaredXcp)[0]
 
 
 
