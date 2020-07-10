@@ -25,8 +25,8 @@ setup(
     long_description=long_description,  # Optional
     long_description_content_type="text/markdown",  # Optional (see note above)
     url="https://github.com/j-bac/elpigraph-python",  # Optional
-    author="Jonathan Bac",  # Optional
-    author_email="",  # Optional
+    maintainer="Jonathan Bac",  # Optional
+    maintainer_email="",  # Optional
     classifiers=[  # Optional
         # How mature is this project? Common values are
         #   3 - Alpha
@@ -38,13 +38,7 @@ setup(
     ],
     keywords="machine_learning graphs dimension_reduction single_cell",  # Optional
     packages=["elpigraph.src", "elpigraph"],
-    #'elpigraphgpu.src','elpigraphgpu'],
-    package_dir={
-        "elpigraph": "elpigraph",
-        #'elpigraphgpu':'elpigraphgpu',
-        "elpigraph.src": path_src,
-    },
-    #'elpigraphgpu.src': path_srcgpu},
+    package_dir={"elpigraph": "elpigraph", "elpigraph.src": path_src,},
     #     package_data={'': ['data/']},
     install_requires=["numpy", "pandas", "scipy", "scikit_learn", "python_igraph"],
     project_urls={  # Optional
@@ -52,4 +46,14 @@ setup(
         "Source": "https://github.com/j-bac/elpigraph-python/",
     },
     zip_safe=False,
+    extras_require={
+        "tests": ["pytest", "pytest-cov"],
+        "docs": [
+            "sphinx",
+            "sphinx-gallery",
+            "sphinx_rtd_theme",
+            "numpydoc",
+            "matplotlib",
+        ],
+    },
 )
