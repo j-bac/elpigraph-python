@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.com/j-bac/elpigraph-python.svg?branch=master)](https://travis-ci.com/j-bac/elpigraph-python)
-[![codecov](https://codecov.io/gh/j-bac/scikit-dimension/branch/master/graph/badge.svg)](https://codecov.io/gh/j-bac/scikit-dimension)
-[![CircleCI](https://circleci.com/gh/j-bac/scikit-dimension/tree/master.svg?style=shield)](https://circleci.com/gh/j-bac/scikit-dimension/tree/master)
+[![codecov](https://codecov.io/gh/j-bac/elpigraph-python/branch/master/graph/badge.svg)](https://codecov.io/gh/j-bac/elpigraph-python)
+[![CircleCI](https://circleci.com/gh/j-bac/elpigraph-python/tree/master.svg?style=shield)](https://circleci.com/gh/j-bac/elpigraph-python/tree/master)
 [![Documentation Status](https://readthedocs.org/projects/elpigraph-python/badge/?version=latest)](https://elpigraph-python.readthedocs.io/en/latest/?badge=latest)
 [![GitHub license](https://img.shields.io/github/license/j-bac/elpigraph-python)](https://github.com/j-bac/elpigraph-python/blob/master/LICENSE)
 
