@@ -53,7 +53,11 @@ install:
   - pip install .
 
 script:
-  - pytest -v --cov=elpigraph --pyargs elpigraph
+  - ls
+  - pytest -v --cov=elpigraph --pyargs elpigraph/tests/
+  - pytest -v --cov=elpigraph --pyargs elpigraph/tests/test_all_params.py
+  - cd elpigraph/
+  - pytest -v --cov=. --pyargs .
 
 after_success:
   - codecov
