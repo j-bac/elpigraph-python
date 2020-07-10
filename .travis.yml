@@ -52,8 +52,8 @@ install:
   - pip install codecov
   - pip install .
 
-#script:
-#  - pytest -v --cov=skdim --ignore=skdim/tests/test_results.py --pyargs skdim
+script:
+  - pytest -v --cov=elpigraph --pyargs elpigraph
 
 after_success:
   - codecov
