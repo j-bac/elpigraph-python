@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-import plotnine
+import matplotlib.pyplot as plt
 from itertools import combinations
 from .src.PCA import PCA, TruncPCA, PCA_gpu, TruncSVD_gpu
 from .src.core import PartitionData
