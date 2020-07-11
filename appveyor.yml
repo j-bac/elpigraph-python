@@ -34,8 +34,8 @@ install:
   - pip install .
 
 test_script:
-  - mkdir for_test
-  - cd for_test
+  #- mkdir for_test
+  #- cd for_test
   - pytest -v --cov=elpigraph --pyargs elpigraph/tests/
 
 after_test:
