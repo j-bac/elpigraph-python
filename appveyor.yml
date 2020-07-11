@@ -38,7 +38,7 @@ test_script:
   #- cd for_test
   - pytest -v --cov=elpigraph --pyargs elpigraph/tests/
 
-after_test:
-  - cp .coverage %APPVEYOR_BUILD_FOLDER%
-  - cd %APPVEYOR_BUILD_FOLDER%
-  - codecov
+#after_test:
+#  - cp .coverage %APPVEYOR_BUILD_FOLDER%
+#  - cd %APPVEYOR_BUILD_FOLDER%
+#  - codecov
