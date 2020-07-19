@@ -75,7 +75,7 @@ about:
 
   # The remaining entries in this section are optional, but recommended.
   description: |
-    elpigraph is a Python package implementing the Elastic Principal Graphs algorithm for manifold learning.
+    elpigraph-python is a package implementing the Elastic Principal Graphs algorithm for manifold learning.
   #doc_url: https://simplejson.readthedocs.io/
   #dev_url: https://github.com/simplejson/simplejson
 

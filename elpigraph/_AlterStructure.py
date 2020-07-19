@@ -269,6 +269,14 @@ def ExtendLeaves(
     # points(TargetPG$NodePositions, col="red")
     # points(NNPos, col="blue")
     #
+    try:
+        print(NNPos.shape)
+    except:
+        print("failed")
+    try:
+        print(TargetPG["NodePositions"].shape)
+    except:
+        pass
     TargetPG["NodePositions"] = np.vstack((TargetPG["NodePositions"], NNPos))
     TargetPG["Edges"] = [
         np.vstack((TargetPG["Edges"][0], NEdgs)),  # edges

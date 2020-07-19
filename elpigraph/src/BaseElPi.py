@@ -1,4 +1,5 @@
 import numpy as np
+
 try:
     import cupy
 except:
@@ -8,10 +9,18 @@ import datetime
 import time
 import copy
 from .PCA import PCA, TruncPCA, PCA_gpu, TruncSVD_gpu
-from .core import PrimitiveElasticGraphEmbedment, PrimitiveElasticGraphEmbedment_cp, PartitionData, PartitionData_cp, Encode2ElasticMatrix, DecodeElasticMatrix
+from .core import (
+    PrimitiveElasticGraphEmbedment,
+    PrimitiveElasticGraphEmbedment_cp,
+    PartitionData,
+    PartitionData_cp,
+    Encode2ElasticMatrix,
+    DecodeElasticMatrix,
+)
 from .grammar_operations import ApplyOptimalGraphGrammarOperation
 from .reporting import ReportOnPrimitiveGraphEmbedment
 from .._plotting import PlotPG
+
 
 def isnumeric(obj):
     try:
@@ -21,45 +30,46 @@ def isnumeric(obj):
         return False
 
 
-def ElPrincGraph(X,
-                Lambda,
-                Mu,
-                ElasticMatrix,
-                NodePositions,
-                AdjustVect,       
-                NumNodes = 100,
-                NumEdges = float('inf'),
-                verbose = False,
-                n_cores = 1,
-#                 ClusType = "Sock",
-                MinParOp = 20,
-                CompileReport = True,
-                ShowTimer = False,
-                ComputeMSEP = True,
-                FinalEnergy = "Base",
-                alpha = 0,
-                beta = 0,
-                Mode = 1,
-                MaxBlockSize = 100000000,
-                MaxNumberOfIterations = 10,
-                MaxFailedOperations = float('inf'),
-                MaxSteps = float('inf'),
-                GrammarOptimization = True,
-                eps = .01,
-                TrimmingRadius = float('Inf'),
-                GrowGrammars = np.array([]),
-                ShrinkGrammars = np.array([]),
-                GrammarOrder = ["Grow", "Shrink"],
-#                 FastSolve = False,
-                AvoidSolitary = False,
-                EmbPointProb = 1,
-                AdjustElasticMatrix = None, 
-                AdjustElasticMatrix_Initial = None,
-                DisplayWarnings = False,
-                StoreGraphEvolution = False,
-                GPU = False
-                ):
-    '''
+def ElPrincGraph(
+    X,
+    Lambda,
+    Mu,
+    ElasticMatrix,
+    NodePositions,
+    AdjustVect,
+    NumNodes=100,
+    NumEdges=float("inf"),
+    verbose=False,
+    n_cores=1,
+    #                 ClusType = "Sock",
+    MinParOp=20,
+    CompileReport=True,
+    ShowTimer=False,
+    ComputeMSEP=True,
+    FinalEnergy="Base",
+    alpha=0,
+    beta=0,
+    Mode=1,
+    MaxBlockSize=100000000,
+    MaxNumberOfIterations=10,
+    MaxFailedOperations=float("inf"),
+    MaxSteps=float("inf"),
+    GrammarOptimization=True,
+    eps=0.01,
+    TrimmingRadius=float("Inf"),
+    GrowGrammars=np.array([]),
+    ShrinkGrammars=np.array([]),
+    GrammarOrder=["Grow", "Shrink"],
+    #                 FastSolve = False,
+    AvoidSolitary=False,
+    EmbPointProb=1,
+    AdjustElasticMatrix=None,
+    AdjustElasticMatrix_Initial=None,
+    DisplayWarnings=False,
+    StoreGraphEvolution=False,
+    GPU=False,
+):
+    """
     #' Core function to construct a principal elastic graph
     #'
     #' The core function that takes the n m-dimensional points and construct a principal elastic graph using the
@@ -131,191 +141,242 @@ def ElPrincGraph(X,
     #' \code{\link{computeElasticPrincipalCurve}}, or \code{\link{computeElasticPrincipalTree}}
     #' 
     #'
-    '''            
-    
+    """
+
     if GrammarOptimization:
         print("Using grammar optimization")
         if np.isinf(MaxSteps):
-            print("When setting GrammarOptimization to TRUE, MaxSteps must be finite. Using MaxSteps = 1")
+            print(
+                "When setting GrammarOptimization to TRUE, MaxSteps must be finite. Using MaxSteps = 1"
+            )
             MaxSteps = 1
 
-    if not isinstance(X,np.ndarray):
+    if not isinstance(X, np.ndarray):
         raise TypeError("Please provide data matrix as an np array")
 
     if not CompileReport:
         verbose = False
 
-    if isinstance(ElasticMatrix,np.ndarray):
+    if isinstance(ElasticMatrix, np.ndarray):
         if np.any(ElasticMatrix != ElasticMatrix.T):
-            raise ValueError('Elastic matrix must be square and symmetric')
-            
+            raise ValueError("Elastic matrix must be square and symmetric")
+
     if AdjustElasticMatrix_Initial is not None:
-        ElasticMatrix, _ = AdjustElasticMatrix_Initial(ElasticMatrix,AdjustVect,verbose=True)
+        ElasticMatrix, _ = AdjustElasticMatrix_Initial(
+            ElasticMatrix, AdjustVect, verbose=True
+        )
 
     ReportTable = []
-    SquaredX = (X**2).sum(axis=1,keepdims=1)
+    SquaredX = (X ** 2).sum(axis=1, keepdims=1)
     if GPU:
         Xcp = cupy.asarray(X)
-        SquaredXcp = (Xcp**2).sum(axis=1,keepdims=1)
-        InitNodePositions = PrimitiveElasticGraphEmbedment_cp(X = X, NodePositions = NodePositions,
-                                                        MaxNumberOfIterations = MaxNumberOfIterations,
-                                                        TrimmingRadius = TrimmingRadius, eps = eps,
-                                                        ElasticMatrix = ElasticMatrix, Mode = Mode,
-                                                        Xcp = Xcp, SquaredXcp = SquaredXcp)[0]
+        SquaredXcp = (Xcp ** 2).sum(axis=1, keepdims=1)
+        InitNodePositions = PrimitiveElasticGraphEmbedment_cp(
+            X=X,
+            NodePositions=NodePositions,
+            MaxNumberOfIterations=MaxNumberOfIterations,
+            TrimmingRadius=TrimmingRadius,
+            eps=eps,
+            ElasticMatrix=ElasticMatrix,
+            Mode=Mode,
+            Xcp=Xcp,
+            SquaredXcp=SquaredXcp,
+        )[0]
     else:
         Xcp = None
         SquaredXcp = None
-        InitNodePositions = PrimitiveElasticGraphEmbedment(X = X, NodePositions = NodePositions,
-                                                    MaxNumberOfIterations = MaxNumberOfIterations,
-                                                    TrimmingRadius = TrimmingRadius, eps = eps,
-                                                    ElasticMatrix = ElasticMatrix, Mode = Mode)[0]
+        InitNodePositions = PrimitiveElasticGraphEmbedment(
+            X=X,
+            NodePositions=NodePositions,
+            MaxNumberOfIterations=MaxNumberOfIterations,
+            TrimmingRadius=TrimmingRadius,
+            eps=eps,
+            ElasticMatrix=ElasticMatrix,
+            Mode=Mode,
+        )[0]
 
+    UpdatedPG = dict(
+        ElasticMatrix=ElasticMatrix,
+        NodePositions=InitNodePositions,
+        AdjustVect=AdjustVect,
+    )
 
-    UpdatedPG = dict(ElasticMatrix = ElasticMatrix, NodePositions = InitNodePositions, AdjustVect = AdjustVect)
+    #     if n_cores > 1:
+    #         print('Copying data to shared memory for parallel processing...',end='')
+    # #         ray.init(num_cpus=n_cores)
+    # #         Xremote = ray.put(X)
+    # #         SquaredXremote = ray.put(SquaredX)
+    #         X_shape = X.shape
+    #         SquaredX_shape = SquaredX.shape
 
-#     if n_cores > 1:
-#         print('Copying data to shared memory for parallel processing...',end='')
-# #         ray.init(num_cpus=n_cores)
-# #         Xremote = ray.put(X)
-# #         SquaredXremote = ray.put(SquaredX)  
-#         X_shape = X.shape
-#         SquaredX_shape = SquaredX.shape
-        
-#         X_remote = multiprocessing.RawArray('d', X_shape[0] * X_shape[1])
-#         SquaredX_remote = multiprocessing.RawArray('d', SquaredX_shape[0] * SquaredX_shape[1])
-        
-#         # Wrap remote objects as numpy arrays so we can easily manipulate their data.
-#         X_np = np.frombuffer(X_remote).reshape(X_shape)
-#         SquaredX_np = np.frombuffer(SquaredX_remote).reshape(SquaredX_shape)
-        
-#         # Copy data to our shared array.
-#         np.copyto(X_np, X)
-#         np.copyto(SquaredX_np, SquaredX)
-#         multiproc_shared_variables = (X_remote,X_shape,SquaredX_remote,SquaredX_shape)
-#         # Initialize dictionary storing the variables passed from the init_worker.
-#         var_dict = {}
-        
-#         print('Done')
+    #         X_remote = multiprocessing.RawArray('d', X_shape[0] * X_shape[1])
+    #         SquaredX_remote = multiprocessing.RawArray('d', SquaredX_shape[0] * SquaredX_shape[1])
 
-            
+    #         # Wrap remote objects as numpy arrays so we can easily manipulate their data.
+    #         X_np = np.frombuffer(X_remote).reshape(X_shape)
+    #         SquaredX_np = np.frombuffer(SquaredX_remote).reshape(SquaredX_shape)
+
+    #         # Copy data to our shared array.
+    #         np.copyto(X_np, X)
+    #         np.copyto(SquaredX_np, SquaredX)
+    #         multiproc_shared_variables = (X_remote,X_shape,SquaredX_remote,SquaredX_shape)
+    #         # Initialize dictionary storing the variables passed from the init_worker.
+    #         var_dict = {}
+
+    #         print('Done')
+
     if verbose:
-        print('BARCODE\tENERGY\tNNODES\tNEDGES\tNRIBS\tNSTARS\tNRAYS\tNRAYS2\tMSE\tMSEP\tFVE\tFVEP\tUE\tUR\tURN\tURN2\tURSD\n')
-                                       
+        print(
+            "BARCODE\tENERGY\tNNODES\tNEDGES\tNRIBS\tNSTARS\tNRAYS\tNRAYS2\tMSE\tMSEP\tFVE\tFVEP\tUE\tUR\tURN\tURN2\tURSD\n"
+        )
+
     # now we grow the graph up to NumNodes
 
-    if (UpdatedPG['NodePositions'].shape[0] >= NumNodes) and not(GrammarOptimization):
-        FinalReport = ReportOnPrimitiveGraphEmbedment(X = X, NodePositions = UpdatedPG['NodePositions'],ElasticMatrix = UpdatedPG['ElasticMatrix'],PartData = PartitionData(X = X,NodePositions = UpdatedPG['NodePositions'],MaxBlockSize=100000000,SquaredX = SquaredX,TrimmingRadius = TrimmingRadius),ComputeMSEP = ComputeMSEP)
+    if (UpdatedPG["NodePositions"].shape[0] >= NumNodes) and not (GrammarOptimization):
+        FinalReport = ReportOnPrimitiveGraphEmbedment(
+            X=X,
+            NodePositions=UpdatedPG["NodePositions"],
+            ElasticMatrix=UpdatedPG["ElasticMatrix"],
+            PartData=PartitionData(
+                X=X,
+                NodePositions=UpdatedPG["NodePositions"],
+                MaxBlockSize=100000000,
+                SquaredX=SquaredX,
+                TrimmingRadius=TrimmingRadius,
+            ),
+            ComputeMSEP=ComputeMSEP,
+        )
 
-        return dict(NodePositions = UpdatedPG['NodePositions'], ElasticMatrix = UpdatedPG['ElasticMatrix'],
-               ReportTable = FinalReport, FinalReport = FinalReport, Lambda = Lambda, Mu = Mu)
+        return dict(
+            NodePositions=UpdatedPG["NodePositions"],
+            ElasticMatrix=UpdatedPG["ElasticMatrix"],
+            ReportTable=FinalReport,
+            FinalReport=FinalReport,
+            Lambda=Lambda,
+            Mu=Mu,
+        )
 
     FailedOperations = 0
     Steps = 0
     FirstPrint = True
-    
+
     start = time.time()
     times = {}
-    
+
     AllNodePositions = {}
     AllElasticMatrices = {}
-        
-    
-    while (UpdatedPG['NodePositions'].shape[0] < NumNodes) or GrammarOptimization:
-        nEdges = len(np.triu(UpdatedPG['ElasticMatrix'], 1).nonzero()[0])
-        if (((UpdatedPG['NodePositions'].shape[0]) >= NumNodes) or (nEdges >= NumEdges)) and not GrammarOptimization:
+
+    while (UpdatedPG["NodePositions"].shape[0] < NumNodes) or GrammarOptimization:
+        nEdges = len(np.triu(UpdatedPG["ElasticMatrix"], 1).nonzero()[0])
+        if (
+            ((UpdatedPG["NodePositions"].shape[0]) >= NumNodes) or (nEdges >= NumEdges)
+        ) and not GrammarOptimization:
             break
 
-        if(not verbose and ShowTimer):
-            print("Nodes = ", UpdatedPG['NodePositions'].shape[0])
+        if not verbose and ShowTimer:
+            print("Nodes = ", UpdatedPG["NodePositions"].shape[0])
 
-        if(not verbose and not ShowTimer):
-            if(FirstPrint):
-                print("Nodes = ",end=' ')
+        if not verbose and not ShowTimer:
+            if FirstPrint:
+                print("Nodes = ", end=" ")
                 FirstPrint = False
-            print(UpdatedPG['NodePositions'].shape[0],end=" ")
+            print(UpdatedPG["NodePositions"].shape[0], end=" ")
         OldPG = copy.deepcopy(UpdatedPG)
 
         for OpType in GrammarOrder:
-            if OpType == "Grow" and len(GrowGrammars)>0:        
+            if OpType == "Grow" and len(GrowGrammars) > 0:
 
                 for k in range(GrowGrammars.shape[0]):
                     if ShowTimer:
                         print("Growing")
                         t = time.time()
 
-                    UpdatedPG = ApplyOptimalGraphGrammarOperation(X,
-                                                                  UpdatedPG['NodePositions'], 
-                                                                  UpdatedPG['ElasticMatrix'],
-                                                                  GrowGrammars[k],
-                                                                  MaxBlockSize = MaxBlockSize,
-                                                                  AdjustVect = UpdatedPG['AdjustVect'],
-                                                                  SquaredX = SquaredX,
-                                                                  verbose = False,
-                                                                  MaxNumberOfIterations = MaxNumberOfIterations,
-                                                                  eps = eps,
-                                                                  TrimmingRadius = TrimmingRadius,
-                                                                  Mode = Mode,
-                                                                  FinalEnergy = FinalEnergy,
-                                                                  alpha = alpha,
-                                                                  beta = beta,
-                                                                  EmbPointProb = EmbPointProb,
-                                                                  AvoidSolitary = AvoidSolitary,
-                                                                  AdjustElasticMatrix = AdjustElasticMatrix,
-                                                                  DisplayWarnings = DisplayWarnings,
-                                                                  n_cores=n_cores, MinParOp = MinParOp,
-                                                                  Xcp = Xcp, SquaredXcp = SquaredXcp
-                                                                  )
+                    UpdatedPG = ApplyOptimalGraphGrammarOperation(
+                        X,
+                        UpdatedPG["NodePositions"],
+                        UpdatedPG["ElasticMatrix"],
+                        GrowGrammars[k],
+                        MaxBlockSize=MaxBlockSize,
+                        AdjustVect=UpdatedPG["AdjustVect"],
+                        SquaredX=SquaredX,
+                        verbose=False,
+                        MaxNumberOfIterations=MaxNumberOfIterations,
+                        eps=eps,
+                        TrimmingRadius=TrimmingRadius,
+                        Mode=Mode,
+                        FinalEnergy=FinalEnergy,
+                        alpha=alpha,
+                        beta=beta,
+                        EmbPointProb=EmbPointProb,
+                        AvoidSolitary=AvoidSolitary,
+                        AdjustElasticMatrix=AdjustElasticMatrix,
+                        DisplayWarnings=DisplayWarnings,
+                        n_cores=n_cores,
+                        MinParOp=MinParOp,
+                        Xcp=Xcp,
+                        SquaredXcp=SquaredXcp,
+                    )
 
-                    if UpdatedPG == 'failed operation':
-                        print('failed operation')
+                    if UpdatedPG == "failed operation":
+                        print("failed operation")
                         FailedOperations += 1
                         UpdatedPG = copy.deepcopy(OldPG)
                         break
                     else:
                         FailedOperations = 0
-                        if len(UpdatedPG['NodePositions']) == 3:
+                        if len(UpdatedPG["NodePositions"]) == 3:
                             # this is needed to erase the star elasticity coefficient which was initially assigned to both leaf nodes,
                             # one can erase this information after the number of nodes in the graph is > 2
 
-                            inds = np.where(np.sum(UpdatedPG['ElasticMatrix']-np.diag(np.diag(UpdatedPG['ElasticMatrix']))>0,axis=0)==1)
+                            inds = np.where(
+                                np.sum(
+                                    UpdatedPG["ElasticMatrix"]
+                                    - np.diag(np.diag(UpdatedPG["ElasticMatrix"]))
+                                    > 0,
+                                    axis=0,
+                                )
+                                == 1
+                            )
 
-                            UpdatedPG['ElasticMatrix'][inds, inds] = 0
+                            UpdatedPG["ElasticMatrix"][inds, inds] = 0
 
                     if ShowTimer:
                         elapsed = time.time() - t
-                        print(np.round(elapsed,4))  
+                        print(np.round(elapsed, 4))
 
-
-            if OpType == "Shrink" and len(ShrinkGrammars)>0:
+            if OpType == "Shrink" and len(ShrinkGrammars) > 0:
                 for k in range(ShrinkGrammars.shape[0]):
                     if ShowTimer:
                         print("Shrinking")
                         t = time.time()
-                    UpdatedPG = ApplyOptimalGraphGrammarOperation(X,
-                                                                  UpdatedPG['NodePositions'], 
-                                                                  UpdatedPG['ElasticMatrix'],
-                                                                  ShrinkGrammars[k],
-                                                                  MaxBlockSize = MaxBlockSize,
-                                                                  AdjustVect = UpdatedPG['AdjustVect'],
-                                                                  SquaredX = SquaredX,
-                                                                  verbose = False,
-                                                                  MaxNumberOfIterations = MaxNumberOfIterations,
-                                                                  eps = eps,
-                                                                  TrimmingRadius = TrimmingRadius,
-                                                                  Mode = Mode,
-                                                                  FinalEnergy = FinalEnergy,
-                                                                  alpha = alpha,
-                                                                  beta = beta,
-                                                                  EmbPointProb = EmbPointProb,
-                                                                  AvoidSolitary = AvoidSolitary,
-                                                                  AdjustElasticMatrix = AdjustElasticMatrix,
-                                                                  DisplayWarnings = DisplayWarnings,
-                                                                  n_cores=n_cores,MinParOp=MinParOp,
-                                                                  Xcp = Xcp, SquaredXcp = SquaredXcp
-                                                                  )
+                    UpdatedPG = ApplyOptimalGraphGrammarOperation(
+                        X,
+                        UpdatedPG["NodePositions"],
+                        UpdatedPG["ElasticMatrix"],
+                        ShrinkGrammars[k],
+                        MaxBlockSize=MaxBlockSize,
+                        AdjustVect=UpdatedPG["AdjustVect"],
+                        SquaredX=SquaredX,
+                        verbose=False,
+                        MaxNumberOfIterations=MaxNumberOfIterations,
+                        eps=eps,
+                        TrimmingRadius=TrimmingRadius,
+                        Mode=Mode,
+                        FinalEnergy=FinalEnergy,
+                        alpha=alpha,
+                        beta=beta,
+                        EmbPointProb=EmbPointProb,
+                        AvoidSolitary=AvoidSolitary,
+                        AdjustElasticMatrix=AdjustElasticMatrix,
+                        DisplayWarnings=DisplayWarnings,
+                        n_cores=n_cores,
+                        MinParOp=MinParOp,
+                        Xcp=Xcp,
+                        SquaredXcp=SquaredXcp,
+                    )
 
-                    if UpdatedPG == 'failed operation':
-                        print('failed operation')
+                    if UpdatedPG == "failed operation":
+                        print("failed operation")
                         FailedOperations += 1
                         UpdatedPG = copy.deepcopy(OldPG)
                         break
@@ -324,14 +385,32 @@ def ElPrincGraph(X,
 
                     if ShowTimer:
                         elapsed = time.time() - t
-                        print(np.round(elapsed,4))  
+                        print(np.round(elapsed, 4))
 
         if CompileReport:
             if GPU:
-                PartData = PartitionData_cp(Xcp,NodePositions = UpdatedPG['NodePositions'],MaxBlockSize=1000000000,SquaredXcp = SquaredXcp,TrimmingRadius = TrimmingRadius)
+                PartData = PartitionData_cp(
+                    Xcp,
+                    NodePositions=UpdatedPG["NodePositions"],
+                    MaxBlockSize=1000000000,
+                    SquaredXcp=SquaredXcp,
+                    TrimmingRadius=TrimmingRadius,
+                )
             else:
-                PartData = PartitionData(X,NodePositions = UpdatedPG['NodePositions'],MaxBlockSize=1000000000,SquaredX = SquaredX,TrimmingRadius = TrimmingRadius)
-            tReport = ReportOnPrimitiveGraphEmbedment(X = X, NodePositions = UpdatedPG['NodePositions'],ElasticMatrix = UpdatedPG['ElasticMatrix'], PartData = PartData,ComputeMSEP = ComputeMSEP)
+                PartData = PartitionData(
+                    X,
+                    NodePositions=UpdatedPG["NodePositions"],
+                    MaxBlockSize=1000000000,
+                    SquaredX=SquaredX,
+                    TrimmingRadius=TrimmingRadius,
+                )
+            tReport = ReportOnPrimitiveGraphEmbedment(
+                X=X,
+                NodePositions=UpdatedPG["NodePositions"],
+                ElasticMatrix=UpdatedPG["ElasticMatrix"],
+                PartData=PartData,
+                ComputeMSEP=ComputeMSEP,
+            )
 
             FinalReport = copy.deepcopy(tReport)
             for k, v in tReport.items():
@@ -341,7 +420,7 @@ def ElPrincGraph(X,
 
             if verbose:
                 print("\t".join(tReport.values()))
-#                 print("\n")
+        #                 print("\n")
 
         # Count the execution steps
         Steps += 1
@@ -349,32 +428,46 @@ def ElPrincGraph(X,
         # If the number of execution steps is larger than MaxSteps stop the algorithm
         if Steps > MaxSteps or FailedOperations > MaxFailedOperations:
             break
-            
-        times[UpdatedPG['NodePositions'].shape[0]] = time.time()-start
+
+        times[UpdatedPG["NodePositions"].shape[0]] = time.time() - start
         if StoreGraphEvolution:
-            AllNodePositions[UpdatedPG['NodePositions'].shape[0]] = UpdatedPG['NodePositions']
-            AllElasticMatrices[UpdatedPG['NodePositions'].shape[0]] = UpdatedPG['ElasticMatrix']
+            AllNodePositions[UpdatedPG["NodePositions"].shape[0]] = UpdatedPG[
+                "NodePositions"
+            ]
+            AllElasticMatrices[UpdatedPG["NodePositions"].shape[0]] = UpdatedPG[
+                "ElasticMatrix"
+            ]
 
     if not verbose:
         if not CompileReport:
             if GPU:
-                tReport = ReportOnPrimitiveGraphEmbedment(X = X, NodePositions = UpdatedPG['NodePositions'],
-                                                        ElasticMatrix = UpdatedPG['ElasticMatrix'],
-                                                        PartData = PartitionData_cp(Xcp = Xcp,
-                                                                                NodePositions = UpdatedPG['NodePositions'],
-                                                                                SquaredXcp = SquaredXcp,
-                                                                                TrimmingRadius = TrimmingRadius,
-                                                                                MaxBlockSize = MaxBlockSize),
-                                                        ComputeMSEP = ComputeMSEP)
+                tReport = ReportOnPrimitiveGraphEmbedment(
+                    X=X,
+                    NodePositions=UpdatedPG["NodePositions"],
+                    ElasticMatrix=UpdatedPG["ElasticMatrix"],
+                    PartData=PartitionData_cp(
+                        Xcp=Xcp,
+                        NodePositions=UpdatedPG["NodePositions"],
+                        SquaredXcp=SquaredXcp,
+                        TrimmingRadius=TrimmingRadius,
+                        MaxBlockSize=MaxBlockSize,
+                    ),
+                    ComputeMSEP=ComputeMSEP,
+                )
             else:
-                tReport = ReportOnPrimitiveGraphEmbedment(X = X, NodePositions = UpdatedPG['NodePositions'],
-                                                     ElasticMatrix = UpdatedPG['ElasticMatrix'],
-                                                     PartData = PartitionData(X = X,
-                                                                              NodePositions = UpdatedPG['NodePositions'],
-                                                                              SquaredX = SquaredX,
-                                                                              TrimmingRadius = TrimmingRadius,
-                                                                              MaxBlockSize = MaxBlockSize),
-                                                     ComputeMSEP = ComputeMSEP)
+                tReport = ReportOnPrimitiveGraphEmbedment(
+                    X=X,
+                    NodePositions=UpdatedPG["NodePositions"],
+                    ElasticMatrix=UpdatedPG["ElasticMatrix"],
+                    PartData=PartitionData(
+                        X=X,
+                        NodePositions=UpdatedPG["NodePositions"],
+                        SquaredX=SquaredX,
+                        TrimmingRadius=TrimmingRadius,
+                        MaxBlockSize=MaxBlockSize,
+                    ),
+                    ComputeMSEP=ComputeMSEP,
+                )
 
             FinalReport = copy.deepcopy(tReport)
             for k, v in tReport.items():
@@ -385,68 +478,82 @@ def ElPrincGraph(X,
             tReport = ReportTable[-1]
 
         print("\n")
-        print('BARCODE\tENERGY\tNNODES\tNEDGES\tNRIBS\tNSTARS\tNRAYS\tNRAYS2\tMSE\tMSEP\tFVE\tFVEP\tUE\tUR\tURN\tURN2\tURSD\n')
+        print(
+            "BARCODE\tENERGY\tNNODES\tNEDGES\tNRIBS\tNSTARS\tNRAYS\tNRAYS2\tMSE\tMSEP\tFVE\tFVEP\tUE\tUR\tURN\tURN2\tURSD\n"
+        )
         print("\t".join(tReport.values()))
         print("\n")
 
     if CompileReport:
-        ReportTable={k:[d[k] for d in ReportTable] for k in ReportTable[0]}
-                                       
-#     if n_cores > 1:
-#         ray.shutdown()
+        ReportTable = {k: [d[k] for d in ReportTable] for k in ReportTable[0]}
 
-    return dict(NodePositions = UpdatedPG['NodePositions'], ElasticMatrix = UpdatedPG['ElasticMatrix'],ReportTable = ReportTable, FinalReport = FinalReport, Lambda = Lambda, Mu = Mu,Mode = Mode, MaxNumberOfIterations = MaxNumberOfIterations,eps = eps, times = times, AllNodePositions = AllNodePositions, AllElasticMatrices = AllElasticMatrices)
+    #     if n_cores > 1:
+    #         ray.shutdown()
+
+    return dict(
+        NodePositions=UpdatedPG["NodePositions"],
+        ElasticMatrix=UpdatedPG["ElasticMatrix"],
+        ReportTable=ReportTable,
+        FinalReport=FinalReport,
+        Lambda=Lambda,
+        Mu=Mu,
+        Mode=Mode,
+        MaxNumberOfIterations=MaxNumberOfIterations,
+        eps=eps,
+        times=times,
+        AllNodePositions=AllNodePositions,
+        AllElasticMatrices=AllElasticMatrices,
+    )
 
 
+def computeElasticPrincipalGraph(
+    Data,
+    InitNodePositions,
+    AdjustVect,
+    InitEdges,
+    NumNodes,
+    NumEdges=float("inf"),
+    ElasticMatrix=None,
+    Lambda=0.01,
+    Mu=0.1,
+    MaxNumberOfIterations=100,
+    eps=0.01,
+    TrimmingRadius=float("inf"),
+    Do_PCA=True,
+    CenterData=True,
+    ComputeMSEP=True,
+    verbose=False,
+    ShowTimer=False,
+    ReduceDimension=None,
+    # drawAccuracyComplexity = True,
+    # drawPCAView = True,
+    # drawEnergy = True,
+    n_cores=1,
+    # ClusType = "Sock",
+    MinParOp=20,
+    Mode=1,
+    FinalEnergy="Base",
+    alpha=0,
+    beta=0,
+    # gamma = 0,
+    GrowGrammars=np.array([]),
+    ShrinkGrammars=np.array([]),
+    GrammarOptimization=False,
+    MaxSteps=float("inf"),
+    GrammarOrder=["Grow", "Shrink"],
+    #                                 FastSolve = False,
+    AvoidSolitary=False,
+    EmbPointProb=1,
+    AdjustElasticMatrix=None,
+    AdjustElasticMatrix_Initial=None,
+    Lambda_Initial=None,
+    Mu_Initial=None,
+    DisplayWarnings=False,
+    StoreGraphEvolution=False,
+    GPU=False,
+):
 
-
-def computeElasticPrincipalGraph(Data,
-                                InitNodePositions,
-                                AdjustVect,
-                                InitEdges,
-                                NumNodes,
-                                NumEdges = float('inf'),
-                                ElasticMatrix = None,
-                                Lambda = 0.01,
-                                Mu = 0.1,
-                                MaxNumberOfIterations = 100,
-                                eps = .01,
-                                TrimmingRadius = float('inf'),
-                                Do_PCA = True,
-                                CenterData = True,
-                                ComputeMSEP = True,
-                                verbose = False,
-                                ShowTimer = False,
-                                ReduceDimension = None,
-                                #drawAccuracyComplexity = True,
-                                #drawPCAView = True,
-                                #drawEnergy = True,
-                                n_cores = 1,
-                                # ClusType = "Sock",
-                                MinParOp = 20,
-                                Mode = 1,
-                                FinalEnergy = "Base",
-                                alpha = 0,
-                                beta = 0,
-                                # gamma = 0,
-                                GrowGrammars = np.array([]),
-                                ShrinkGrammars = np.array([]),
-                                GrammarOptimization = False,
-                                MaxSteps = float('inf'),
-                                GrammarOrder =["Grow", "Shrink"],
-#                                 FastSolve = False,
-                                AvoidSolitary = False,
-                                EmbPointProb = 1,
-                                AdjustElasticMatrix = None,
-                                AdjustElasticMatrix_Initial = None,
-                                Lambda_Initial = None,
-                                Mu_Initial = None,
-                                DisplayWarnings=False,
-                                StoreGraphEvolution = False,
-                                GPU = False
-                                ):
-
-    '''
+    """
     #' Regularize data and construct a principal elastic graph
     #'
     #' This allow to perform basic data regularization before constructing a principla elastic graph.
@@ -519,8 +626,8 @@ def computeElasticPrincipalGraph(Data,
     #' for examples
     #'
     #'
-    '''
-    ST = datetime.datetime.today().strftime('%Y-%m-%d-%H:%M:%S')
+    """
+    ST = datetime.datetime.today().strftime("%Y-%m-%d-%H:%M:%S")
     t = time.time()
 
     if ReduceDimension is None:
@@ -531,34 +638,55 @@ def computeElasticPrincipalGraph(Data,
         print("Dimensionality reduction will be ignored")
         ReduceDimension = np.array(range(np.min(Data.shape)))
 
-
+    DataCenters = np.mean(Data, axis=0)
     if CenterData:
-        DataCenters = np.mean(Data,axis=0)
         Data = Data - DataCenters
         InitNodePositions = InitNodePositions - DataCenters
 
     if Do_PCA:
         print("Performing PCA")
-        
-        if isinstance(ReduceDimension,float):
+
+        if isinstance(ReduceDimension, float):
             if ReduceDimension < 1:
-                print("Dimensionality reduction via ratio of explained variance (full PCA will be computed)")
+                print(
+                    "Dimensionality reduction via ratio of explained variance (full PCA will be computed)"
+                )
                 vglobal, PCAData, explainedVariances = PCA(Data)
-                ReduceDimension = range(np.min(np.where(np.cumsum(explainedVariances)/explainedVariances.sum() >= ReduceDimension))+1)
-                perc = explainedVariances[ReduceDimension].sum()/explainedVariances.sum()*100
+                ReduceDimension = range(
+                    np.min(
+                        np.where(
+                            np.cumsum(explainedVariances) / explainedVariances.sum()
+                            >= ReduceDimension
+                        )
+                    )
+                    + 1
+                )
+                perc = (
+                    explainedVariances[ReduceDimension].sum()
+                    / explainedVariances.sum()
+                    * 100
+                )
 
                 InitNodePositions = InitNodePositions.dot(vglobal)
             else:
                 raise ValueError("if ReduceDimension is a single value it must be < 1")
 
         else:
-            if max(ReduceDimension+1) > min(Data.shape):
-                print("Selected dimensions are outside of the available range. ReduceDimension will be updated")
-                ReduceDimension = [i for i in ReduceDimension if i in range(min(Data.shape))]
-            if(max(ReduceDimension+1) > min(Data.shape)*.75):
+            if max(ReduceDimension + 1) > min(Data.shape):
+                print(
+                    "Selected dimensions are outside of the available range. ReduceDimension will be updated"
+                )
+                ReduceDimension = [
+                    i for i in ReduceDimension if i in range(min(Data.shape))
+                ]
+            if max(ReduceDimension + 1) > min(Data.shape) * 0.75:
                 print("Using standard PCA")
                 vglobal, PCAData, explainedVariances = PCA(Data)
-                perc = explainedVariances[ReduceDimension].sum()/explainedVariances.sum()*100
+                perc = (
+                    explainedVariances[ReduceDimension].sum()
+                    / explainedVariances.sum()
+                    * 100
+                )
 
                 InitNodePositions = InitNodePositions.dot(vglobal)
 
@@ -566,23 +694,23 @@ def computeElasticPrincipalGraph(Data,
                 print("Centering data and using PCA with truncated SVD")
                 if not CenterData:
                     # if data was not centered, center it (for SVD)
-                    DataCenters = np.mean(Data,axis=0)
+                    DataCenters = np.mean(Data, axis=0)
                     Data = Data - DataCenters
                     InitNodePositions = InitNodePositions - DataCenters
-                PCAData, explainedVariances, U, S, Vt = TruncPCA(Data,algorithm='randomized',n_components=max(ReduceDimension+1))
+                PCAData, explainedVariances, U, S, Vt = TruncPCA(
+                    Data, algorithm="randomized", n_components=max(ReduceDimension + 1)
+                )
                 ExpVariance = np.sum(np.var(Data, axis=0))
-                perc = np.sum(explainedVariances)/ExpVariance*100
-                
+                perc = np.sum(explainedVariances) / ExpVariance * 100
+
                 vglobal = Vt.T
                 InitNodePositions = InitNodePositions.dot(vglobal)
 
-                
         print(len(ReduceDimension), "dimensions are being used")
-        print(np.round(perc,2), "% of the original variance has been retained")
+        print(np.round(perc, 2), "% of the original variance has been retained")
 
-        X = PCAData[:,ReduceDimension]
-        InitNodePositions = InitNodePositions[:,ReduceDimension]
-
+        X = PCAData[:, ReduceDimension]
+        InitNodePositions = InitNodePositions[:, ReduceDimension]
 
     else:
         X = Data
@@ -594,69 +722,114 @@ def computeElasticPrincipalGraph(Data,
         Mu_Initial = Mu
 
     if ElasticMatrix is None:
-        InitElasticMatrix = Encode2ElasticMatrix(Edges = InitEdges, Lambdas = Lambda_Initial, Mus = Mu_Initial)
+        InitElasticMatrix = Encode2ElasticMatrix(
+            Edges=InitEdges, Lambdas=Lambda_Initial, Mus=Mu_Initial
+        )
     else:
         print("The elastic matrix is being used. Edge configuration will be ignored")
         InitElasticMatrix = ElasticMatrix
 
-
-    if InitElasticMatrix.shape[0] != InitNodePositions.shape[0] or InitElasticMatrix.shape[1] != InitNodePositions.shape[0]:
-        raise ValueError("Elastic matrix incompatible with the node number. Impossible to proceed.")
-
+    if (
+        InitElasticMatrix.shape[0] != InitNodePositions.shape[0]
+        or InitElasticMatrix.shape[1] != InitNodePositions.shape[0]
+    ):
+        raise ValueError(
+            "Elastic matrix incompatible with the node number. Impossible to proceed."
+        )
 
     # Computing the graph
 
-    print("Computing EPG with ", NumNodes," nodes on ", Data.shape[0], " points and ", Data.shape[1], " dimensions")
+    print(
+        "Computing EPG with ",
+        NumNodes,
+        " nodes on ",
+        Data.shape[0],
+        " points and ",
+        Data.shape[1],
+        " dimensions",
+    )
 
-    ElData = ElPrincGraph(X = X, NumNodes = NumNodes, NumEdges = NumEdges, Lambda = Lambda, Mu = Mu,
-                             MaxNumberOfIterations = MaxNumberOfIterations, eps = eps, TrimmingRadius = TrimmingRadius,
-                             NodePositions = InitNodePositions, ElasticMatrix = InitElasticMatrix, AdjustVect = AdjustVect,
-                             CompileReport = True, ShowTimer = ShowTimer,
-                             FinalEnergy = FinalEnergy, alpha = alpha, beta = beta, Mode = Mode,
-                             GrowGrammars = GrowGrammars, ShrinkGrammars = ShrinkGrammars,
-                             GrammarOptimization = GrammarOptimization, MaxSteps = MaxSteps, GrammarOrder = GrammarOrder,
-                             ComputeMSEP = ComputeMSEP,
-                             verbose = verbose, AvoidSolitary = AvoidSolitary,
-                             EmbPointProb = EmbPointProb, AdjustElasticMatrix = AdjustElasticMatrix,
-                             AdjustElasticMatrix_Initial = AdjustElasticMatrix_Initial,
-                             DisplayWarnings=DisplayWarnings,
-                             n_cores=n_cores,MinParOp=MinParOp,
-                             StoreGraphEvolution = StoreGraphEvolution, GPU = GPU)
+    ElData = ElPrincGraph(
+        X=X,
+        NumNodes=NumNodes,
+        NumEdges=NumEdges,
+        Lambda=Lambda,
+        Mu=Mu,
+        MaxNumberOfIterations=MaxNumberOfIterations,
+        eps=eps,
+        TrimmingRadius=TrimmingRadius,
+        NodePositions=InitNodePositions,
+        ElasticMatrix=InitElasticMatrix,
+        AdjustVect=AdjustVect,
+        CompileReport=True,
+        ShowTimer=ShowTimer,
+        FinalEnergy=FinalEnergy,
+        alpha=alpha,
+        beta=beta,
+        Mode=Mode,
+        GrowGrammars=GrowGrammars,
+        ShrinkGrammars=ShrinkGrammars,
+        GrammarOptimization=GrammarOptimization,
+        MaxSteps=MaxSteps,
+        GrammarOrder=GrammarOrder,
+        ComputeMSEP=ComputeMSEP,
+        verbose=verbose,
+        AvoidSolitary=AvoidSolitary,
+        EmbPointProb=EmbPointProb,
+        AdjustElasticMatrix=AdjustElasticMatrix,
+        AdjustElasticMatrix_Initial=AdjustElasticMatrix_Initial,
+        DisplayWarnings=DisplayWarnings,
+        n_cores=n_cores,
+        MinParOp=MinParOp,
+        StoreGraphEvolution=StoreGraphEvolution,
+        GPU=GPU,
+    )
 
-    NodePositions = ElData['NodePositions']
-    AllNodePositions = ElData['AllNodePositions']
-    Edges = DecodeElasticMatrix(ElData['ElasticMatrix'])
+    NodePositions = ElData["NodePositions"]
+    AllNodePositions = ElData["AllNodePositions"]
+    Edges = DecodeElasticMatrix(ElData["ElasticMatrix"])
 
-    #if drawEnergy and ElData['ReportTable'] is not None:
+    # if drawEnergy and ElData['ReportTable'] is not None:
     #    print('MSDEnergyPlot not yet implemented')
     #     plotMSDEnergyPlot(ReportTable = ElData['ReportTable'])
 
-    #if drawAccuracyComplexity and ElData['ReportTable'] is not None:
+    # if drawAccuracyComplexity and ElData['ReportTable'] is not None:
     #    print('accuracyComplexityPlot not yet implemented')
     #     accuracyComplexityPlot(ReportTable = ElData['ReportTable'])
 
     if Do_PCA:
-        NodePositions = NodePositions.dot(vglobal[:,ReduceDimension].T)
-        for k,nodep in AllNodePositions.items():
-            AllNodePositions[k] = nodep.dot(vglobal[:,ReduceDimension].T) 
+        NodePositions = NodePositions.dot(vglobal[:, ReduceDimension].T)
+        for k, nodep in AllNodePositions.items():
+            AllNodePositions[k] = nodep.dot(vglobal[:, ReduceDimension].T)
 
     EndTimer = time.time() - t
-    print(np.round(EndTimer,4), " seconds elapsed")
+    print(np.round(EndTimer, 4), " seconds elapsed")
 
-    FinalPG = dict(NodePositions = NodePositions, Edges = Edges, ReportTable = ElData['ReportTable'],
-                      FinalReport = ElData['FinalReport'], ElasticMatrix = ElData['ElasticMatrix'],
-                      Lambda = ElData['Lambda'], Mu = ElData['Mu'], TrimmingRadius = TrimmingRadius,
-                      Mode = ElData['Mode'],
-                      MaxNumberOfIterations = ElData['MaxNumberOfIterations'],
-                      eps = ElData['eps'], Date = ST, TicToc = EndTimer, times = ElData['times'],
-                      AllNodePositions = AllNodePositions, AllElasticMatrices = ElData['AllElasticMatrices'])
+    FinalPG = dict(
+        NodePositions=NodePositions,
+        Edges=Edges,
+        ReportTable=ElData["ReportTable"],
+        FinalReport=ElData["FinalReport"],
+        ElasticMatrix=ElData["ElasticMatrix"],
+        Lambda=ElData["Lambda"],
+        Mu=ElData["Mu"],
+        TrimmingRadius=TrimmingRadius,
+        Mode=ElData["Mode"],
+        MaxNumberOfIterations=ElData["MaxNumberOfIterations"],
+        eps=ElData["eps"],
+        Date=ST,
+        TicToc=EndTimer,
+        times=ElData["times"],
+        AllNodePositions=AllNodePositions,
+        AllElasticMatrices=ElData["AllElasticMatrices"],
+    )
 
-    #if drawPCAView:
+    # if drawPCAView:
     #    print(PlotPG(Data, FinalPG))
-        
+
     if Do_PCA or CenterData:
-        FinalPG['NodePositions'] = NodePositions + DataCenters
-        for k,nodep in FinalPG['AllNodePositions'].items():
-            FinalPG['AllNodePositions'][k] = nodep + DataCenters
-    
+        FinalPG["NodePositions"] = NodePositions + DataCenters
+        for k, nodep in FinalPG["AllNodePositions"].items():
+            FinalPG["AllNodePositions"][k] = nodep + DataCenters
+
     return FinalPG
