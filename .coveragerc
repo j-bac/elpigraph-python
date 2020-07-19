@@ -6,6 +6,10 @@ source = elpigraph
 include = */elpigraph/*
 omit =
     */setup.py
+    */elpigraph/src/synthetic.py
+    */elpigraph/src/PCA.py
+    */elpigraph/_plotting.py
+    
 
 [report]
 exclude_lines =
