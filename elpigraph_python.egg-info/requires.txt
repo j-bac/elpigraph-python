@@ -1,0 +1,16 @@
+numpy
+pandas
+scipy
+scikit_learn
+python_igraph
+
+[docs]
+sphinx
+sphinx-gallery
+sphinx_rtd_theme
+numpydoc
+matplotlib
+
+[tests]
+pytest
+pytest-cov

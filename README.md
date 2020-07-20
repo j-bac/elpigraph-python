@@ -50,12 +50,12 @@ The requirements.txt file provides the versions this package has been tested wit
 Installation
 ====================
 ```bash
-git clone https://github.com/j-bac/elpigraph.git
+git clone https://github.com/j-bac/elpigraph-python.git
 cd elpigraph
 pip install .
 ```
 or
 
 ```bash
-pip install git+https://github.com/j-bac/elpigraph.git
+pip install git+https://github.com/j-bac/elpigraph-python.git
 ```

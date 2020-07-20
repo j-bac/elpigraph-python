@@ -4,17 +4,16 @@
 # Using the name variable with the URL in line 14 is convenient
 # when copying and pasting from another recipe, but not really needed.
 {% set name = "elpigraph-python" %}
-{% set version = load_setup_py_data().get('version') %}
-#{% set version = "0.1.0" %}
+{% set version = "0.1.0" %}
 
 package:
-  name: {{ name|lower }}
-  version: {{ version }}
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
 
 source:
-  git_rev: master
-  git_url: https://github.com/j-bac/elpigraph-python.git
-  # url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  #git_rev: master
+  #git_url: https://github.com/j-bac/elpigraph-python.git
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
   # If getting the source from GitHub, remove the line above,
   # uncomment the line below, and modify as needed. Use releases if available:
   # url: https://github.com/j-bac/elpigraph-python/releases/download/{{ version }}/elpigraph-python-{{ version }}.tar.gz
@@ -22,7 +21,7 @@ source:
   # and otherwise fall back to archive: 
   #url: https://github.com/simplejson/elpigraph-python/archive/master.tar.gz
   
-  #sha256: d58439c548433adcda98e695be53e526ba940a4b9c44fb9a05d92cd495cdd47f
+  sha256: 15ac2dcefe4d2a0b475359d10471f0ec2e8c069100dc81208c924efe845231dd
   # sha256 is the preferred checksum -- you can get it for a file with:
   #  `openssl sha256 <file name>`.
   # You may need the openssl package, available on conda-forge:
@@ -42,6 +41,13 @@ requirements:
   host:
     - python
     - pip
+    - numpy >=1.16.2
+    - pandas >=0.23.4
+    - numba >=0.49.1 
+    - scikit-learn >=0.21.3
+    - scipy >=1.2.0
+    - python-igraph >=0.7.1
+    - matplotlib
   run:
     - python
     - numpy >=1.16.2
@@ -58,16 +64,16 @@ test:
   # List all the packages/modules that `run_test.py` imports.
   imports:
     - elpigraph
-#    - simplejson.tests
+    - elpigraph.src
 
 about:
   home: https://github.com/j-bac/elpigraph-python
   # Remember to specify the license variants for BSD, Apache, GPL, and LGPL.
   # Prefer the short version, e.g: GPL-2.0 instead of GNU General Public License version 2.0
   # See https://opensource.org/licenses/alphabetical
-  license: GPL-3.0
+  license: "GNU General Public v3 (GPLv3)"
   # The license_family, i.e. "BSD" if license is "BSD-3-Clause". (optional)
-  license_family: GPL
+  license_family: GPL3
   # It is strongly encouraged to include a license file in the package,
   # (even if the license doesn't require it) using the license_file entry.
   # See https://docs.conda.io/projects/conda-build/en/latest/resources/define-metadata.html#license-file

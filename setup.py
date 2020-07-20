@@ -19,7 +19,7 @@ with open(path.join(here, "README.md"), encoding="utf-8") as f:
 # Fields marked as "Optional" may be commented out.
 
 setup(
-    name="elpigraph",  # Required
+    name="elpigraph-python",  # Required
     version="0.1.0",  # Required
     description="",  # Optional
     long_description=long_description,  # Optional
