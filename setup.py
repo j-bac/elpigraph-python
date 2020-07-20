@@ -24,7 +24,7 @@ setup(
     description="",  # Optional
     long_description=long_description,  # Optional
     long_description_content_type="text/markdown",  # Optional (see note above)
-    url="https://github.com/j-bac/elpigraph",  # Optional
+    url="https://github.com/j-bac/elpigraph-python",  # Optional
     maintainer="Jonathan Bac",  # Optional
     maintainer_email="",  # Optional
     classifiers=[  # Optional
@@ -42,8 +42,8 @@ setup(
     #     package_data={'': ['data/']},
     install_requires=["numpy", "pandas", "scipy", "scikit_learn", "python_igraph"],
     project_urls={  # Optional
-        "Bug Reports": "https://github.com/j-bac/elpigraph/issues",
-        "Source": "https://github.com/j-bac/elpigraph/",
+        "Bug Reports": "https://github.com/j-bac/elpigraph-python/issues",
+        "Source": "https://github.com/j-bac/elpigraph-python/",
     },
     zip_safe=False,
     extras_require={

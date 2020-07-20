@@ -3,7 +3,7 @@
 # Jinja variables help maintain the recipe as you'll update the version only here.
 # Using the name variable with the URL in line 14 is convenient
 # when copying and pasting from another recipe, but not really needed.
-{% set name = "elpigraph" %}
+{% set name = "elpigraph-python" %}
 {% set version = load_setup_py_data().get('version') %}
 #{% set version = "0.1.0" %}
 
@@ -13,7 +13,7 @@ package:
 
 source:
   git_rev: master
-  git_url: https://github.com/j-bac/elpigraph.git
+  git_url: https://github.com/j-bac/elpigraph-python.git
   # url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
   # If getting the source from GitHub, remove the line above,
   # uncomment the line below, and modify as needed. Use releases if available:
@@ -61,7 +61,7 @@ test:
 #    - simplejson.tests
 
 about:
-  home: https://github.com/j-bac/elpigraph
+  home: https://github.com/j-bac/elpigraph-python
   # Remember to specify the license variants for BSD, Apache, GPL, and LGPL.
   # Prefer the short version, e.g: GPL-2.0 instead of GNU General Public License version 2.0
   # See https://opensource.org/licenses/alphabetical
@@ -76,7 +76,7 @@ about:
 
   # The remaining entries in this section are optional, but recommended.
   description: |
-    elpigraph is a package implementing the Elastic Principal Graphs algorithm for manifold learning.
+    elpigraph-python is a package implementing the Elastic Principal Graphs algorithm for manifold learning.
   #doc_url: https://simplejson.readthedocs.io/
   #dev_url: https://github.com/simplejson/simplejson
 
