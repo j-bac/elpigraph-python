@@ -51,7 +51,7 @@ Installation
 ====================
 ```bash
 git clone https://github.com/j-bac/elpigraph.git
-cd elpigraph-python
+cd elpigraph
 pip install .
 ```
 or
