@@ -1,7 +1,6 @@
 from ._AlterStructure import ExtendLeaves, CollapseBranches, ShiftBranching
 from ._BaseElPiWrapper import computeElasticPrincipalGraphWithGrammars
 from ._EMAdjustment import AdjustByConstant
-from ._plotting import PlotPG
 from ._topologies import (
     computeElasticPrincipalCircle,
     computeElasticPrincipalTree,
@@ -11,4 +10,5 @@ from ._topologies import (
     generateInitialConfiguration,
 )
 from . import src
+from . import plot
 from ._version import __version__

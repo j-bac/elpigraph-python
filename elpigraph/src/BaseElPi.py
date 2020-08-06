@@ -19,7 +19,6 @@ from .core import (
 )
 from .grammar_operations import ApplyOptimalGraphGrammarOperation
 from .reporting import ReportOnPrimitiveGraphEmbedment
-from .._plotting import PlotPG
 
 
 def isnumeric(obj):
@@ -557,7 +556,7 @@ def computeElasticPrincipalGraph(
     #' Regularize data and construct a principal elastic graph
     #'
     #' This allow to perform basic data regularization before constructing a principla elastic graph.
-    #' The function also allows plotting the results.
+    #' 
     #'
     #' @param Data numerical 2D matrix, the n-by-m matrix with the position of n m-dimensional points
     #' @param NumNodes integer, the number of nodes of the principal graph
@@ -568,9 +567,6 @@ def computeElasticPrincipalGraph(
     #' @param ComputeMSEP boolean, should MSEP be computed when building the report?
     #' @param ReduceDimension integer vector, vector of principal components to retain when performing
     #' dimensionality reduction. If None all the components will be used
-    #' @param drawAccuracyComplexity boolean, should the accuracy VS complexity plot be reported?
-    #' @param drawPCAView boolean, should a 2D plot of the points and pricipal curve be dranw for the final configuration?
-    #' @param drawEnergy boolean, should changes of evergy VS the number of nodes be reported?
     #' @param InitNodePositions numerical 2D matrix, the k-by-m matrix with k m-dimensional positions of the nodes
     #' in the initial step
     #' @param InitEdges numerical 2D matrix, the e-by-2 matrix with e end-points of the edges connecting the nodes
