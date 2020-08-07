@@ -40,7 +40,16 @@ setup(
     packages=["elpigraph.src", "elpigraph"],
     package_dir={"elpigraph": "elpigraph", "elpigraph.src": path_src,},
     #     package_data={'': ['data/']},
-    install_requires=["numpy", "pandas", "scipy", "scikit_learn", "python_igraph"],
+    install_requires=[
+        "numpy >=1.16.2",
+        "pandas >=0.23.4",
+        "numba >=0.49.1 ",
+        "scikit-learn >=0.21.3",
+        "scipy >=1.2.0",
+        "python_igraph >=0.7.1",
+        "networkx >=2.0",
+        "matplotlib",
+    ],
     project_urls={  # Optional
         "Bug Reports": "https://github.com/j-bac/elpigraph-python/issues",
         "Source": "https://github.com/j-bac/elpigraph-python/",
