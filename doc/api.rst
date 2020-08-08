@@ -2,14 +2,7 @@
 elpigraph-python API
 ####################
 
-WIP 
+WIP API summary
 
-Fitting ElPiGraph
-===============================
-
-WIP
-
-Plotting
-================================
-
-WIP
+.. toctree::
+    autoapi/elpigraph/index

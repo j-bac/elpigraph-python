@@ -30,7 +30,6 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-
 from elpigraph import __version__
 from distutils.version import LooseVersion
 import sphinx
@@ -41,7 +40,8 @@ import sphinx_gallery
 import sphinx_rtd_theme
 
 
-sys.path.append("../elpigraph-python/")
+sys.path.append("../elpigraph/")
+sys.path.insert(0, os.path.abspath("../"))
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -67,7 +67,10 @@ extensions = [
     "sphinx_gallery.gen_gallery",
 ]
 
+extensions.append("autoapi.extension")
 
+autoapi_type = "python"
+autoapi_dirs = ["../elpigraph/", "../elpigraph/src"]
 # this is needed for some reason...
 # see https://github.com/numpy/numpydoc/issues/69
 numpydoc_show_class_members = False
