@@ -17,10 +17,9 @@ Mirkes](https://github.com/Mirkes)) is also
 Citation
 ========
 
-When using this package, please cite our preprint:
+When using this package, please cite our paper:
 
-Albergante, L.  et al . Robust And Scalable Learning Of Complex Dataset Topologies Via Elpigraph
-arXiv: [1804.07580](https://arxiv.org/abs/1804.07580) (2018)
+Albergante L, Mirkes E, Bac J, Chen H, Martin A, Faure L, Barillot E, Pinello L, Gorban AN, Zinovyev A. [Robust and scalable learning of complex intrinsic dataset geometry via ElPiGraph.](https://www.mdpi.com/1099-4300/22/3/296) Entropy 2020;22(3):296.
 
 Requirements
 ============
