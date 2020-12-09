@@ -1,68 +1,76 @@
 import numpy as np
+
 try:
     import cupy
 except:
     pass
 from ._topologies import generateInitialConfiguration
 from .src.distutils import PartialDistance
-from .src.core import Encode2ElasticMatrix, PrimitiveElasticGraphEmbedment, PrimitiveElasticGraphEmbedment_cp
+from .src.core import (
+    Encode2ElasticMatrix,
+    PrimitiveElasticGraphEmbedment,
+    PrimitiveElasticGraphEmbedment_cp,
+)
 from .src.BaseElPi import computeElasticPrincipalGraph
 
-def computeElasticPrincipalGraphWithGrammars(X,
-                                             GrowGrammars,
-                                             ShrinkGrammars,
-                                             NumNodes,
-                                             NumEdges = float('inf'),
-                                             InitNodes = 2,
-                                             Lambda = 0.01,
-                                             Mu = 0.1,
-                                             GrammarOptimization = False,
-                                             MaxSteps = float('inf'),
-                                             GrammarOrder = ["Grow", "Shrink"],
-                                             MaxNumberOfIterations = 10,
-                                             TrimmingRadius = float('inf'),
-                                             eps = .01,
-                                             Do_PCA = True,
-                                             InitNodePositions = None,
-                                             AdjustVect = None,
-                                             ElasticMatrix = None,
-                                             InitEdges = None,
-                                             CenterData = True,
-                                             ComputeMSEP = True,
-                                             verbose = False,
-                                             ShowTimer = False,
-                                             ReduceDimension = None,
-#                                             drawAccuracyComplexity = True,
-#                                             drawPCAView = True,
-#                                             drawEnergy = True,
-                                             n_cores = 1,
-                                             #ClusType = "Sock",
-                                             MinParOp = 20,
-                                             nReps = 1,
-#                                              ParallelRep = False,
-                                             Subsets = list(),
-                                             ProbPoint = 1,
-                                             Mode = 1,
-                                             FinalEnergy = "Base",
-                                             alpha = 0,
-                                             beta = 0,
-                                             #gamma = 0,
-                                             #FastSolve = False,
-                                             Configuration = "Line",
-                                             DensityRadius = None,
-                                             AvoidSolitary = False,
-                                             EmbPointProb = 1,
-                                             SampleIC = True,
-                                             AvoidResampling = True,
-                                             AdjustElasticMatrix = None,
-                                             AdjustElasticMatrix_Initial = None,
-                                             Lambda_Initial = None, 
-                                             Mu_Initial = None,
-                                             DisplayWarnings = True,
-                                             StoreGraphEvolution = False,
-                                             GPU = False): 
 
-    '''
+def computeElasticPrincipalGraphWithGrammars(
+    X,
+    GrowGrammars,
+    ShrinkGrammars,
+    NumNodes,
+    NumEdges=float("inf"),
+    InitNodes=2,
+    Lambda=0.01,
+    Mu=0.1,
+    GrammarOptimization=False,
+    MaxSteps=float("inf"),
+    GrammarOrder=["Grow", "Shrink"],
+    MaxNumberOfIterations=10,
+    TrimmingRadius=float("inf"),
+    eps=0.01,
+    Do_PCA=True,
+    InitNodePositions=None,
+    AdjustVect=None,
+    ElasticMatrix=None,
+    InitEdges=None,
+    CenterData=True,
+    ComputeMSEP=True,
+    verbose=False,
+    ShowTimer=False,
+    ReduceDimension=None,
+    #                                             drawAccuracyComplexity = True,
+    #                                             drawPCAView = True,
+    #                                             drawEnergy = True,
+    n_cores=1,
+    # ClusType = "Sock",
+    MinParOp=20,
+    nReps=1,
+    #                                              ParallelRep = False,
+    Subsets=list(),
+    ProbPoint=1,
+    Mode=1,
+    FinalEnergy="Base",
+    alpha=0,
+    beta=0,
+    # gamma = 0,
+    # FastSolve = False,
+    Configuration="Line",
+    DensityRadius=None,
+    AvoidSolitary=False,
+    EmbPointProb=1,
+    SampleIC=True,
+    AvoidResampling=True,
+    AdjustElasticMatrix=None,
+    AdjustElasticMatrix_Initial=None,
+    Lambda_Initial=None,
+    Mu_Initial=None,
+    DisplayWarnings=True,
+    StoreGraphEvolution=False,
+    GPU=False,
+):
+
+    """
     #' Construct a principal graph with the specified grammar
     #'
     #' This function is a wrapper to the computeElasticPrincipalGraph function that constructs the appropriate initial graph and
@@ -140,14 +148,13 @@ def computeElasticPrincipalGraphWithGrammars(X,
     #' @examples
     #'
     #'
-    '''
+    """
     # Be default we are using a predefined initial configuration
     ComputeIC = False
 
     # Generate a dummy subset is not specified
-    if(Subsets == list()):
+    if Subsets == list():
         Subsets = [np.array(range(X.shape[1]))]
-
 
     # Prepare the list to be returned
     ReturnList = list()
@@ -160,228 +167,320 @@ def computeElasticPrincipalGraphWithGrammars(X,
 
         # Generate the appropriate matrix
         X = Base_X[:, Subsets[j]]
-        SquaredX = np.sum(X**2,axis=1,keepdims=1)
+        SquaredX = np.sum(X ** 2, axis=1, keepdims=1)
         if GPU:
             Xcp = cupy.asarray(X)
-            SquaredXcp = Xcp.sum(axis=1,keepdims=1)
+            SquaredXcp = Xcp.sum(axis=1, keepdims=1)
 
         # Define temporary variable to avoid excessing plotting
-        #Intermediate_drawPCAView = drawPCAView
-        #Intermediate_drawAccuracyComplexity = drawAccuracyComplexity 
-        #Intermediate_drawEnergy = drawEnergy   
+        # Intermediate_drawPCAView = drawPCAView
+        # Intermediate_drawAccuracyComplexity = drawAccuracyComplexity
+        # Intermediate_drawEnergy = drawEnergy
 
         Used = np.array([False] * len(X))
 
         for i in range(nReps):
 
             # Select the points to be used
-            if(ProbPoint<1 and ProbPoint>0):
+            if ProbPoint < 1 and ProbPoint > 0:
                 SelPoints = np.random.uniform(len(X)) <= ProbPoint
             else:
-                SelPoints = np.array([True]* len(X))
+                SelPoints = np.array([True] * len(X))
 
             # Do we need to compute the initial conditions?
-            if(InitNodePositions is None or (InitEdges is None and ElasticMatrix is None)):
-
-                print("Generating the initial configuration")
+            if InitNodePositions is None or (
+                InitEdges is None and ElasticMatrix is None
+            ):
+                if verbose:
+                    print("Generating the initial configuration")
 
                 # We are computing the initial conditions. InitNodePositions need to be reset after each step!
                 ComputeIC = True
 
-                if(SampleIC):
-                    if(AvoidResampling):
-                        InitialConf = generateInitialConfiguration(X[SelPoints & ~Used,:],
-                                                                    Nodes = InitNodes,
-                                                                    Configuration = Configuration,
-                                                                    DensityRadius = DensityRadius)
+                if SampleIC:
+                    if AvoidResampling:
+                        InitialConf = generateInitialConfiguration(
+                            X[SelPoints & ~Used, :],
+                            Nodes=InitNodes,
+                            Configuration=Configuration,
+                            DensityRadius=DensityRadius,
+                            verbose=verbose,
+                        )
 
-                        Dist = np.min(PartialDistance(InitialConf['NodePositions'], X), axis=0)
+                        Dist = np.min(
+                            PartialDistance(InitialConf["NodePositions"], X), axis=0
+                        )
 
-                        if(DensityRadius):
-                            Used = (Used | (Dist < DensityRadius))
+                        if DensityRadius:
+                            Used = Used | (Dist < DensityRadius)
                         else:
-                            Used = (Used | (Dist <= np.finfo(float).min))
+                            Used = Used | (Dist <= np.finfo(float).min)
 
-                        if(np.sum(Used) < len(X)*.9):
-                            print("90% of the points have been used as initial conditions. Resetting.")
+                        if (np.sum(Used) < len(X) * 0.9) and verbose:
+                            print(
+                                "90% of the points have been used as initial conditions. Resetting."
+                            )
                     else:
                         # Construct the initial configuration
-                        InitialConf = generateInitialConfiguration(X[SelPoints,:],
-                                                                Nodes = InitNodes,
-                                                                Configuration = Configuration,
-                                                                DensityRadius = DensityRadius)
-
+                        InitialConf = generateInitialConfiguration(
+                            X[SelPoints, :],
+                            Nodes=InitNodes,
+                            Configuration=Configuration,
+                            DensityRadius=DensityRadius,
+                            verbose=verbose,
+                        )
 
                 else:
-                    if(AvoidResampling):
-                        InitialConf = generateInitialConfiguration(X[~Used,],
-                                                                Nodes = InitNodes,
-                                                                Configuration = Configuration,
-                                                                DensityRadius = DensityRadius)
+                    if AvoidResampling:
+                        InitialConf = generateInitialConfiguration(
+                            X[~Used,],
+                            Nodes=InitNodes,
+                            Configuration=Configuration,
+                            DensityRadius=DensityRadius,
+                            verbose=verbose,
+                        )
 
-                        Dist = np.min(PartialDistance(InitialConf['NodePositions'], X), axis=0)
+                        Dist = np.min(
+                            PartialDistance(InitialConf["NodePositions"], X), axis=0
+                        )
 
-                        if(DensityRadius):
+                        if DensityRadius:
                             Used = Used | (Dist < DensityRadius)
                         else:
                             Used = Used | (Dist < np.finfo(float).min)
 
-
-                        if(np.sum(Used) > len(X)*.9):
-                            print("90% or more of the points have been used as initial conditions. Resetting.")
-
+                        if (np.sum(Used) > len(X) * 0.9) and verbose:
+                            print(
+                                "90% or more of the points have been used as initial conditions. Resetting."
+                            )
 
                     else:
                         # Construct the initial configuration
-                        InitialConf = generateInitialConfiguration(X,
-                                                            Nodes = InitNodes,
-                                                            Configuration = Configuration,
-                                                            DensityRadius = DensityRadius)
+                        InitialConf = generateInitialConfiguration(
+                            X,
+                            Nodes=InitNodes,
+                            Configuration=Configuration,
+                            DensityRadius=DensityRadius,
+                            verbose=verbose,
+                        )
 
                 # Set the initial edge configuration
-                InitEdges = InitialConf['Edges']
+                InitEdges = InitialConf["Edges"]
 
                 # Compute the initial elastic matrix
-                ElasticMatrix = Encode2ElasticMatrix(Edges = InitialConf['Edges'], Lambdas = Lambda, Mus = Mu)
+                ElasticMatrix = Encode2ElasticMatrix(
+                    Edges=InitialConf["Edges"], Lambdas=Lambda, Mus=Mu
+                )
 
                 # Compute the initial node position
                 if GPU:
                     InitNodePositions = PrimitiveElasticGraphEmbedment_cp(
-                        X = X, NodePositions = InitialConf['NodePositions'], 
-                        MaxNumberOfIterations = MaxNumberOfIterations, TrimmingRadius = TrimmingRadius, eps = eps,
-                        ElasticMatrix = ElasticMatrix, Mode = Mode, Xcp = Xcp, SquaredXcp = SquaredXcp, SquaredX=SquaredX)[0]
+                        X=X,
+                        NodePositions=InitialConf["NodePositions"],
+                        MaxNumberOfIterations=MaxNumberOfIterations,
+                        TrimmingRadius=TrimmingRadius,
+                        eps=eps,
+                        ElasticMatrix=ElasticMatrix,
+                        Mode=Mode,
+                        Xcp=Xcp,
+                        SquaredXcp=SquaredXcp,
+                        SquaredX=SquaredX,
+                    )[0]
                 else:
                     InitNodePositions = PrimitiveElasticGraphEmbedment(
-                        X = X, NodePositions = InitialConf['NodePositions'], 
-                        MaxNumberOfIterations = MaxNumberOfIterations, TrimmingRadius = TrimmingRadius, eps = eps,
-                        ElasticMatrix = ElasticMatrix, Mode = Mode, SquaredX=SquaredX)[0]
-
+                        X=X,
+                        NodePositions=InitialConf["NodePositions"],
+                        MaxNumberOfIterations=MaxNumberOfIterations,
+                        TrimmingRadius=TrimmingRadius,
+                        eps=eps,
+                        ElasticMatrix=ElasticMatrix,
+                        Mode=Mode,
+                        SquaredX=SquaredX,
+                    )[0]
 
             # Do we need to compute AdjustVect?
-            if(AdjustVect is None):
+            if AdjustVect is None:
                 AdjustVect = [False] * len(InitNodePositions)
 
-
             # Limit plotting after a few examples
-            #if(len(ReturnList) == 3):
+            # if(len(ReturnList) == 3):
             #    print("Graphical output will be suppressed for the remaining replicas")
             #    Intermediate_drawPCAView = False
-            #    Intermediate_drawAccuracyComplexity = False 
+            #    Intermediate_drawAccuracyComplexity = False
             #    Intermediate_drawEnergy = False
 
-
-            print("Constructing tree", i+1, "of", nReps, "/ Subset", j+1, "of", len(Subsets))
+            if verbose:
+                print(
+                    "Constructing tree",
+                    i + 1,
+                    "of",
+                    nReps,
+                    "/ Subset",
+                    j + 1,
+                    "of",
+                    len(Subsets),
+                )
             # Run the ElPiGraph algorithm
-            ReturnList.append(computeElasticPrincipalGraph(Data = X[SelPoints,:], NumNodes = NumNodes, NumEdges = NumEdges,
-                                                        InitNodePositions = InitNodePositions, InitEdges = InitEdges, ElasticMatrix = ElasticMatrix,
-                                                        AdjustVect = AdjustVect,
-                                                        GrowGrammars = GrowGrammars,
-                                                        ShrinkGrammars = ShrinkGrammars,
-                                                        GrammarOptimization = GrammarOptimization,
-                                                        MaxSteps = MaxSteps,
-                                                        GrammarOrder = GrammarOrder,
-                                                        MaxNumberOfIterations = MaxNumberOfIterations, TrimmingRadius = TrimmingRadius, eps = eps,
-                                                        Lambda = Lambda, Mu = Mu, Do_PCA = Do_PCA,
-                                                        CenterData = CenterData, ComputeMSEP = ComputeMSEP,
-                                                        verbose = verbose, ShowTimer = ShowTimer,
-                                                        ReduceDimension = ReduceDimension, Mode = Mode,
-                                                        FinalEnergy = FinalEnergy, alpha = alpha, beta = beta, #gamma = gamma,
-                                                        #drawAccuracyComplexity = Intermediate_drawAccuracyComplexity,
-                                                        #drawPCAView = Intermediate_drawPCAView,
-                                                        #drawEnergy = Intermediate_drawEnergy,
-                                                        n_cores = n_cores, 
-                                                        #ClusType = ClusType, 
-                                                        MinParOp = MinParOp,
-                                                        #FastSolve = FastSolve,
-                                                        AvoidSolitary = AvoidSolitary,
-                                                        EmbPointProb = EmbPointProb, AdjustElasticMatrix = AdjustElasticMatrix,
-                                                        AdjustElasticMatrix_Initial = AdjustElasticMatrix_Initial,
-                                                        Lambda_Initial = Lambda_Initial, Mu_Initial = Mu_Initial,
-                                                        DisplayWarnings=DisplayWarnings,
-                                                        StoreGraphEvolution=StoreGraphEvolution,
-                                                        GPU = GPU
-                                                        )
-                             )
+            ReturnList.append(
+                computeElasticPrincipalGraph(
+                    Data=X[SelPoints, :],
+                    NumNodes=NumNodes,
+                    NumEdges=NumEdges,
+                    InitNodePositions=InitNodePositions,
+                    InitEdges=InitEdges,
+                    ElasticMatrix=ElasticMatrix,
+                    AdjustVect=AdjustVect,
+                    GrowGrammars=GrowGrammars,
+                    ShrinkGrammars=ShrinkGrammars,
+                    GrammarOptimization=GrammarOptimization,
+                    MaxSteps=MaxSteps,
+                    GrammarOrder=GrammarOrder,
+                    MaxNumberOfIterations=MaxNumberOfIterations,
+                    TrimmingRadius=TrimmingRadius,
+                    eps=eps,
+                    Lambda=Lambda,
+                    Mu=Mu,
+                    Do_PCA=Do_PCA,
+                    CenterData=CenterData,
+                    ComputeMSEP=ComputeMSEP,
+                    verbose=verbose,
+                    ShowTimer=ShowTimer,
+                    ReduceDimension=ReduceDimension,
+                    Mode=Mode,
+                    FinalEnergy=FinalEnergy,
+                    alpha=alpha,
+                    beta=beta,  # gamma = gamma,
+                    # drawAccuracyComplexity = Intermediate_drawAccuracyComplexity,
+                    # drawPCAView = Intermediate_drawPCAView,
+                    # drawEnergy = Intermediate_drawEnergy,
+                    n_cores=n_cores,
+                    # ClusType = ClusType,
+                    MinParOp=MinParOp,
+                    # FastSolve = FastSolve,
+                    AvoidSolitary=AvoidSolitary,
+                    EmbPointProb=EmbPointProb,
+                    AdjustElasticMatrix=AdjustElasticMatrix,
+                    AdjustElasticMatrix_Initial=AdjustElasticMatrix_Initial,
+                    Lambda_Initial=Lambda_Initial,
+                    Mu_Initial=Mu_Initial,
+                    DisplayWarnings=DisplayWarnings,
+                    StoreGraphEvolution=StoreGraphEvolution,
+                    GPU=GPU,
+                )
+            )
 
             # Save extra information
-            ReturnList[-1]['SubSetID'] = j
-            ReturnList[-1]['ReplicaID'] = i
-            ReturnList[-1]['ProbPoint'] = ProbPoint
+            ReturnList[-1]["SubSetID"] = j
+            ReturnList[-1]["ReplicaID"] = i
+            ReturnList[-1]["ProbPoint"] = ProbPoint
 
             # Reset InitNodePositions for the next iteration
-            if(ComputeIC):
+            if ComputeIC:
                 InitNodePositions = None
 
     # Are we using bootstrapping (nReps > 1). If yes we compute the consensus tree
-    if(nReps>1):
-
-        print("Constructing average tree")
+    if nReps > 1:
+        if verbose:
+            print("Constructing average tree")
 
         # The nodes of the principal trees will be used as points to compute the consensus tree
-        AllPoints = np.concatenate(([i['NodePositions'] for i in ReturnList]))
+        AllPoints = np.concatenate(([i["NodePositions"] for i in ReturnList]))
 
         # De we need to compute the initial conditions?
-        if(InitNodePositions is None or (InitEdges is None and ElasticMatrix is None)):
+        if InitNodePositions is None or (InitEdges is None and ElasticMatrix is None):
 
             # construct the initial configuration
-            InitialConf = generateInitialConfiguration(AllPoints, Nodes = InitNodes, Configuration = Configuration, DensityRadius = DensityRadius)
+            InitialConf = generateInitialConfiguration(
+                AllPoints,
+                Nodes=InitNodes,
+                Configuration=Configuration,
+                DensityRadius=DensityRadius,
+                verbose=verbose,
+            )
 
             # print(InitialConf)
 
             # Set the initial edge configuration
-            InitEdges = InitialConf['Edges']
+            InitEdges = InitialConf["Edges"]
 
             # Compute the initial elastic matrix
-            EM = Encode2ElasticMatrix(Edges = InitialConf['Edges'], Lambdas = Lambda, Mus = Mu)
+            EM = Encode2ElasticMatrix(
+                Edges=InitialConf["Edges"], Lambdas=Lambda, Mus=Mu
+            )
 
             # Compute the initial node position
             if GPU:
                 InitNodePositions = PrimitiveElasticGraphEmbedment_cp(
-                    X = X, NodePositions = InitialConf['NodePositions'],
-                    MaxNumberOfIterations = MaxNumberOfIterations, TrimmingRadius = TrimmingRadius, eps = eps,
-                    ElasticMatrix = EM, Mode = Mode, Xcp = Xcp, SquaredXcp = SquaredXcp)[0]
+                    X=X,
+                    NodePositions=InitialConf["NodePositions"],
+                    MaxNumberOfIterations=MaxNumberOfIterations,
+                    TrimmingRadius=TrimmingRadius,
+                    eps=eps,
+                    ElasticMatrix=EM,
+                    Mode=Mode,
+                    Xcp=Xcp,
+                    SquaredXcp=SquaredXcp,
+                )[0]
 
             else:
                 InitNodePositions = PrimitiveElasticGraphEmbedment(
-                    X = X, NodePositions = InitialConf['NodePositions'],
-                    MaxNumberOfIterations = MaxNumberOfIterations, TrimmingRadius = TrimmingRadius, eps = eps,
-                    ElasticMatrix = EM, Mode = Mode)[0]
+                    X=X,
+                    NodePositions=InitialConf["NodePositions"],
+                    MaxNumberOfIterations=MaxNumberOfIterations,
+                    TrimmingRadius=TrimmingRadius,
+                    eps=eps,
+                    ElasticMatrix=EM,
+                    Mode=Mode,
+                )[0]
 
-
-        ReturnList.append(computeElasticPrincipalGraph(Data = AllPoints, NumNodes = NumNodes, NumEdges = NumEdges,
-                                                    InitNodePositions = InitNodePositions, InitEdges = InitEdges, ElasticMatrix = ElasticMatrix,
-                                                    AdjustVect = AdjustVect,
-                                                    GrowGrammars = GrowGrammars,
-                                                    ShrinkGrammars = ShrinkGrammars,
-                                                    MaxNumberOfIterations = MaxNumberOfIterations, TrimmingRadius = TrimmingRadius, eps = eps,
-                                                    Lambda = Lambda, Mu = Mu, Do_PCA = Do_PCA,
-                                                    CenterData = CenterData, ComputeMSEP = ComputeMSEP,
-                                                    verbose = verbose, ShowTimer = ShowTimer,
-                                                    ReduceDimension = None, Mode = Mode,
-                                                    FinalEnergy = FinalEnergy, alpha = alpha, beta = beta, #gamma = gamma,
-                                                    #drawAccuracyComplexity = drawAccuracyComplexity,
-                                                    #drawPCAView = drawPCAView, drawEnergy = drawEnergy,
-                                                    n_cores = n_cores, 
-                                                    #ClusType = ClusType, 
-                                                    MinParOp = MinParOp,
-                                                    #FastSolve = FastSolve, 
-                                                    AvoidSolitary = AvoidSolitary,
-                                                    EmbPointProb = EmbPointProb, AdjustElasticMatrix = AdjustElasticMatrix,
-                                                    AdjustElasticMatrix_Initial = AdjustElasticMatrix_Initial,
-                                                    Lambda_Initial = Lambda_Initial, Mu_Initial = Mu_Initial,
-                                                    DisplayWarnings=DisplayWarnings,
-                                                    StoreGraphEvolution=StoreGraphEvolution,
-                                                    GPU=GPU
-                                                    )
-                         )
+        ReturnList.append(
+            computeElasticPrincipalGraph(
+                Data=AllPoints,
+                NumNodes=NumNodes,
+                NumEdges=NumEdges,
+                InitNodePositions=InitNodePositions,
+                InitEdges=InitEdges,
+                ElasticMatrix=ElasticMatrix,
+                AdjustVect=AdjustVect,
+                GrowGrammars=GrowGrammars,
+                ShrinkGrammars=ShrinkGrammars,
+                MaxNumberOfIterations=MaxNumberOfIterations,
+                TrimmingRadius=TrimmingRadius,
+                eps=eps,
+                Lambda=Lambda,
+                Mu=Mu,
+                Do_PCA=Do_PCA,
+                CenterData=CenterData,
+                ComputeMSEP=ComputeMSEP,
+                verbose=verbose,
+                ShowTimer=ShowTimer,
+                ReduceDimension=None,
+                Mode=Mode,
+                FinalEnergy=FinalEnergy,
+                alpha=alpha,
+                beta=beta,  # gamma = gamma,
+                # drawAccuracyComplexity = drawAccuracyComplexity,
+                # drawPCAView = drawPCAView, drawEnergy = drawEnergy,
+                n_cores=n_cores,
+                # ClusType = ClusType,
+                MinParOp=MinParOp,
+                # FastSolve = FastSolve,
+                AvoidSolitary=AvoidSolitary,
+                EmbPointProb=EmbPointProb,
+                AdjustElasticMatrix=AdjustElasticMatrix,
+                AdjustElasticMatrix_Initial=AdjustElasticMatrix_Initial,
+                Lambda_Initial=Lambda_Initial,
+                Mu_Initial=Mu_Initial,
+                DisplayWarnings=DisplayWarnings,
+                StoreGraphEvolution=StoreGraphEvolution,
+                GPU=GPU,
+            )
+        )
 
         # Run the ElPiGraph algorithm
-        ReturnList[-1]['SubSetID'] = j
-        ReturnList[-1]['ReplicaID'] = 0
-        ReturnList[-1]['ProbPoint'] = 1
+        ReturnList[-1]["SubSetID"] = j
+        ReturnList[-1]["ReplicaID"] = 0
+        ReturnList[-1]["ProbPoint"] = 1
 
-
-
-    return(ReturnList)
-
+    return ReturnList
 

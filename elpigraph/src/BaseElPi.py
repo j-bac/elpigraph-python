@@ -272,10 +272,10 @@ def ElPrincGraph(
         ) and not GrammarOptimization:
             break
 
-        if not verbose and ShowTimer:
+        if verbose and ShowTimer:
             print("Nodes = ", UpdatedPG["NodePositions"].shape[0])
 
-        if not verbose and not ShowTimer:
+        if verbose and not ShowTimer:
             if FirstPrint:
                 print("Nodes = ", end=" ")
                 FirstPrint = False
@@ -475,13 +475,13 @@ def ElPrincGraph(
 
         else:
             tReport = ReportTable[-1]
-
-        print("\n")
-        print(
-            "BARCODE\tENERGY\tNNODES\tNEDGES\tNRIBS\tNSTARS\tNRAYS\tNRAYS2\tMSE\tMSEP\tFVE\tFVEP\tUE\tUR\tURN\tURN2\tURSD\n"
-        )
-        print("\t".join(tReport.values()))
-        print("\n")
+        if verbose:
+            print("\n")
+            print(
+                "BARCODE\tENERGY\tNNODES\tNEDGES\tNRIBS\tNSTARS\tNRAYS\tNRAYS2\tMSE\tMSEP\tFVE\tFVEP\tUE\tUR\tURN\tURN2\tURSD\n"
+            )
+            print("\t".join(tReport.values()))
+            print("\n")
 
     if CompileReport:
         ReportTable = {k: [d[k] for d in ReportTable] for k in ReportTable[0]}
@@ -630,8 +630,9 @@ def computeElasticPrincipalGraph(
         ReduceDimension = np.array(range(np.min(Data.shape)))
 
     elif not Do_PCA:
-        print("Cannot reduce dimensionality witout doing PCA (parameter Do_PCA)")
-        print("Dimensionality reduction will be ignored")
+        if verbose:
+            print("Cannot reduce dimensionality witout doing PCA (parameter Do_PCA)")
+            print("Dimensionality reduction will be ignored")
         ReduceDimension = np.array(range(np.min(Data.shape)))
 
     DataCenters = np.mean(Data, axis=0)
@@ -640,13 +641,15 @@ def computeElasticPrincipalGraph(
         InitNodePositions = InitNodePositions - DataCenters
 
     if Do_PCA:
-        print("Performing PCA")
+        if verbose:
+            print("Performing PCA")
 
         if isinstance(ReduceDimension, float):
             if ReduceDimension < 1:
-                print(
-                    "Dimensionality reduction via ratio of explained variance (full PCA will be computed)"
-                )
+                if verbose:
+                    print(
+                        "Dimensionality reduction via ratio of explained variance (full PCA will be computed)"
+                    )
                 vglobal, PCAData, explainedVariances = PCA(Data)
                 ReduceDimension = range(
                     np.min(
@@ -669,14 +672,16 @@ def computeElasticPrincipalGraph(
 
         else:
             if max(ReduceDimension + 1) > min(Data.shape):
-                print(
-                    "Selected dimensions are outside of the available range. ReduceDimension will be updated"
-                )
+                if verbose:
+                    print(
+                        "Selected dimensions are outside of the available range. ReduceDimension will be updated"
+                    )
                 ReduceDimension = [
                     i for i in ReduceDimension if i in range(min(Data.shape))
                 ]
             if max(ReduceDimension + 1) > min(Data.shape) * 0.75:
-                print("Using standard PCA")
+                if verbose:
+                    print("Using standard PCA")
                 vglobal, PCAData, explainedVariances = PCA(Data)
                 perc = (
                     explainedVariances[ReduceDimension].sum()
@@ -687,7 +692,8 @@ def computeElasticPrincipalGraph(
                 InitNodePositions = InitNodePositions.dot(vglobal)
 
             else:
-                print("Centering data and using PCA with truncated SVD")
+                if verbose:
+                    print("Centering data and using PCA with truncated SVD")
                 if not CenterData:
                     # if data was not centered, center it (for SVD)
                     DataCenters = np.mean(Data, axis=0)
@@ -701,9 +707,9 @@ def computeElasticPrincipalGraph(
 
                 vglobal = Vt.T
                 InitNodePositions = InitNodePositions.dot(vglobal)
-
-        print(len(ReduceDimension), "dimensions are being used")
-        print(np.round(perc, 2), "% of the original variance has been retained")
+        if verbose:
+            print(len(ReduceDimension), "dimensions are being used")
+            print(np.round(perc, 2), "% of the original variance has been retained")
 
         X = PCAData[:, ReduceDimension]
         InitNodePositions = InitNodePositions[:, ReduceDimension]
@@ -722,7 +728,10 @@ def computeElasticPrincipalGraph(
             Edges=InitEdges, Lambdas=Lambda_Initial, Mus=Mu_Initial
         )
     else:
-        print("The elastic matrix is being used. Edge configuration will be ignored")
+        if verbose:
+            print(
+                "The elastic matrix is being used. Edge configuration will be ignored"
+            )
         InitElasticMatrix = ElasticMatrix
 
     if (
@@ -734,16 +743,16 @@ def computeElasticPrincipalGraph(
         )
 
     # Computing the graph
-
-    print(
-        "Computing EPG with ",
-        NumNodes,
-        " nodes on ",
-        Data.shape[0],
-        " points and ",
-        Data.shape[1],
-        " dimensions",
-    )
+    if verbose:
+        print(
+            "Computing EPG with ",
+            NumNodes,
+            " nodes on ",
+            Data.shape[0],
+            " points and ",
+            Data.shape[1],
+            " dimensions",
+        )
 
     ElData = ElPrincGraph(
         X=X,
@@ -799,7 +808,8 @@ def computeElasticPrincipalGraph(
             AllNodePositions[k] = nodep.dot(vglobal[:, ReduceDimension].T)
 
     EndTimer = time.time() - t
-    print(np.round(EndTimer, 4), " seconds elapsed")
+    if verbose:
+        print(np.round(EndTimer, 4), " seconds elapsed")
 
     FinalPG = dict(
         NodePositions=NodePositions,
