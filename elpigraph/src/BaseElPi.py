@@ -67,6 +67,7 @@ def ElPrincGraph(
     DisplayWarnings=False,
     StoreGraphEvolution=False,
     GPU=False,
+    FixNodesAtPoints=None,
 ):
     """
     #' Core function to construct a principal elastic graph
@@ -141,7 +142,6 @@ def ElPrincGraph(
     #' 
     #'
     """
-
     if GrammarOptimization:
         print("Using grammar optimization")
         if np.isinf(MaxSteps):
@@ -192,6 +192,7 @@ def ElPrincGraph(
             eps=eps,
             ElasticMatrix=ElasticMatrix,
             Mode=Mode,
+            FixNodesAtPoints=FixNodesAtPoints,
         )[0]
 
     UpdatedPG = dict(
@@ -314,6 +315,7 @@ def ElPrincGraph(
                         MinParOp=MinParOp,
                         Xcp=Xcp,
                         SquaredXcp=SquaredXcp,
+                        FixNodesAtPoints=FixNodesAtPoints,
                     )
 
                     if UpdatedPG == "failed operation":
@@ -372,6 +374,7 @@ def ElPrincGraph(
                         MinParOp=MinParOp,
                         Xcp=Xcp,
                         SquaredXcp=SquaredXcp,
+                        FixNodesAtPoints=FixNodesAtPoints,
                     )
 
                     if UpdatedPG == "failed operation":
@@ -550,6 +553,7 @@ def computeElasticPrincipalGraph(
     DisplayWarnings=False,
     StoreGraphEvolution=False,
     GPU=False,
+    FixNodesAtPoints=None,
 ):
 
     """
@@ -723,6 +727,17 @@ def computeElasticPrincipalGraph(
     if Mu_Initial is None:
         Mu_Initial = Mu
 
+    if FixNodesAtPoints is not None:
+        flat_FixNodesAtPoints = [
+            item for sublist in FixNodesAtPoints for item in sublist
+        ]  # fixed datapoints
+        if len(set(flat_FixNodesAtPoints)) != len(flat_FixNodesAtPoints):
+            raise ValueError("FixNodesAtPoints lists contain duplicate points")
+        FixedNodePositions = np.array(
+            [X[inds].mean(axis=0) for inds in FixNodesAtPoints]
+        )  # init fixed nodes
+        InitNodePositions = np.concatenate((FixedNodePositions, InitNodePositions))
+
     if ElasticMatrix is None:
         InitElasticMatrix = Encode2ElasticMatrix(
             Edges=InitEdges, Lambdas=Lambda_Initial, Mus=Mu_Initial
@@ -788,6 +803,7 @@ def computeElasticPrincipalGraph(
         MinParOp=MinParOp,
         StoreGraphEvolution=StoreGraphEvolution,
         GPU=GPU,
+        FixNodesAtPoints=FixNodesAtPoints,
     )
 
     NodePositions = ElData["NodePositions"]

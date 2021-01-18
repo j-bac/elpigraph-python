@@ -68,6 +68,7 @@ def computeElasticPrincipalGraphWithGrammars(
     DisplayWarnings=True,
     StoreGraphEvolution=False,
     GPU=False,
+    FixNodesAtPoints=None,
 ):
 
     """
@@ -267,11 +268,21 @@ def computeElasticPrincipalGraphWithGrammars(
                 # Set the initial edge configuration
                 InitEdges = InitialConf["Edges"]
 
+                if FixNodesAtPoints is not None:
+                    AddEdges = np.vstack(
+                        (
+                            np.arange(len(FixNodesAtPoints)),
+                            np.repeat(len(FixNodesAtPoints), len(FixNodesAtPoints)),
+                        )
+                    ).T
+                    InitEdges = np.concatenate(
+                        (AddEdges, InitEdges + len(FixNodesAtPoints))
+                    )
+
                 # Compute the initial elastic matrix
                 ElasticMatrix = Encode2ElasticMatrix(
-                    Edges=InitialConf["Edges"], Lambdas=Lambda, Mus=Mu
+                    Edges=InitEdges, Lambdas=Lambda, Mus=Mu
                 )
-
                 # Compute the initial node position
                 if GPU:
                     InitNodePositions = PrimitiveElasticGraphEmbedment_cp(
@@ -300,7 +311,12 @@ def computeElasticPrincipalGraphWithGrammars(
 
             # Do we need to compute AdjustVect?
             if AdjustVect is None:
-                AdjustVect = [False] * len(InitNodePositions)
+                if FixNodesAtPoints is not None:
+                    AdjustVect = [False] * (
+                        len(InitNodePositions) + len(FixNodesAtPoints)
+                    )
+                else:
+                    AdjustVect = [False] * len(InitNodePositions)
 
             # Limit plotting after a few examples
             # if(len(ReturnList) == 3):
@@ -366,6 +382,7 @@ def computeElasticPrincipalGraphWithGrammars(
                     DisplayWarnings=DisplayWarnings,
                     StoreGraphEvolution=StoreGraphEvolution,
                     GPU=GPU,
+                    FixNodesAtPoints=FixNodesAtPoints,
                 )
             )
 
@@ -402,11 +419,18 @@ def computeElasticPrincipalGraphWithGrammars(
 
             # Set the initial edge configuration
             InitEdges = InitialConf["Edges"]
-
+            if FixNodesAtPoints is not None:
+                AddEdges = np.vstack(
+                    (
+                        np.arange(len(FixNodesAtPoints)),
+                        np.repeat(len(FixNodesAtPoints), len(FixNodesAtPoints)),
+                    )
+                ).T
+                InitEdges = np.concatenate(
+                    (AddEdges, InitEdges + len(FixNodesAtPoints))
+                )
             # Compute the initial elastic matrix
-            EM = Encode2ElasticMatrix(
-                Edges=InitialConf["Edges"], Lambdas=Lambda, Mus=Mu
-            )
+            EM = Encode2ElasticMatrix(Edges=InitEdges, Lambdas=Lambda, Mus=Mu)
 
             # Compute the initial node position
             if GPU:
@@ -474,6 +498,7 @@ def computeElasticPrincipalGraphWithGrammars(
                 DisplayWarnings=DisplayWarnings,
                 StoreGraphEvolution=StoreGraphEvolution,
                 GPU=GPU,
+                FixNodesAtPoints=FixNodesAtPoints,
             )
         )
 

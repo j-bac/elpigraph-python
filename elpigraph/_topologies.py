@@ -57,6 +57,7 @@ def computeElasticPrincipalCircle(
     DisplayWarnings=False,
     StoreGraphEvolution=False,
     GPU=False,
+    FixNodesAtPoints=None,
 ):
 
     """
@@ -211,6 +212,7 @@ def computeElasticPrincipalCircle(
         MaxSteps=MaxSteps,
         StoreGraphEvolution=StoreGraphEvolution,
         GPU=GPU,
+        FixNodesAtPoints=FixNodesAtPoints,
     )
 
 
@@ -267,6 +269,7 @@ def computeElasticPrincipalTree(
     DisplayWarnings=False,
     StoreGraphEvolution=False,
     GPU=False,
+    FixNodesAtPoints=None,
 ):
     """
     #' Construct a principal elastic tree
@@ -416,6 +419,7 @@ def computeElasticPrincipalTree(
         MaxSteps=MaxSteps,
         StoreGraphEvolution=StoreGraphEvolution,
         GPU=GPU,
+        FixNodesAtPoints=FixNodesAtPoints,
     )
 
 
@@ -472,6 +476,7 @@ def computeElasticPrincipalCurve(
     DisplayWarnings=False,
     StoreGraphEvolution=False,
     GPU=False,
+    FixNodesAtPoints=None,
 ):
 
     """ 
@@ -620,6 +625,7 @@ def computeElasticPrincipalCurve(
         MaxSteps=MaxSteps,
         StoreGraphEvolution=StoreGraphEvolution,
         GPU=GPU,
+        FixNodesAtPoints=FixNodesAtPoints,
     )
 
 
@@ -676,6 +682,7 @@ def fineTuneBR(
     DisplayWarnings=False,
     StoreGraphEvolution=False,
     GPU=False,
+    FixNodesAtPoints=None,
 ):
 
     """
@@ -836,6 +843,7 @@ def fineTuneBR(
         DisplayWarnings=DisplayWarnings,
         StoreGraphEvolution=StoreGraphEvolution,
         GPU=GPU,
+        FixNodesAtPoints=FixNodesAtPoints,
     )
 
 
@@ -1052,6 +1060,7 @@ def generateInitialConfiguration(
     PCADensity=True,
     CenterDataDensity=True,
     verbose=False,
+    FixNodesAtPoints=None,
 ):
     """  
     #' Produce an initial graph with a given structure
@@ -1095,9 +1104,9 @@ def generateInitialConfiguration(
         st = np.std(PC1, ddof=1)
         NodeP = np.dot(np.linspace(mn - st, mn + st, Nodes)[:, None], Vt)
         NodePositions = NodeP + mv[None]
+
         # Creating edges
         edges = np.vstack((np.arange(Nodes - 1), np.arange(1, Nodes))).T
-
         DONE = True
 
     if Configuration == "Circle":

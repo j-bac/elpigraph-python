@@ -6,9 +6,11 @@ from .core import (
     PartitionData_cp,
     PrimitiveElasticGraphEmbedment,
     PrimitiveElasticGraphEmbedment_cp,
+    PrimitiveElasticGraphEmbedment2,
     DecodeElasticMatrix2,
 )
 from .._EMAdjustment import AdjustByConstant
+from . import grammar_operations2
 
 
 def proxy(Dict):
@@ -93,19 +95,35 @@ def proxy_cp(Dict):
 # Grammar function wrapper ------------------------------------------------
 
 
-def GraphGrammarOperation(X, NodePositions, ElasticMatrix, AdjustVect, Type, partition):
+def GraphGrammarOperation(
+    X, NodePositions, ElasticMatrix, AdjustVect, Type, partition, FixNodesAtPoints=None
+):
     if Type == "addnode2node":
-        return AddNode2Node(X, NodePositions, ElasticMatrix, partition, AdjustVect)
+        return AddNode2Node(
+            X, NodePositions, ElasticMatrix, partition, AdjustVect, FixNodesAtPoints
+        )
     elif Type == "addnode2node_1":
         return AddNode2Node(
-            X, NodePositions, ElasticMatrix, partition, AdjustVect, Max_K=1
+            X,
+            NodePositions,
+            ElasticMatrix,
+            partition,
+            AdjustVect,
+            FixNodesAtPoints,
+            Max_K=1,
         )
     elif Type == "addnode2node_2":
         return AddNode2Node(
-            X, NodePositions, ElasticMatrix, partition, AdjustVect, Max_K=2
+            X,
+            NodePositions,
+            ElasticMatrix,
+            partition,
+            AdjustVect,
+            FixNodesAtPoints,
+            Max_K=2,
         )
     elif Type == "removenode":
-        return RemoveNode(NodePositions, ElasticMatrix, AdjustVect)
+        return RemoveNode(NodePositions, ElasticMatrix, AdjustVect, FixNodesAtPoints)
     elif Type == "bisectedge":
         return BisectEdge(NodePositions, ElasticMatrix, AdjustVect)
     elif Type == "bisectedge_3":
@@ -122,7 +140,13 @@ def GraphGrammarOperation(X, NodePositions, ElasticMatrix, AdjustVect, Type, par
 
 
 def AddNode2Node(
-    X, NodePositions, ElasticMatrix, partition, AdjustVect, Max_K=float("inf")
+    X,
+    NodePositions,
+    ElasticMatrix,
+    partition,
+    AdjustVect,
+    FixNodesAtPoints,
+    Max_K=float("inf"),
 ):
     """
     #' Adds a node to each graph node
@@ -173,6 +197,9 @@ def AddNode2Node(
             raise ValueError("AddNode2Node impossible with the current parameters!")
     else:
         idx_nodes = np.array(range(nNodes))
+
+    if FixNodesAtPoints is not None:
+        idx_nodes = idx_nodes[~np.isin(idx_nodes, np.arange(len(FixNodesAtPoints)))]
 
     # Put prototypes to corresponding places
     NodePositionsArray = [npProt.copy() for i in range(len(idx_nodes))]
@@ -281,16 +308,23 @@ def BisectEdge(NodePositions, ElasticMatrix, AdjustVect, Min_K=1):
     return NodePositionsArray, ElasticMatrices, AdjustVectArray  # , NodeIndicesArray
 
 
-def RemoveNode(NodePositions, ElasticMatrix, AdjustVect):
+def RemoveNode(NodePositions, ElasticMatrix, AdjustVect, FixNodesAtPoints):
     """    
     ##  This grammar operation removes a leaf node (connectivity==1)
     """
     Lambda = ElasticMatrix.copy()
     np.fill_diagonal(Lambda, 0)
     Connectivities = (Lambda > 0).sum(axis=0)
+
     # Define sizes
     nNodes = ElasticMatrix.shape[0]
-    nGraphs = (Connectivities == 1).sum()
+    if FixNodesAtPoints is not None:
+        nGraphs = (Connectivities == 1).sum() - len(FixNodesAtPoints)
+        start = len(FixNodesAtPoints)
+    else:
+        nGraphs = (Connectivities == 1).sum()
+        start = 0
+
     # Preallocate arrays
     NodePositionsArray = [
         np.zeros((nNodes - 1, NodePositions.shape[1])) for i in range(nGraphs)
@@ -300,7 +334,7 @@ def RemoveNode(NodePositions, ElasticMatrix, AdjustVect):
     AdjustVectArray = [[] for i in range(nGraphs)]
 
     k = 0
-    for i in range(Connectivities.shape[0]):
+    for i in range(start, Connectivities.shape[0]):
         if Connectivities[i] == 1:
             # if terminal node remove it
             newInds = np.concatenate(
@@ -412,6 +446,7 @@ def ApplyOptimalGraphGrammarOperation(
     multiproc_shared_variables=None,
     Xcp=None,
     SquaredXcp=None,
+    FixNodesAtPoints=None,
 ):
 
     """
@@ -457,9 +492,6 @@ def ApplyOptimalGraphGrammarOperation(
     ElasticMatricesAll = []
     AdjustVectAll = []
 
-    #    if SquaredX is None and SquaredXcp is None:
-    #        SquaredX = (X**2).sum(axis=1,keepdims=1)
-
     if Xcp is None:
         partition, _ = PartitionData(
             X, NodePositions, MaxBlockSize, SquaredX, TrimmingRadius
@@ -472,9 +504,14 @@ def ApplyOptimalGraphGrammarOperation(
     for i in range(len(opTypes)):
         if verbose:
             print(" Operation type : ", opTypes[i])
-
-        NodePositionsArray, ElasticMatrices, AdjustVectArray = GraphGrammarOperation(
-            X, NodePositions, ElasticMatrix, AdjustVect, opTypes[i], partition
+        (NodePositionsArray, ElasticMatrices, AdjustVectArray,) = GraphGrammarOperation(
+            X,
+            NodePositions,
+            ElasticMatrix,
+            AdjustVect,
+            opTypes[i],
+            partition,
+            FixNodesAtPoints,
         )
 
         #         NodePositionsArrayAll = np.concatenate((NodePositionsArrayAll,
@@ -713,6 +750,7 @@ def ApplyOptimalGraphGrammarOperation(
                     verbose=False,
                     TrimmingRadius=TrimmingRadius,
                     SquaredX=SquaredX,
+                    FixNodesAtPoints=FixNodesAtPoints,
                 )
 
                 if ElasticEnergy < minEnergy:
