@@ -154,7 +154,7 @@ def ComputePenalizedPrimitiveGraphElasticEnergy(
     lp[np.where(lp < 0)] = 0
 
     Lpenalized = L + alpha * lp
-    EP = np.dot(Lpenalized, np.sum(dev ** 2, axis=1)) + np.max(np.abs(dev)) * 100
+    EP = np.dot(Lpenalized, np.sum(dev ** 2, axis=1))
     ####
     indL = Lambda + Lambda.transpose() > 0
     RP = 0

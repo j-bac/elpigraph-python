@@ -338,7 +338,7 @@ def ComputeRelativeChangeOfNodePositions(NodePositions, NewNodePositions):
     ).max()
 
 
-def PrimitiveElasticGraphEmbedment(
+def PrimitiveElasticGraphEmbedmentv1(
     X,
     NodePositions,
     ElasticMatrix,
@@ -529,6 +529,172 @@ def PrimitiveElasticGraphEmbedment(
         partition = np.concatenate((FixedNodesPart, partition))
         if not (verbose or Mode == 2):
             dists = np.concatenate((FixedNodesDists, dists))
+
+    if (FinalEnergy != "Base") or (not (verbose) and (Mode != 2)):
+        if FinalEnergy == "Base":
+            ElasticEnergy, MSE, EP, RP = ComputePrimitiveGraphElasticEnergy(
+                NewNodePositions, ElasticMatrix, dists
+            )
+
+        elif FinalEnergy == "Penalized":
+            ElasticEnergy, MSE, EP, RP = ComputePenalizedPrimitiveGraphElasticEnergy(
+                NewNodePositions, ElasticMatrix, dists, alpha, beta
+            )
+
+    EmbeddedNodePositions = NewNodePositions
+    return EmbeddedNodePositions, ElasticEnergy, partition, dists, MSE, EP, RP
+
+
+def PrimitiveElasticGraphEmbedment(
+    X,
+    NodePositions,
+    ElasticMatrix,
+    MaxNumberOfIterations=10,
+    eps=0.01,
+    Mode=1,
+    FinalEnergy="Base",
+    alpha=0,
+    beta=0,
+    prob=1,
+    DisplayWarnings=True,
+    PointWeights=None,
+    MaxBlockSize=100000000,
+    verbose=False,
+    TrimmingRadius=float("inf"),
+    SquaredX=None,
+    FixNodesAtPoints=None,
+):
+
+    """
+    #' Function fitting a primitive elastic graph to the data
+    #'
+    #' @param X is n-by-m matrix containing the positions of the n points in the m-dimensional space
+    #' @param NodePositions is k-by-m matrix of positions of the graph nodes in the same space as X
+    #' @param ElasticMatrix is a k-by-k symmetric matrix describing the connectivity and the elastic
+    #' properties of the graph. Star elasticities (mu coefficients) are along the main diagonal
+    #' (non-zero entries only for star centers), and the edge elasticity moduli are at non-diagonal elements.
+    #' @param MaxNumberOfIterations is an integer number indicating the maximum number of iterations for the EM algorithm
+    #' @param TrimmingRadius is a real value indicating the trimming radius, a parameter required for robust principal graphs
+    #' (see https://github.com/auranic/Elastic-principal-graphs/wiki/Robust-principal-graphs)
+    #' @param eps a real number indicating the minimal relative change in the nodenpositions
+    #' to be considered the graph embedded (convergence criteria)
+    #' @param verbose is a boolean indicating whether diagnostig informations should be plotted
+    #' @param Mode integer, the energy mode. It can be 1 (difference is computed using the position of the nodes) and
+    #' 2 (difference is computed using the changes in elestic energy of the configuraztions)
+    #' @param SquaredX the sum (by node) of X squared. It not specified, it will be calculated by the fucntion
+    #' @param FastSolve boolean, shuold the Fastsolve of Armadillo by enabled?
+    #' @param DisplayWarnings boolean, should warning about convergence be displayed? 
+    #' @param FinalEnergy string indicating the final elastic emergy associated with the configuration. Currently it can be "Base" or "Penalized"
+    #' @param alpha positive numeric, the value of the alpha parameter of the penalized elastic energy
+    #' @param beta positive numeric, the value of the beta parameter of the penalized elastic energy
+    #' @param prob numeric between 0 and 1. If less than 1 point will be sampled at each iteration. Prob indicate the probability of
+    #' using each points. This is an *experimental* feature, which may helps speeding up the computation if a large number of points is present.
+    #'
+    #' @return
+    #' @export
+    #'
+    #' @examples
+    """
+
+    if prob < 1:
+        raise ValueError("probPoint < 1 option not implemented yet")
+
+    N = X.shape[0]
+
+    if PointWeights is None:
+        PointWeights = np.ones((N, 1))
+    # Auxiliary computations
+    SpringLaplacianMatrix = ComputeSpringLaplacianMatrix(ElasticMatrix)
+    if SquaredX is None:
+        SquaredX = (X ** 2).sum(axis=1).reshape((N, 1))
+
+    if FixNodesAtPoints is not None:
+        # define fixed dists, fixed partition, fixed nodesp
+        FixedNodePositions = NodePositions[: len(FixNodesAtPoints)].copy()
+
+    # Main iterative EM cycle: partition, fit given the partition, repeat
+    partition, dists = PartitionData(
+        X, NodePositions, MaxBlockSize, SquaredX, TrimmingRadius,
+    )
+
+    if verbose or Mode == 2:
+        OldElasticEnergy, MSE, EP, RP = ComputePrimitiveGraphElasticEnergy(
+            NodePositions, ElasticMatrix, dists
+        )
+
+    ElasticEnergy = 0
+    for i in range(MaxNumberOfIterations):
+        # Updated positions
+
+        NewNodePositions = FitGraph2DataGivenPartition(
+            X, PointWeights, SpringLaplacianMatrix, partition,
+        )
+
+        if FixNodesAtPoints is not None:
+            NewNodePositions[: len(FixNodesAtPoints)] = FixedNodePositions
+
+        # Look at differences
+        if verbose or Mode == 2:
+            ElasticEnergy, MSE, EP, RP = ComputePrimitiveGraphElasticEnergy(
+                NewNodePositions, ElasticMatrix, dists
+            )
+
+        if Mode == 1:
+            diff = ComputeRelativeChangeOfNodePositions(NodePositions, NewNodePositions)
+        elif Mode == 2:
+            diff = (OldElasticEnergy - ElasticEnergy) / ElasticEnergy
+
+        # Print Info
+        if verbose:
+            print(
+                "Iteration ",
+                (i + 1),
+                " difference of node position=",
+                np.around(diff, 5),
+                ", Energy=",
+                np.around(ElasticEnergy, 5),
+                ", MSE=",
+                np.around(MSE, 5),
+                ", EP=",
+                np.around(EP, 5),
+                ", RP=",
+                np.around(RP, 5),
+            )
+
+        # Have we converged?
+        if not np.isfinite(diff):
+            diff = 0
+
+        if diff < eps:
+            break
+
+        elif i < MaxNumberOfIterations - 1:
+            partition, dists = PartitionData(
+                X, NewNodePositions, MaxBlockSize, SquaredX, TrimmingRadius,
+            )
+
+            NodePositions = NewNodePositions
+            OldElasticEnergy = ElasticEnergy
+
+    if DisplayWarnings and not (diff < eps):
+        print(
+            "Maximum number of iterations (",
+            MaxNumberOfIterations,
+            ") has been reached. diff = ",
+            diff,
+        )
+
+    # If we
+    # 1) Didn't use use energy during the embedment
+    # 2) Didn't compute energy step by step due to verbose being false
+    # or
+    # 3) FinalEnergy != "Penalized"
+
+    # if FixNodesAtPoints is not None:
+    #    partition[partition >= 0] += len(FixNodesAtPoints)
+    #    partition = np.concatenate((FixedNodesPart, partition))
+    #    if not (verbose or Mode == 2):
+    #        dists = np.concatenate((FixedNodesDists, dists))
 
     if (FinalEnergy != "Base") or (not (verbose) and (Mode != 2)):
         if FinalEnergy == "Base":

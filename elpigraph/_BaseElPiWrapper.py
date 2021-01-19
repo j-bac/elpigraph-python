@@ -266,7 +266,7 @@ def computeElasticPrincipalGraphWithGrammars(
                         )
 
                 # Set the initial edge configuration
-                InitEdges = InitialConf["Edges"]
+                InitEdges = InitialConf["Edges"].copy()
 
                 if FixNodesAtPoints is not None:
                     AddEdges = np.vstack(
@@ -283,6 +283,9 @@ def computeElasticPrincipalGraphWithGrammars(
                 ElasticMatrix = Encode2ElasticMatrix(
                     Edges=InitEdges, Lambdas=Lambda, Mus=Mu
                 )
+                InitialElasticMatrix = Encode2ElasticMatrix(
+                    Edges=InitialConf["Edges"], Lambdas=Lambda, Mus=Mu
+                )
                 # Compute the initial node position
                 if GPU:
                     InitNodePositions = PrimitiveElasticGraphEmbedment_cp(
@@ -291,7 +294,7 @@ def computeElasticPrincipalGraphWithGrammars(
                         MaxNumberOfIterations=MaxNumberOfIterations,
                         TrimmingRadius=TrimmingRadius,
                         eps=eps,
-                        ElasticMatrix=ElasticMatrix,
+                        ElasticMatrix=InitialElasticMatrix,
                         Mode=Mode,
                         Xcp=Xcp,
                         SquaredXcp=SquaredXcp,
@@ -304,9 +307,10 @@ def computeElasticPrincipalGraphWithGrammars(
                         MaxNumberOfIterations=MaxNumberOfIterations,
                         TrimmingRadius=TrimmingRadius,
                         eps=eps,
-                        ElasticMatrix=ElasticMatrix,
+                        ElasticMatrix=InitialElasticMatrix,
                         Mode=Mode,
                         SquaredX=SquaredX,
+                        FixNodesAtPoints=None,
                     )[0]
 
             # Do we need to compute AdjustVect?
