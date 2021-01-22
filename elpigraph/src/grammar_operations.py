@@ -6,7 +6,6 @@ from .core import (
     PartitionData_cp,
     PrimitiveElasticGraphEmbedment,
     PrimitiveElasticGraphEmbedment_cp,
-    PrimitiveElasticGraphEmbedment2,
     DecodeElasticMatrix2,
 )
 from .._EMAdjustment import AdjustByConstant

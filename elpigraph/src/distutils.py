@@ -241,3 +241,47 @@ def FitGraph2DataGivenPartition(X, PointWeights, SpringLaplacianMatrix, partitio
         SLAUMatrix, NodeClusterRelativeSize * NodeClusterCenters
     )
     return NewNodePositions
+
+
+def FitSubGraph2DataGivenPartition(
+    move_X,
+    move_PointWeights,
+    SpringLaplacianMatrix,
+    NodePositions,
+    move_partition,
+    move_nodes_idx,
+):
+    """
+    Fits moving Subpart of the graph to data while constraining some nodes to remain fixed
+    """
+
+    # params
+    NumberOfNodes = len(NodePositions)
+    NumberOfNodesToFit = len(move_nodes_idx)
+    fixed_nodes_idx = list(set(range(NumberOfNodes)) - set(move_nodes_idx))
+    # new node positions
+    NewNodePositions = np.zeros(NodePositions.shape)
+
+    # weighted average of moving nodes
+    (move_NodeClusterCenters, move_NodeClusterRelativeSize,) = ComputeWeightedAverage(
+        move_X, move_partition, move_PointWeights, NumberOfNodesToFit
+    )
+
+    # SLAUMatrices
+    rs = np.zeros((NumberOfNodes))
+    rs[move_nodes_idx] = move_NodeClusterRelativeSize.flatten()
+    SLAUMatrix = np.diag(rs) + SpringLaplacianMatrix
+    move_SLAUMatrix = SLAUMatrix[move_nodes_idx][:, move_nodes_idx]
+    fixed_SLAUMatrix = SLAUMatrix[move_nodes_idx][:, fixed_nodes_idx]
+
+    # Fit
+    RightHandSide = move_NodeClusterRelativeSize * move_NodeClusterCenters
+    rhs1 = NodePositions[fixed_nodes_idx]
+    RightHandSide -= np.dot(fixed_SLAUMatrix, rhs1)
+    move_NewNodePositions = np.linalg.solve(move_SLAUMatrix, RightHandSide)
+
+    # Store
+    NewNodePositions[fixed_nodes_idx, :] = NodePositions[fixed_nodes_idx, :]
+    NewNodePositions[move_nodes_idx, :] = move_NewNodePositions
+
+    return NewNodePositions
