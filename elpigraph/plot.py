@@ -1229,7 +1229,7 @@ def draw_pie(ax, ratios, colors, X=0, Y=0, size=1000):
 
 
 def PlotPG(
-    X, PG, X_color="r", Do_PCA=True, DimToPlot=[0, 1],
+    X, PG, X_color="r", Node_color="k", Do_PCA=True, DimToPlot=[0, 1],
 ):
 
     if Do_PCA:
@@ -1249,14 +1249,12 @@ def PlotPG(
     f, ax = plt.subplots(1, 1)
 
     # scatter data
-    if X_color is None:
-        X_color = "r"
     ax.scatter(
         BaseData[:, DimToPlot[0]], BaseData[:, DimToPlot[1]], c=X_color, alpha=0.15
     )
 
     # scatter nodes
-    ax.scatter(nodesp[:, DimToPlot[0]], nodesp[:, DimToPlot[1]], c="k", s=24)
+    ax.scatter(nodesp[:, DimToPlot[0]], nodesp[:, DimToPlot[1]], c=Node_color, s=24)
 
     Edges = PG["Edges"][0].T
 

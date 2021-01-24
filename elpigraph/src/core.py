@@ -401,26 +401,16 @@ def PrimitiveElasticGraphEmbedment(
     SpringLaplacianMatrix = ComputeSpringLaplacianMatrix(ElasticMatrix)
 
     if FixNodesAtPoints is not None:
+        # -----Index data and graph into moving nodes and fixed nodes------#
         flat_FixNodesAtPoints = [
             item for sublist in FixNodesAtPoints for item in sublist
         ]  # fixed datapoints
 
-        # FixedNodesDists = np.concatenate(
-        #    [
-        #        PartitionData(
-        #            X[idx_points],
-        #            NodePositions[i],
-        #            SquaredX=SquaredX[idx_points],
-        #            MaxBlockSize=1000000,
-        #        )[1]
-        #        for i, idx_points in enumerate(FixNodesAtPoints)
-        #    ]
+        # partition, dists = PartitionData(
+        #    X, NodePositions, MaxBlockSize, SquaredX, TrimmingRadius,
         # )
-        # FixedNodesPart = np.zeros(FixedNodesDists.shape, dtype=int)
-        # for i, idx_points in enumerate(FixNodesAtPoints):
-        #    FixedNodesPart[idx_points] = i
+        # move_data_idx = np.where(~np.isin(partition, range(len(FixNodesAtPoints))))[0]
 
-        # -----Index data and graph into moving nodes and fixed nodes------#
         move_data_idx = [i for i in range(len(X)) if i not in flat_FixNodesAtPoints]
         move_nodes_idx = np.arange(len(FixNodesAtPoints), len(NodePositions))
     else:

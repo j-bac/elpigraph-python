@@ -117,14 +117,14 @@ def GetSubGraph(Net, Structure, Nodes=None, Circular=True, KeepEnds=True):
                     )
                 )
 
-            Valid = (
+            Valid = np.where(
                 np.array(
                     list(map(lambda x: np.sum(np.array(Net.degree(x)) != 2), AllPaths))
                 )
                 == 2
-            )
+            )[0]
 
-            AllPaths = list(np.array(AllPaths)[Valid])
+            AllPaths = [AllPaths[i] for i in Valid]
 
             if not KeepEnds:
                 AllPaths = list(map(lambda x: set(x).difference(BrPoints), AllPaths))
