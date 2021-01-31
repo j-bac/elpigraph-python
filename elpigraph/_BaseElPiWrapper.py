@@ -68,7 +68,9 @@ def computeElasticPrincipalGraphWithGrammars(
     DisplayWarnings=True,
     StoreGraphEvolution=False,
     GPU=False,
-    FixNodesAtPoints=None,
+    FixNodesAtPoints=[],
+    pseudotime=None,
+    pseudotimeLambda=0.01,
 ):
 
     """
@@ -268,7 +270,7 @@ def computeElasticPrincipalGraphWithGrammars(
                 # Set the initial edge configuration
                 InitEdges = InitialConf["Edges"].copy()
 
-                if FixNodesAtPoints is not None:
+                if FixNodesAtPoints != []:
                     AddEdges = np.vstack(
                         (
                             np.arange(len(FixNodesAtPoints)),
@@ -310,12 +312,12 @@ def computeElasticPrincipalGraphWithGrammars(
                         ElasticMatrix=InitialElasticMatrix,
                         Mode=Mode,
                         SquaredX=SquaredX,
-                        FixNodesAtPoints=None,
+                        FixNodesAtPoints=[],
                     )[0]
 
             # Do we need to compute AdjustVect?
             if AdjustVect is None:
-                if FixNodesAtPoints is not None:
+                if FixNodesAtPoints != []:
                     AdjustVect = [False] * (
                         len(InitNodePositions) + len(FixNodesAtPoints)
                     )
@@ -387,6 +389,8 @@ def computeElasticPrincipalGraphWithGrammars(
                     StoreGraphEvolution=StoreGraphEvolution,
                     GPU=GPU,
                     FixNodesAtPoints=FixNodesAtPoints,
+                    pseudotime=pseudotime,
+                    pseudotimeLambda=pseudotimeLambda,
                 )
             )
 
@@ -423,7 +427,7 @@ def computeElasticPrincipalGraphWithGrammars(
 
             # Set the initial edge configuration
             InitEdges = InitialConf["Edges"]
-            if FixNodesAtPoints is not None:
+            if FixNodesAtPoints != []:
                 AddEdges = np.vstack(
                     (
                         np.arange(len(FixNodesAtPoints)),
@@ -503,6 +507,8 @@ def computeElasticPrincipalGraphWithGrammars(
                 StoreGraphEvolution=StoreGraphEvolution,
                 GPU=GPU,
                 FixNodesAtPoints=FixNodesAtPoints,
+                pseudotime=pseudotime,
+                pseudotimeLambda=pseudotimeLambda,
             )
         )
 

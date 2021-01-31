@@ -67,7 +67,9 @@ def ElPrincGraph(
     DisplayWarnings=False,
     StoreGraphEvolution=False,
     GPU=False,
-    FixNodesAtPoints=None,
+    FixNodesAtPoints=[],
+    pseudotime=None,
+    pseudotimeLambda=0.01,
 ):
     """
     #' Core function to construct a principal elastic graph
@@ -263,6 +265,9 @@ def ElPrincGraph(
     start = time.time()
     times = {}
 
+    AllMeanPseudotime = {}
+    AllMergedElasticMatrices = {}
+    AllMergedNodePositions = {}
     AllNodePositions = {}
     AllElasticMatrices = {}
 
@@ -316,6 +321,8 @@ def ElPrincGraph(
                         Xcp=Xcp,
                         SquaredXcp=SquaredXcp,
                         FixNodesAtPoints=FixNodesAtPoints,
+                        pseudotime=pseudotime,
+                        pseudotimeLambda=pseudotimeLambda,
                     )
 
                     if UpdatedPG == "failed operation":
@@ -375,6 +382,8 @@ def ElPrincGraph(
                         Xcp=Xcp,
                         SquaredXcp=SquaredXcp,
                         FixNodesAtPoints=FixNodesAtPoints,
+                        pseudotime=pseudotime,
+                        pseudotimeLambda=pseudotimeLambda,
                     )
 
                     if UpdatedPG == "failed operation":
@@ -438,6 +447,15 @@ def ElPrincGraph(
             ]
             AllElasticMatrices[UpdatedPG["NodePositions"].shape[0]] = UpdatedPG[
                 "ElasticMatrix"
+            ]
+            AllMeanPseudotime[UpdatedPG["NodePositions"].shape[0]] = UpdatedPG[
+                "StoreMeanPseudotime"
+            ]
+            AllMergedElasticMatrices[UpdatedPG["NodePositions"].shape[0]] = UpdatedPG[
+                "StoreMergedElasticMatrix"
+            ]
+            AllMergedNodePositions[UpdatedPG["NodePositions"].shape[0]] = UpdatedPG[
+                "StoreMergedNodePositions"
             ]
 
     if not verbose:
@@ -505,6 +523,9 @@ def ElPrincGraph(
         times=times,
         AllNodePositions=AllNodePositions,
         AllElasticMatrices=AllElasticMatrices,
+        AllMeanPseudotime=AllMeanPseudotime,
+        AllMergedElasticMatrices=AllMergedElasticMatrices,
+        AllMergedNodePositions=AllMergedNodePositions,
     )
 
 
@@ -553,7 +574,9 @@ def computeElasticPrincipalGraph(
     DisplayWarnings=False,
     StoreGraphEvolution=False,
     GPU=False,
-    FixNodesAtPoints=None,
+    FixNodesAtPoints=[],
+    pseudotime=None,
+    pseudotimeLambda=0.01,
 ):
 
     """
@@ -727,7 +750,7 @@ def computeElasticPrincipalGraph(
     if Mu_Initial is None:
         Mu_Initial = Mu
 
-    if FixNodesAtPoints is not None:
+    if FixNodesAtPoints != []:
         flat_FixNodesAtPoints = [
             item for sublist in FixNodesAtPoints for item in sublist
         ]  # fixed datapoints
@@ -804,10 +827,13 @@ def computeElasticPrincipalGraph(
         StoreGraphEvolution=StoreGraphEvolution,
         GPU=GPU,
         FixNodesAtPoints=FixNodesAtPoints,
+        pseudotime=pseudotime,
+        pseudotimeLambda=pseudotimeLambda,
     )
 
     NodePositions = ElData["NodePositions"]
     AllNodePositions = ElData["AllNodePositions"]
+    AllMergedNodePositions = ElData["AllMergedNodePositions"]
     Edges = DecodeElasticMatrix(ElData["ElasticMatrix"])
 
     # if drawEnergy and ElData['ReportTable'] is not None:
@@ -820,8 +846,12 @@ def computeElasticPrincipalGraph(
 
     if Do_PCA:
         NodePositions = NodePositions.dot(vglobal[:, ReduceDimension].T)
-        for k, nodep in AllNodePositions.items():
+        for (k, nodep), (_, allnodep) in zip(
+            AllNodePositions.items(), AllMergedNodePositions.items()
+        ):
             AllNodePositions[k] = nodep.dot(vglobal[:, ReduceDimension].T)
+            if AllMergedNodePositions[k] is not None:
+                AllMergedNodePositions[k] = allnodep.dot(vglobal[:, ReduceDimension].T)
 
     EndTimer = time.time() - t
     if verbose:
@@ -844,6 +874,9 @@ def computeElasticPrincipalGraph(
         times=ElData["times"],
         AllNodePositions=AllNodePositions,
         AllElasticMatrices=ElData["AllElasticMatrices"],
+        AllMeanPseudotime=ElData["AllMeanPseudotime"],
+        AllMergedElasticMatrices=ElData["AllMergedElasticMatrices"],
+        AllMergedNodePositions=AllMergedNodePositions,
     )
 
     # if drawPCAView:
@@ -851,7 +884,11 @@ def computeElasticPrincipalGraph(
 
     if Do_PCA or CenterData:
         FinalPG["NodePositions"] = NodePositions + DataCenters
-        for k, nodep in FinalPG["AllNodePositions"].items():
+        for (k, nodep), (_, allnodep) in zip(
+            FinalPG["AllNodePositions"].items(),
+            FinalPG["AllMergedNodePositions"].items(),
+        ):
             FinalPG["AllNodePositions"][k] = nodep + DataCenters
-
+            if FinalPG["AllMergedNodePositions"][k] is not None:
+                FinalPG["AllMergedNodePositions"][k] = allnodep + DataCenters
     return FinalPG

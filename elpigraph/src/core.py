@@ -400,7 +400,7 @@ def PrimitiveElasticGraphEmbedment(
         SquaredX = (X ** 2).sum(axis=1).reshape((N, 1))
     SpringLaplacianMatrix = ComputeSpringLaplacianMatrix(ElasticMatrix)
 
-    if FixNodesAtPoints is not None:
+    if FixNodesAtPoints != []:
         # -----Index data and graph into moving nodes and fixed nodes------#
         flat_FixNodesAtPoints = [
             item for sublist in FixNodesAtPoints for item in sublist
@@ -431,7 +431,7 @@ def PrimitiveElasticGraphEmbedment(
     )
 
     if verbose or Mode == 2:
-        # if FixNodesAtPoints is not None:
+        # if FixNodesAtPoints != []:
         #    dists = np.concatenate((FixedNodesDists, move_dists))
         OldElasticEnergy, MSE, EP, RP = ComputePrimitiveGraphElasticEnergy(
             NodePositions, ElasticMatrix, move_dists
@@ -440,7 +440,7 @@ def PrimitiveElasticGraphEmbedment(
     ElasticEnergy = 0
     for i in range(MaxNumberOfIterations):
         # Updated positions
-        if FixNodesAtPoints is not None:
+        if FixNodesAtPoints != []:
             NewNodePositions = FitSubGraph2DataGivenPartition(
                 move_X,
                 move_PointWeights,
@@ -456,7 +456,7 @@ def PrimitiveElasticGraphEmbedment(
 
         # Look at differences
         if verbose or Mode == 2:
-            # if FixNodesAtPoints is not None:
+            # if FixNodesAtPoints != []:
             #    dists = np.concatenate((FixedNodesDists, move_dists))
             ElasticEnergy, MSE, EP, RP = ComputePrimitiveGraphElasticEnergy(
                 NewNodePositions, ElasticMatrix, move_dists
@@ -513,13 +513,13 @@ def PrimitiveElasticGraphEmbedment(
     # or
     # 3) FinalEnergy != "Penalized"
 
-    if FixNodesAtPoints is not None:
+    if FixNodesAtPoints != []:
         partition, dists = PartitionData(
             X, NewNodePositions, MaxBlockSize, SquaredX, TrimmingRadius,
         )
     else:
         partition, dists = move_partition, move_dists
-    # if FixNodesAtPoints is not None:
+    # if FixNodesAtPoints != []:
     #    move_partition[move_partition >= 0] += len(FixNodesAtPoints)
     #    partition = np.concatenate((FixedNodesPart, move_partition))
     #    dists = np.concatenate((FixedNodesDists, move_dists))

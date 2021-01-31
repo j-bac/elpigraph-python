@@ -6,11 +6,12 @@ from .core import (
     PartitionData,
     # PartitionData_cp,
     Encode2ElasticMatrix,
+    DecodeElasticMatrix,
 )
 
 # -----extract oriented branches and associated data
 def bf_search(dict_branches, root_node):
-    """ breadth-first tree search """
+    """ breadth-first tree search: returns edges and nodes ordering for dict_branches given root_node"""
     flat_tree = nx.Graph()
     flat_tree.add_nodes_from(
         list(set(itertools.chain.from_iterable(dict_branches.keys())))
@@ -21,7 +22,20 @@ def bf_search(dict_branches, root_node):
     return edges, nodes
 
 
+def get_circle_or_curve(Edges, root_node):
+    """Given root node, decompose Edges into graph relations: circle or curve version """
+    # ----find ordered relations from root node (for the single "branch")
+    _dict_branches = {tuple(x): None for x in Edges}
+    ordered_edges, ordered_nodes = bf_search(_dict_branches, root_node)
+    dict_branches_single_end = {(ordered_nodes[0], ordered_nodes[-1]): ordered_nodes}
+    return dict_branches_single_end
+
+
 def get_tree(Edges, root_node):
+    """Given root node, decompose Edges into graph relations: 
+    - tree parent-children relations
+    - branches with (repeating) endpoints, 
+    - partitioning of nodes into branches ('single-ended')"""
     # ----get branches
     net = ConstructGraph({"Edges": [Edges]})
     branches = GetSubGraph(net, "branches")
@@ -67,27 +81,39 @@ def get_tree(Edges, root_node):
     return dict_tree, dict_branches, dict_branches_single_end
 
 
-def partition_data_by_branch(X, NodePositions, branches):
-    partition, dists = PartitionData(
-        X, NodePositions, 10 ** 8, np.sum(X ** 2, axis=1, keepdims=1)
-    )
+def partition_data_by_branch(X, SquaredX, NodePositions, branches):
+    """Partition data into each branch """
+    partition, dists = PartitionData(X, NodePositions, 10 ** 8, SquaredX)
     branches_dataidx = {k: np.isin(partition[:, 0], b) for k, b in branches.items()}
     return branches_dataidx
 
 
 # ------generate pseudotime centroid branches
 def nNodes_pseudotime(bX, bpseudotime, bnNodes):
-    blocksize = int(len(bX) / bnNodes)
-    argsort_pseudotime = np.argsort(pseudotime)
+    """"
+    Argsorts pseudotime and create nNodes bins 
+    with even number of points  but potentially uneven amount of pseudotime
+    """
+    argsort_pseudotime = np.argsort(bpseudotime)
     PseudotimeNodePositions = np.zeros((bnNodes, bX.shape[1]))
-    for idx_curve, idx_data in enumerate(np.arange(0, len(bX), blocksize)):
-        PseudotimeNodePositions[idx_curve] = bX[
-            argsort_pseudotime[idx_data : idx_data + blocksize]
+    MeanPseudotime = np.zeros(bnNodes)
+    idx_data = np.linspace(0, len(bX), bnNodes + 1, dtype=int)
+    for i in range(bnNodes):
+        PseudotimeNodePositions[i] = bX[
+            argsort_pseudotime[idx_data[i] : idx_data[i + 1]]
         ].mean(axis=0)
-    return PseudotimeNodePositions
+        MeanPseudotime[i] = bpseudotime[
+            argsort_pseudotime[idx_data[i] : idx_data[i + 1]]
+        ].mean()
+
+    return PseudotimeNodePositions, MeanPseudotime
 
 
 def bin_pseudotime(bX, bpseudotime, bnNodes):
+    """"
+    Argsorts pseudotime and create nNodes bins 
+    with even amounts of pseudotime but potentially uneven number of points
+    """
     # create nodes with uniformly spread pseudotime
     count, bins = np.histogram(bpseudotime, bins=bnNodes)
     clusters = np.digitize(bpseudotime, bins[1:], right=True)
@@ -128,7 +154,7 @@ def gen_pseudotime_centroids(X, pseudotime, branches_single_end, branches_dataid
 
 
 # ------for each branch, create elastic edges between pseudotime nodes & elpigraph nodes and merge pseudotime and elpigraph nodesp, elasticmatrix
-def pseudotime_augmented_graph(
+def augment_graph(
     NodePositions,
     Edges,
     PseudotimeNodePositions,
@@ -167,5 +193,52 @@ def pseudotime_augmented_graph(
         MergedEdges,
         MergedLambdas,
         MergedMus,
+    )
+
+
+def gen_pseudotime_augmented_graph(
+    X, SquaredX, NodePositions, ElasticMatrix, pseudotime, root_node, LinkMu, LinkLambda
+):
+    # ------extract oriented branches and associated data
+    Edges, Lambdas, Mus = DecodeElasticMatrix(ElasticMatrix)
+
+    # handle edge case: circle or curve topology
+    if np.bincount(Edges.flat).max() == 2:
+        print("WARNING: fitting circle or curve topology")
+        branches_single_end = get_circle_or_curve(Edges, root_node)
+    else:
+        tree, branches, branches_single_end = get_tree(Edges, root_node)
+    branches_dataidx = partition_data_by_branch(
+        X, SquaredX, NodePositions, branches_single_end
+    )
+
+    # ------generate pseudotime centroid branches
+    PseudotimeNodePositions, MeanPseudotime = gen_pseudotime_centroids(
+        X, pseudotime, branches_single_end, branches_dataidx
+    )
+
+    # ------for each branch, create elastic edges between pseudotime nodes & elpigraph nodes and merge pseudotime and elpigraph nodesp, elasticmatrix
+    (
+        MergedNodePositions,
+        MergedElasticMatrix,
+        MergedEdges,
+        MergedLambdas,
+        MergedMus,
+    ) = augment_graph(
+        NodePositions,
+        Edges,
+        PseudotimeNodePositions,
+        branches_single_end,
+        Mus,
+        Lambdas,
+        LinkMu,
+        LinkLambda,
+    )
+    return (
+        MeanPseudotime,
+        MergedNodePositions,
+        MergedElasticMatrix,
+        MergedEdges,
+        len(PseudotimeNodePositions),
     )
 

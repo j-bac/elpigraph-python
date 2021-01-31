@@ -57,7 +57,9 @@ def computeElasticPrincipalCircle(
     DisplayWarnings=False,
     StoreGraphEvolution=False,
     GPU=False,
-    FixNodesAtPoints=None,
+    FixNodesAtPoints=[],
+    pseudotime=None,
+    pseudotimeLambda=0.01,
 ):
 
     """
@@ -213,6 +215,8 @@ def computeElasticPrincipalCircle(
         StoreGraphEvolution=StoreGraphEvolution,
         GPU=GPU,
         FixNodesAtPoints=FixNodesAtPoints,
+        pseudotime=pseudotime,
+        pseudotimeLambda=pseudotimeLambda,
     )
 
 
@@ -269,7 +273,9 @@ def computeElasticPrincipalTree(
     DisplayWarnings=False,
     StoreGraphEvolution=False,
     GPU=False,
-    FixNodesAtPoints=None,
+    FixNodesAtPoints=[],
+    pseudotime=None,
+    pseudotimeLambda=0.01,
 ):
     """
     #' Construct a principal elastic tree
@@ -420,6 +426,8 @@ def computeElasticPrincipalTree(
         StoreGraphEvolution=StoreGraphEvolution,
         GPU=GPU,
         FixNodesAtPoints=FixNodesAtPoints,
+        pseudotime=pseudotime,
+        pseudotimeLambda=pseudotimeLambda,
     )
 
 
@@ -476,7 +484,9 @@ def computeElasticPrincipalCurve(
     DisplayWarnings=False,
     StoreGraphEvolution=False,
     GPU=False,
-    FixNodesAtPoints=None,
+    FixNodesAtPoints=[],
+    pseudotime=None,
+    pseudotimeLambda=0.01,
 ):
 
     """ 
@@ -626,6 +636,8 @@ def computeElasticPrincipalCurve(
         StoreGraphEvolution=StoreGraphEvolution,
         GPU=GPU,
         FixNodesAtPoints=FixNodesAtPoints,
+        pseudotime=pseudotime,
+        pseudotimeLambda=pseudotimeLambda,
     )
 
 
@@ -682,7 +694,8 @@ def fineTuneBR(
     DisplayWarnings=False,
     StoreGraphEvolution=False,
     GPU=False,
-    FixNodesAtPoints=None,
+    FixNodesAtPoints=[],
+    pseudotime=None,
 ):
 
     """
@@ -844,6 +857,7 @@ def fineTuneBR(
         StoreGraphEvolution=StoreGraphEvolution,
         GPU=GPU,
         FixNodesAtPoints=FixNodesAtPoints,
+        pseudotime=pseudotime,
     )
 
 
@@ -1060,7 +1074,7 @@ def generateInitialConfiguration(
     PCADensity=True,
     CenterDataDensity=True,
     verbose=False,
-    FixNodesAtPoints=None,
+    FixNodesAtPoints=[],
 ):
     """  
     #' Produce an initial graph with a given structure

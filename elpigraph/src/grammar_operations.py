@@ -8,6 +8,7 @@ from .core import (
     PrimitiveElasticGraphEmbedment_cp,
     DecodeElasticMatrix2,
 )
+from .supervised import gen_pseudotime_augmented_graph
 from .._EMAdjustment import AdjustByConstant
 from . import grammar_operations2
 
@@ -95,7 +96,7 @@ def proxy_cp(Dict):
 
 
 def GraphGrammarOperation(
-    X, NodePositions, ElasticMatrix, AdjustVect, Type, partition, FixNodesAtPoints=None
+    X, NodePositions, ElasticMatrix, AdjustVect, Type, partition, FixNodesAtPoints=[]
 ):
     if Type == "addnode2node":
         return AddNode2Node(
@@ -197,7 +198,7 @@ def AddNode2Node(
     else:
         idx_nodes = np.array(range(nNodes))
 
-    if FixNodesAtPoints is not None:
+    if FixNodesAtPoints != []:
         idx_nodes = idx_nodes[~np.isin(idx_nodes, np.arange(len(FixNodesAtPoints)))]
 
     # Put prototypes to corresponding places
@@ -317,7 +318,7 @@ def RemoveNode(NodePositions, ElasticMatrix, AdjustVect, FixNodesAtPoints):
 
     # Define sizes
     nNodes = ElasticMatrix.shape[0]
-    if FixNodesAtPoints is not None:
+    if FixNodesAtPoints != []:
         nGraphs = (Connectivities == 1).sum() - len(FixNodesAtPoints)
         start = len(FixNodesAtPoints)
     else:
@@ -445,7 +446,9 @@ def ApplyOptimalGraphGrammarOperation(
     multiproc_shared_variables=None,
     Xcp=None,
     SquaredXcp=None,
-    FixNodesAtPoints=None,
+    FixNodesAtPoints=[],
+    pseudotime=None,
+    pseudotimeLambda=0.01,
 ):
 
     """
@@ -724,6 +727,30 @@ def ApplyOptimalGraphGrammarOperation(
         if Xcp is None:
             for i in Valid_configurations:
                 # TODO add pointweights ?
+                if pseudotime is not None and len(NodePositions) > 6:
+                    (
+                        MeanPseudotime,
+                        MergedNodePositions,
+                        MergedElasticMatrix,
+                        MergedEdges,
+                        nPseudoNodes,
+                    ) = gen_pseudotime_augmented_graph(
+                        X,
+                        SquaredX,
+                        NodePositionsArrayAll[i],
+                        ElasticMatricesAll[i],
+                        pseudotime,
+                        root_node=0,
+                        LinkMu=0,
+                        LinkLambda=pseudotimeLambda,
+                    )
+
+                    FitNodePositions = MergedNodePositions
+                    FitElasticMatrix = MergedElasticMatrix
+                else:
+                    FitNodePositions = NodePositionsArrayAll[i]
+                    FitElasticMatrix = ElasticMatricesAll[i]
+                    nPseudoNodes = 0
                 (
                     nodep,
                     ElasticEnergy,
@@ -734,8 +761,8 @@ def ApplyOptimalGraphGrammarOperation(
                     rp,
                 ) = PrimitiveElasticGraphEmbedment(
                     X,
-                    NodePositionsArrayAll[i],
-                    ElasticMatricesAll[i],
+                    FitNodePositions,
+                    FitElasticMatrix,
                     MaxNumberOfIterations,
                     eps,
                     Mode=Mode,
@@ -749,11 +776,21 @@ def ApplyOptimalGraphGrammarOperation(
                     verbose=False,
                     TrimmingRadius=TrimmingRadius,
                     SquaredX=SquaredX,
-                    FixNodesAtPoints=FixNodesAtPoints,
+                    FixNodesAtPoints=[[] for i in range(nPseudoNodes)]
+                    + FixNodesAtPoints,
                 )
 
                 if ElasticEnergy < minEnergy:
-                    NewNodePositions = nodep
+                    if pseudotime is not None and len(NodePositions) > 6:
+                        StoreMeanPseudotime = MeanPseudotime
+                        StoreMergedElasticMatrix = MergedElasticMatrix
+                        StoreMergedNodePositions = nodep
+                        NewNodePositions = nodep[nPseudoNodes:]
+                    else:
+                        StoreMeanPseudotime = None
+                        StoreMergedElasticMatrix = None
+                        StoreMergedNodePositions = None
+                        NewNodePositions = nodep
                     NewElasticMatrix = ElasticMatricesAll[i]
                     partition = part
                     AdjustVect = AdjustVectAll[i]
@@ -807,6 +844,9 @@ def ApplyOptimalGraphGrammarOperation(
                     Dist = dist
 
     return dict(
+        StoreMeanPseudotime=StoreMeanPseudotime,
+        StoreMergedElasticMatrix=StoreMergedElasticMatrix,
+        StoreMergedNodePositions=StoreMergedNodePositions,
         NodePositions=NewNodePositions,
         ElasticMatrix=NewElasticMatrix,
         ElasticEnergy=minEnergy,
