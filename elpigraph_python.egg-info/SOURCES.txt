@@ -48,6 +48,7 @@ elpigraph/src/grammar_operations.py
 elpigraph/src/grammar_operations2.py
 elpigraph/src/graphs.py
 elpigraph/src/reporting.py
+elpigraph/src/supervised.py
 elpigraph/src/synthetic.py
 elpigraph/tests/__init__.py
 elpigraph/tests/test_all_params.py
