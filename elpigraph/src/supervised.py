@@ -114,29 +114,36 @@ def bin_pseudotime(bX, bpseudotime, bnNodes):
     Argsorts pseudotime and create nNodes bins 
     with even amounts of pseudotime but potentially uneven number of points
     """
-    # create nodes with uniformly spread pseudotime
+    # ---create nodes with uniformly spread pseudotime
     count, bins = np.histogram(bpseudotime, bins=bnNodes)
     clusters = np.digitize(bpseudotime, bins[1:], right=True)
+    # handle edge case: empty bins
+    if 0 in count:
+        return nNodes_pseudotime(bX, bpseudotime, bnNodes)
+
     PseudotimeNodePositions = np.zeros((bnNodes, bX.shape[1]))
     MeanPseudotime = np.zeros(bnNodes)
     # for each branch node
     for j in range(bnNodes):
         # index associated data
         data_idx = clusters == j
+
         # generate node
         PseudotimeNodePositions[j] = bX[data_idx].mean(axis=0)
         MeanPseudotime[j] = bpseudotime[data_idx].mean()
     return PseudotimeNodePositions, MeanPseudotime
 
 
-def gen_pseudotime_centroids(X, pseudotime, branches_single_end, branches_dataidx):
+def OLD_gen_pseudotime_centroids(X, pseudotime, branches_single_end, branches_dataidx):
     """generate pseudotime centroids for each branch of the graph"""
     for i, (k, bdata) in enumerate(
         branches_dataidx.items()
     ):  # for data associated with each branch
+
         # branch data points, data pseudotime
         bX, bpseudotime = X[bdata], pseudotime[bdata]
         bnNodes = len(branches_single_end[k])
+
         # generate node positions
         if i == 0:
             PseudotimeNodePositions, MeanPseudotime = bin_pseudotime(
@@ -151,6 +158,45 @@ def gen_pseudotime_centroids(X, pseudotime, branches_single_end, branches_dataid
             )
             MeanPseudotime = np.concatenate((MeanPseudotime, _MeanPseudotime))
     return PseudotimeNodePositions, MeanPseudotime
+
+
+def gen_pseudotime_centroids(X, pseudotime, branches_single_end, branches_dataidx):
+    """generate pseudotime centroids for each branch of the graph"""
+
+    # ignore branches with associated ndatapoints less than nNodes
+    nonempty_branches_dataidx = {}
+    nonempty_branches_single_end = {}
+    nonempty_nNodes = 0
+    for (k, bdata), bnodes in zip(
+        branches_dataidx.items(), branches_single_end.values()
+    ):
+        if len(np.where(bdata)[0]) >= len(bnodes):
+            nonempty_branches_dataidx[k] = bdata
+            nonempty_branches_single_end[k] = bnodes
+            nonempty_nNodes += len(branches_single_end[k])
+
+    PseudotimeNodePositions = np.zeros((nonempty_nNodes, X.shape[1]))
+    MeanPseudotime = np.zeros(nonempty_nNodes)
+
+    n = 0
+    for (
+        k,
+        bdata,
+    ) in nonempty_branches_dataidx.items():  # for data associated with each branch
+
+        # branch data points, pseudotime
+        bX, bpseudotime = X[bdata], pseudotime[bdata]
+        bnNodes = len(branches_single_end[k])
+
+        # generate branch ps node positions
+        (
+            PseudotimeNodePositions[n : n + bnNodes],
+            MeanPseudotime[n : n + bnNodes],
+        ) = bin_pseudotime(bX, bpseudotime, bnNodes)
+
+        n += bnNodes
+
+    return PseudotimeNodePositions, MeanPseudotime, nonempty_branches_single_end
 
 
 # ------for each branch, create elastic edges between pseudotime nodes & elpigraph nodes and merge pseudotime and elpigraph nodesp, elasticmatrix
@@ -213,9 +259,11 @@ def gen_pseudotime_augmented_graph(
     )
 
     # ------generate pseudotime centroid branches
-    PseudotimeNodePositions, MeanPseudotime = gen_pseudotime_centroids(
-        X, pseudotime, branches_single_end, branches_dataidx
-    )
+    (
+        PseudotimeNodePositions,
+        MeanPseudotime,
+        nonempty_branches_single_end,
+    ) = gen_pseudotime_centroids(X, pseudotime, branches_single_end, branches_dataidx)
 
     # ------for each branch, create elastic edges between pseudotime nodes & elpigraph nodes and merge pseudotime and elpigraph nodesp, elasticmatrix
     (
@@ -228,7 +276,7 @@ def gen_pseudotime_augmented_graph(
         NodePositions,
         Edges,
         PseudotimeNodePositions,
-        branches_single_end,
+        nonempty_branches_single_end,
         Mus,
         Lambdas,
         LinkMu,

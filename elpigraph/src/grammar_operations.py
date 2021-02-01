@@ -727,7 +727,7 @@ def ApplyOptimalGraphGrammarOperation(
         if Xcp is None:
             for i in Valid_configurations:
                 # TODO add pointweights ?
-                if pseudotime is not None and len(NodePositions) > 6:
+                if pseudotime is not None and len(NodePositions) > 10:
                     (
                         MeanPseudotime,
                         MergedNodePositions,
@@ -781,7 +781,7 @@ def ApplyOptimalGraphGrammarOperation(
                 )
 
                 if ElasticEnergy < minEnergy:
-                    if pseudotime is not None and len(NodePositions) > 6:
+                    if pseudotime is not None and len(NodePositions) > 10:
                         StoreMeanPseudotime = MeanPseudotime
                         StoreMergedElasticMatrix = MergedElasticMatrix
                         StoreMergedNodePositions = nodep
