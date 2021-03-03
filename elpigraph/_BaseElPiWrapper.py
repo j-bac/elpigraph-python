@@ -162,8 +162,8 @@ def computeElasticPrincipalGraphWithGrammars(
     # Prepare the list to be returned
     ReturnList = list()
 
-    # Copy the original matrix, this is needed in case of subsetting
-    Base_X = X.copy()
+    # Copy the original matrix, this is needed in case of subsetting (and setting float64 dtype to avoid numba compilation errors)
+    Base_X = X.astype('float64')
 
     # For each subset
     for j in range(len(Subsets)):
