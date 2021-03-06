@@ -6,9 +6,13 @@ from .core import (
     PartitionData_cp,
     PrimitiveElasticGraphEmbedment,
     PrimitiveElasticGraphEmbedment_cp,
+    PrimitiveElasticGraphBarycentricEmbedment,
     DecodeElasticMatrix2,
 )
-from .supervised import gen_pseudotime_augmented_graph
+from .supervised import (
+    gen_pseudotime_augmented_graph,
+    gen_pseudotime_augmented_graph_by_path,
+)
 from .._EMAdjustment import AdjustByConstant
 from . import grammar_operations2
 
@@ -734,7 +738,7 @@ def ApplyOptimalGraphGrammarOperation(
                         MergedElasticMatrix,
                         MergedEdges,
                         nPseudoNodes,
-                    ) = gen_pseudotime_augmented_graph(
+                    ) = gen_pseudotime_augmented_graph_by_path(
                         X,
                         SquaredX,
                         NodePositionsArrayAll[i],
@@ -743,6 +747,7 @@ def ApplyOptimalGraphGrammarOperation(
                         root_node=0,
                         LinkMu=0,
                         LinkLambda=pseudotimeLambda,
+                        TrimmingRadius=TrimmingRadius,
                     )
 
                     FitNodePositions = MergedNodePositions
@@ -803,6 +808,31 @@ def ApplyOptimalGraphGrammarOperation(
         else:
             for i in Valid_configurations:
                 # TODO add pointweights ?
+                if pseudotime is not None and len(NodePositions) > 10:
+                    (
+                        MeanPseudotime,
+                        MergedNodePositions,
+                        MergedElasticMatrix,
+                        MergedEdges,
+                        nPseudoNodes,
+                    ) = gen_pseudotime_augmented_graph_by_path(
+                        X,
+                        SquaredX,
+                        NodePositionsArrayAll[i],
+                        ElasticMatricesAll[i],
+                        pseudotime,
+                        root_node=0,
+                        LinkMu=0,
+                        LinkLambda=pseudotimeLambda,
+                        TrimmingRadius=TrimmingRadius,
+                    )
+
+                    FitNodePositions = MergedNodePositions
+                    FitElasticMatrix = MergedElasticMatrix
+                else:
+                    FitNodePositions = NodePositionsArrayAll[i]
+                    FitElasticMatrix = ElasticMatricesAll[i]
+                    nPseudoNodes = 0
                 (
                     nodep,
                     ElasticEnergy,
@@ -813,8 +843,8 @@ def ApplyOptimalGraphGrammarOperation(
                     rp,
                 ) = PrimitiveElasticGraphEmbedment_cp(
                     X,
-                    NodePositionsArrayAll[i],
-                    ElasticMatricesAll[i],
+                    FitNodePositions,
+                    FitElasticMatrix,
                     MaxNumberOfIterations,
                     eps,
                     Mode=Mode,
@@ -830,10 +860,21 @@ def ApplyOptimalGraphGrammarOperation(
                     SquaredX=SquaredX,
                     Xcp=Xcp,
                     SquaredXcp=SquaredXcp,
+                    FixNodesAtPoints=[[] for i in range(nPseudoNodes)]
+                    + FixNodesAtPoints,
                 )
 
                 if ElasticEnergy < minEnergy:
-                    NewNodePositions = nodep
+                    if pseudotime is not None and len(NodePositions) > 10:
+                        StoreMeanPseudotime = MeanPseudotime
+                        StoreMergedElasticMatrix = MergedElasticMatrix
+                        StoreMergedNodePositions = nodep
+                        NewNodePositions = nodep[nPseudoNodes:]
+                    else:
+                        StoreMeanPseudotime = None
+                        StoreMergedElasticMatrix = None
+                        StoreMergedNodePositions = None
+                        NewNodePositions = nodep
                     NewElasticMatrix = ElasticMatricesAll[i]
                     partition = part
                     AdjustVect = AdjustVectAll[i]

@@ -182,6 +182,7 @@ def ElPrincGraph(
             Mode=Mode,
             Xcp=Xcp,
             SquaredXcp=SquaredXcp,
+            FixNodesAtPoints=FixNodesAtPoints,
         )[0]
     else:
         Xcp = None
@@ -751,15 +752,37 @@ def computeElasticPrincipalGraph(
         Mu_Initial = Mu
 
     if FixNodesAtPoints != []:
+        nFixedNodes = len(FixNodesAtPoints)
+
+        # fixed datapoints
         flat_FixNodesAtPoints = [
             item for sublist in FixNodesAtPoints for item in sublist
-        ]  # fixed datapoints
+        ]
         if len(set(flat_FixNodesAtPoints)) != len(flat_FixNodesAtPoints):
             raise ValueError("FixNodesAtPoints lists contain duplicate points")
+
+        # init fixed nodes
         FixedNodePositions = np.array(
             [X[inds].mean(axis=0) for inds in FixNodesAtPoints]
-        )  # init fixed nodes
+        )
+
+        # init edges at first indices (with closest NodePosition)
+        closest_node = np.zeros(nFixedNodes, dtype=int)
+        for i, fn in enumerate(FixedNodePositions):
+            closest_node[i] = np.argmin(
+                [np.linalg.norm(fn - n) for n in InitNodePositions]
+            )
+
+        if ElasticMatrix is not None:
+            InitEdges, Lambda, Mu = DecodeElasticMatrix(ElasticMatrix)
+        AddEdges = np.vstack((np.arange(nFixedNodes), closest_node + nFixedNodes)).T
+
+        # concatenate
         InitNodePositions = np.concatenate((FixedNodePositions, InitNodePositions))
+        InitEdges = np.concatenate((AddEdges, InitEdges + nFixedNodes))
+        ElasticMatrix = Encode2ElasticMatrix(
+            Edges=InitEdges, Lambdas=Lambda_Initial, Mus=Mu_Initial
+        )
 
     if ElasticMatrix is None:
         InitElasticMatrix = Encode2ElasticMatrix(

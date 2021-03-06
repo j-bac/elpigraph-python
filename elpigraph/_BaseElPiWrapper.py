@@ -163,7 +163,7 @@ def computeElasticPrincipalGraphWithGrammars(
     ReturnList = list()
 
     # Copy the original matrix, this is needed in case of subsetting (and setting float64 dtype to avoid numba compilation errors)
-    Base_X = X.astype('float64')
+    Base_X = X.astype("float64")
 
     # For each subset
     for j in range(len(Subsets)):
@@ -268,23 +268,9 @@ def computeElasticPrincipalGraphWithGrammars(
                         )
 
                 # Set the initial edge configuration
-                InitEdges = InitialConf["Edges"].copy()
-
-                if FixNodesAtPoints != []:
-                    AddEdges = np.vstack(
-                        (
-                            np.arange(len(FixNodesAtPoints)),
-                            np.repeat(len(FixNodesAtPoints), len(FixNodesAtPoints)),
-                        )
-                    ).T
-                    InitEdges = np.concatenate(
-                        (AddEdges, InitEdges + len(FixNodesAtPoints))
-                    )
+                InitEdges = InitialConf["Edges"]
 
                 # Compute the initial elastic matrix
-                ElasticMatrix = Encode2ElasticMatrix(
-                    Edges=InitEdges, Lambdas=Lambda, Mus=Mu
-                )
                 InitialElasticMatrix = Encode2ElasticMatrix(
                     Edges=InitialConf["Edges"], Lambdas=Lambda, Mus=Mu
                 )
@@ -301,6 +287,7 @@ def computeElasticPrincipalGraphWithGrammars(
                         Xcp=Xcp,
                         SquaredXcp=SquaredXcp,
                         SquaredX=SquaredX,
+                        FixNodesAtPoints=[],
                     )[0]
                 else:
                     InitNodePositions = PrimitiveElasticGraphEmbedment(
@@ -427,16 +414,6 @@ def computeElasticPrincipalGraphWithGrammars(
 
             # Set the initial edge configuration
             InitEdges = InitialConf["Edges"]
-            if FixNodesAtPoints != []:
-                AddEdges = np.vstack(
-                    (
-                        np.arange(len(FixNodesAtPoints)),
-                        np.repeat(len(FixNodesAtPoints), len(FixNodesAtPoints)),
-                    )
-                ).T
-                InitEdges = np.concatenate(
-                    (AddEdges, InitEdges + len(FixNodesAtPoints))
-                )
             # Compute the initial elastic matrix
             EM = Encode2ElasticMatrix(Edges=InitEdges, Lambdas=Lambda, Mus=Mu)
 

@@ -81,9 +81,28 @@ def get_tree(Edges, root_node):
     return dict_tree, dict_branches, dict_branches_single_end
 
 
-def partition_data_by_branch(X, SquaredX, NodePositions, branches):
+def get_shortest_paths(Edges, root_node):
+    """ Return paths from root node to branches endpoints """
+    # ---make graph
+    net = ConstructGraph({"Edges": [Edges]})
+    degrees = net.degree()
+
+    # ---check validity of the root node
+    if degrees[root_node] > 1:
+        raise ValueError("root node has degree > 1")
+
+    # ---get paths
+    end_points = [v for v, d in enumerate(degrees) if d == 1 and v != root_node]
+    paths = net.get_shortest_paths(root_node, end_points)
+    paths = {(p[0], p[-1]): p for p in paths}
+    return paths
+
+
+def partition_data_by_branch(X, SquaredX, NodePositions, branches, TrimmingRadius):
     """Partition data into each branch """
-    partition, dists = PartitionData(X, NodePositions, 10 ** 8, SquaredX)
+    partition, dists = PartitionData(
+        X, NodePositions, 10 ** 8, SquaredX, TrimmingRadius=TrimmingRadius
+    )
     branches_dataidx = {k: np.isin(partition[:, 0], b) for k, b in branches.items()}
     return branches_dataidx
 
@@ -134,30 +153,14 @@ def bin_pseudotime(bX, bpseudotime, bnNodes):
     return PseudotimeNodePositions, MeanPseudotime
 
 
-def OLD_gen_pseudotime_centroids(X, pseudotime, branches_single_end, branches_dataidx):
-    """generate pseudotime centroids for each branch of the graph"""
-    for i, (k, bdata) in enumerate(
-        branches_dataidx.items()
-    ):  # for data associated with each branch
-
-        # branch data points, data pseudotime
-        bX, bpseudotime = X[bdata], pseudotime[bdata]
-        bnNodes = len(branches_single_end[k])
-
-        # generate node positions
-        if i == 0:
-            PseudotimeNodePositions, MeanPseudotime = bin_pseudotime(
-                bX, bpseudotime, bnNodes
-            )
-        else:
-            _PseudotimeNodePositions, _MeanPseudotime = bin_pseudotime(
-                bX, bpseudotime, bnNodes
-            )
-            PseudotimeNodePositions = np.concatenate(
-                (PseudotimeNodePositions, _PseudotimeNodePositions)
-            )
-            MeanPseudotime = np.concatenate((MeanPseudotime, _MeanPseudotime))
-    return PseudotimeNodePositions, MeanPseudotime
+def interp_bins(nodes):
+    """interpolate nodes evenly"""
+    # euclidean distances between consecutive points
+    dist = np.sqrt((np.diff(nodes, axis=0) ** 2).sum(axis=1))
+    u = np.cumsum(dist)
+    u = np.hstack([[0], u])
+    t = np.linspace(0, u.max(), len(nodes))
+    return np.array([np.interp(t, u, coord) for coord in nodes.T]).T
 
 
 def gen_pseudotime_centroids(X, pseudotime, branches_single_end, branches_dataidx):
@@ -192,11 +195,57 @@ def gen_pseudotime_centroids(X, pseudotime, branches_single_end, branches_dataid
         (
             PseudotimeNodePositions[n : n + bnNodes],
             MeanPseudotime[n : n + bnNodes],
-        ) = bin_pseudotime(bX, bpseudotime, bnNodes)
+        ) = nNodes_pseudotime(bX, bpseudotime, bnNodes)
 
         n += bnNodes
 
     return PseudotimeNodePositions, MeanPseudotime, nonempty_branches_single_end
+
+
+def gen_pseudotime_centroids_by_path(X, pseudotime, paths, paths_dataidx):
+    """generate pseudotime centroids for each path of the graph"""
+
+    # ---ignore paths with associated ndatapoints less than nNodes
+    nonempty_paths_dataidx = {}
+    nonempty_paths = {}
+    for (k, bdata), bnodes in zip(paths_dataidx.items(), paths.values()):
+        if len(np.where(bdata)[0]) >= len(bnodes):
+            nonempty_paths_dataidx[k] = bdata
+            nonempty_paths[k] = bnodes
+
+    # ---generate pseudotime nodes
+    nodes_list = list(itertools.chain.from_iterable(nonempty_paths.values()))
+
+    nonempty_nNodes = len(set(nodes_list))
+    nNodes_bincount = np.bincount(nodes_list)
+
+    PseudotimeNodePositions = np.zeros((nonempty_nNodes, X.shape[1]))
+    MeanPseudotime = np.zeros(nonempty_nNodes)
+
+    for (
+        k,
+        bdata,
+    ) in nonempty_paths_dataidx.items():  # for data associated with each branch
+
+        # paths data points, pseudotime, Nodes, nNodes
+        bX, bpseudotime = X[bdata], pseudotime[bdata]
+        bNodes = nonempty_paths[k]
+        bnNodes = len(bNodes)
+
+        # generate paths ps node positions
+        _PseudotimeNodePositions, _MeanPseudotime = nNodes_pseudotime(
+            bX, bpseudotime, bnNodes
+        )
+        _PseudotimeNodePositions = interp_bins(_PseudotimeNodePositions)
+
+        # add them to common array
+        PseudotimeNodePositions[bNodes] += _PseudotimeNodePositions
+        MeanPseudotime[bNodes] += _MeanPseudotime
+
+    # divide to average nodes that appear in multiple paths
+    PseudotimeNodePositions /= nNodes_bincount[:, None]
+    MeanPseudotime /= nNodes_bincount
+    return PseudotimeNodePositions, MeanPseudotime, nonempty_paths
 
 
 # ------for each branch, create elastic edges between pseudotime nodes & elpigraph nodes and merge pseudotime and elpigraph nodesp, elasticmatrix
@@ -242,8 +291,49 @@ def augment_graph(
     )
 
 
+def augment_graph_by_path(
+    NodePositions, Edges, PseudotimeNodePositions, Mus, Lambdas, LinkMu, LinkLambda,
+):
+    """
+    generate a graph merging node positions and pseudotime node positions
+    with one edge between each of their nodes. 
+    pseudotime node positions and edges are placed as the top rows of the matrices
+    """
+    # ------for each branch, create elastic edges between pseudotime nodes & elpigraph nodes
+    # ordering of nodespositions in the graph (corresponding to pseudotime nodes)
+    nPsNodes = len(PseudotimeNodePositions)
+    # link pseudotime nodes and graph nodes
+    LinkEdges = np.array(list(zip(np.arange(nPsNodes), np.arange(nPsNodes) + nPsNodes)))
+    LinkMus = np.repeat(LinkMu, nPsNodes)
+    LinkLambdas = np.repeat(LinkLambda, nPsNodes)
+
+    # -----merge pseudotime and graph nodepositions, elasticmatrix
+    MergedNodePositions = np.concatenate((PseudotimeNodePositions, NodePositions))
+    MergedEdges = np.concatenate((LinkEdges, Edges + nPsNodes))
+    MergedLambdas = np.concatenate((LinkLambdas, Lambdas))
+    MergedMus = np.concatenate((LinkMus, Mus))
+    MergedElasticMatrix = Encode2ElasticMatrix(MergedEdges, MergedLambdas, MergedMus)
+
+    return (
+        MergedNodePositions,
+        MergedElasticMatrix,
+        MergedEdges,
+        MergedLambdas,
+        MergedMus,
+    )
+
+
+# ---main functions
 def gen_pseudotime_augmented_graph(
-    X, SquaredX, NodePositions, ElasticMatrix, pseudotime, root_node, LinkMu, LinkLambda
+    X,
+    SquaredX,
+    NodePositions,
+    ElasticMatrix,
+    pseudotime,
+    root_node,
+    LinkMu,
+    LinkLambda,
+    TrimmingRadius=float("inf"),
 ):
     # ------extract oriented branches and associated data
     Edges, Lambdas, Mus = DecodeElasticMatrix(ElasticMatrix)
@@ -255,7 +345,7 @@ def gen_pseudotime_augmented_graph(
     else:
         tree, branches, branches_single_end = get_tree(Edges, root_node)
     branches_dataidx = partition_data_by_branch(
-        X, SquaredX, NodePositions, branches_single_end
+        X, SquaredX, NodePositions, branches_single_end, TrimmingRadius
     )
 
     # ------generate pseudotime centroid branches
@@ -281,6 +371,51 @@ def gen_pseudotime_augmented_graph(
         Lambdas,
         LinkMu,
         LinkLambda,
+    )
+    return (
+        MeanPseudotime,
+        MergedNodePositions,
+        MergedElasticMatrix,
+        MergedEdges,
+        len(PseudotimeNodePositions),
+    )
+
+
+def gen_pseudotime_augmented_graph_by_path(
+    X,
+    SquaredX,
+    NodePositions,
+    ElasticMatrix,
+    pseudotime,
+    root_node,
+    LinkMu,
+    LinkLambda,
+    TrimmingRadius=float("inf"),
+):
+    # ------extract oriented paths and associated data
+    Edges, Lambdas, Mus = DecodeElasticMatrix(ElasticMatrix)
+
+    paths = get_shortest_paths(Edges, root_node)
+    paths_dataidx = partition_data_by_branch(
+        X, SquaredX, NodePositions, paths, TrimmingRadius
+    )
+
+    # ------generate pseudotime centroid branches
+    (
+        PseudotimeNodePositions,
+        MeanPseudotime,
+        nonempty_paths,
+    ) = gen_pseudotime_centroids_by_path(X, pseudotime, paths, paths_dataidx)
+
+    # ------for each branch, create elastic edges between pseudotime nodes & elpigraph nodes and merge pseudotime and elpigraph nodesp, elasticmatrix
+    (
+        MergedNodePositions,
+        MergedElasticMatrix,
+        MergedEdges,
+        MergedLambdas,
+        MergedMus,
+    ) = augment_graph_by_path(
+        NodePositions, Edges, PseudotimeNodePositions, Mus, Lambdas, LinkMu, LinkLambda,
     )
     return (
         MeanPseudotime,

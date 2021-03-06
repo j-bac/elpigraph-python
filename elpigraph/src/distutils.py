@@ -209,7 +209,7 @@ def PartialDistance(A, B):
 
 
 def ComputeWeightedAverage(X, partition, PointWeights, NumberOfNodes):
-    X = X * PointWeights
+    X *= PointWeights
     # Auxiliary calculations
     M = X.shape[1]
     part = partition.ravel() + 1
@@ -252,7 +252,7 @@ def FitSubGraph2DataGivenPartition(
     move_nodes_idx,
 ):
     """
-    Fits moving Subpart of the graph to data while constraining some nodes to remain fixed
+    Fits moving subpart of the graph to data while constraining some nodes to remain fixed
     """
 
     # params
