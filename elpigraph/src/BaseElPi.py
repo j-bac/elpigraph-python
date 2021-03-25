@@ -70,12 +70,18 @@ def ElPrincGraph(
     FixNodesAtPoints=[],
     pseudotime=None,
     pseudotimeLambda=0.01,
+    MaxNumberOfGraphCandidatesDict={
+        "AddNode2Node": float("inf"),
+        "BisectEdge": float("inf"),
+        "RemoveNode": float("inf"),
+        "ShrinkEdge": float("inf"),
+    },
 ):
     """
     #' Core function to construct a principal elastic graph
     #'
     #' The core function that takes the n m-dimensional points and construct a principal elastic graph using the
-    #' grammars provided. 
+    #' grammars provided.
     #'
     #' @param X numerical 2D matrix, the n-by-m matrix with the position of n m-dimensional points
     #' @param NumNodes integer, the number of nodes of the principal graph
@@ -91,12 +97,12 @@ def ElPrincGraph(
     #' @param NodesPositions numerical 2D matrix, the k-by-m matrix with k m-dimensional positions of the nodes
     #' in the initial step
     #' @param ElasticMatrix numerical 2D matrix, the k-by-k elastic matrix
-    #' @param n.cores either an integer (indicating the number of cores to used for the creation of a cluster) or 
+    #' @param n.cores either an integer (indicating the number of cores to used for the creation of a cluster) or
     #' cluster structure returned, e.g., by makeCluster. If a cluster structure is used, all the nodes must contains X
     #' (this is done using clusterExport)
     #' @param MinParOP integer, the minimum number of operations to use parallel computation
     #' @param MaxNumberOfIterations integer, maximum number of steps to embed the nodes in the data
-    #' @param eps real, minimal relative change in the position of the nodes to stop embedment 
+    #' @param eps real, minimal relative change in the position of the nodes to stop embedment
     #' @param TrimmingRadius real, maximal distance of point from a node to affect its embedment
     #' @param NumEdges integer, the maximum nulber of edges
     #' @param Mode integer, the energy computation mode
@@ -119,8 +125,8 @@ def ElPrincGraph(
     #' If None (the default), no penalization will be used.
     #' @param AdjustVect boolean vector keeping track of the nodes for which the elasticity parameters have been adjusted.
     #' When True for a node its elasticity parameters will not be adjusted.
-    #' @param gamma 
-    #' @param verbose 
+    #' @param gamma
+    #' @param verbose
     #' @param AdjustElasticMatrix.Initial a penalization function to adjust the elastic matrices of the initial configuration (e.g., AdjustByConstant).
     #' If None (the default), no penalization will be used.
     #'
@@ -141,7 +147,7 @@ def ElPrincGraph(
     #'
     #' This is a low level function. See  \code{\link{computeElasticPrincipalCircle}},
     #' \code{\link{computeElasticPrincipalCurve}}, or \code{\link{computeElasticPrincipalTree}}
-    #' 
+    #'
     #'
     """
     if GrammarOptimization:
@@ -157,6 +163,12 @@ def ElPrincGraph(
 
     if not CompileReport:
         verbose = False
+
+    if "RemoveNode" in MaxNumberOfGraphCandidatesDict:
+        if np.isfinite(MaxNumberOfGraphCandidatesDict["RemoveNode"]):
+            raise ValueError(
+                "MaxNumberOfGraphCandidates limitation not yet available for RemoveNode. Keep it to infinity"
+            )
 
     if isinstance(ElasticMatrix, np.ndarray):
         if np.any(ElasticMatrix != ElasticMatrix.T):
@@ -230,7 +242,7 @@ def ElPrincGraph(
 
     if verbose:
         print(
-            "BARCODE\tENERGY\tNNODES\tNEDGES\tNRIBS\tNSTARS\tNRAYS\tNRAYS2\tMSE\tMSEP\tFVE\tFVEP\tUE\tUR\tURN\tURN2\tURSD\n"
+            "\nBARCODE\tENERGY\tNNODES\tNEDGES\tNRIBS\tNSTARS\tNRAYS\tNRAYS2\tMSE\tMSEP\tFVE\tFVEP\tUE\tUR\tURN\tURN2\tURSD\n"
         )
 
     # now we grow the graph up to NumNodes
@@ -261,7 +273,6 @@ def ElPrincGraph(
 
     FailedOperations = 0
     Steps = 0
-    FirstPrint = True
 
     start = time.time()
     times = {}
@@ -279,14 +290,6 @@ def ElPrincGraph(
         ) and not GrammarOptimization:
             break
 
-        if verbose and ShowTimer:
-            print("Nodes = ", UpdatedPG["NodePositions"].shape[0])
-
-        if verbose and not ShowTimer:
-            if FirstPrint:
-                print("Nodes = ", end=" ")
-                FirstPrint = False
-            print(UpdatedPG["NodePositions"].shape[0], end=" ")
         OldPG = copy.deepcopy(UpdatedPG)
 
         for OpType in GrammarOrder:
@@ -324,6 +327,7 @@ def ElPrincGraph(
                         FixNodesAtPoints=FixNodesAtPoints,
                         pseudotime=pseudotime,
                         pseudotimeLambda=pseudotimeLambda,
+                        MaxNumberOfGraphCandidatesDict=MaxNumberOfGraphCandidatesDict,
                     )
 
                     if UpdatedPG == "failed operation":
@@ -385,6 +389,7 @@ def ElPrincGraph(
                         FixNodesAtPoints=FixNodesAtPoints,
                         pseudotime=pseudotime,
                         pseudotimeLambda=pseudotimeLambda,
+                        MaxNumberOfGraphCandidatesDict=MaxNumberOfGraphCandidatesDict,
                     )
 
                     if UpdatedPG == "failed operation":
@@ -578,13 +583,19 @@ def computeElasticPrincipalGraph(
     FixNodesAtPoints=[],
     pseudotime=None,
     pseudotimeLambda=0.01,
+    MaxNumberOfGraphCandidatesDict={
+        "AddNode2Node": float("inf"),
+        "BisectEdge": float("inf"),
+        "RemoveNode": float("inf"),
+        "ShrinkEdge": float("inf"),
+    },
 ):
 
     """
     #' Regularize data and construct a principal elastic graph
     #'
     #' This allow to perform basic data regularization before constructing a principla elastic graph.
-    #' 
+    #'
     #'
     #' @param Data numerical 2D matrix, the n-by-m matrix with the position of n m-dimensional points
     #' @param NumNodes integer, the number of nodes of the principal graph
@@ -600,11 +611,11 @@ def computeElasticPrincipalGraph(
     #' @param InitEdges numerical 2D matrix, the e-by-2 matrix with e end-points of the edges connecting the nodes
     #' @param ElasticMatrix numerical 2D matrix, the e-by-e matrix containing the elasticity parameters of the edges
     #' @param MaxNumberOfIterations integer, maximum number of steps to embed the nodes in the data
-    #' @param eps real, minimal relative change in the position of the nodes to stop embedment 
+    #' @param eps real, minimal relative change in the position of the nodes to stop embedment
     #' @param TrimmingRadius real, maximal distance of point from a node to affect its embedment
     #' @param verbose boolean, should debugging information be reported?
     #' @param ShowTimer boolean, should the time to construct the graph be computed and reported for each step?
-    #' @param n_cores either an integer (indicating the number of cores to used for the creation of a cluster) or 
+    #' @param n_cores either an integer (indicating the number of cores to used for the creation of a cluster) or
     #' cluster structure returned, e.g., by makeCluster. If a cluster structure is used, all the nodes must contains X
     #' (this is done using clusterExport)
     #' @param MinParOp integer, the minimum number of operations to use parallel computation
@@ -618,7 +629,7 @@ def computeElasticPrincipalGraph(
     #' helps speeding up the computation if a large number of points is present.
     #' @param FinalEnergy string indicating the final elastic emergy associated with the configuration. Currently it can be "Base" or "Penalized"
     #' @param alpha positive numeric, the value of the alpha parameter of the penalized elastic energy
-    #' @param beta positive numeric, the value of the beta parameter of the penalized elastic energy 
+    #' @param beta positive numeric, the value of the beta parameter of the penalized elastic energy
     #' @param ... optional parameter that will be passed to the AdjustHOS function
     #' @param AdjustVect boolean vector keeping track of the nodes for which the elasticity parameters have been adjusted.
     #' When True for a node its elasticity parameters will not be adjusted.
@@ -626,8 +637,8 @@ def computeElasticPrincipalGraph(
     #' If None (the default), no penalization will be used.
     #' @param AdjustElasticMatrix.Initial a penalization function to adjust the elastic matrices of the initial configuration (e.g., AdjustByConstant).
     #' If None (the default), no penalization will be used.
-    #' @param Lambda.Initial 
-    #' @param Mu.Initial 
+    #' @param Lambda.Initial
+    #' @param Mu.Initial
     #'
     #' @return a named list with a number of elements:
     #' \describe{
@@ -852,6 +863,7 @@ def computeElasticPrincipalGraph(
         FixNodesAtPoints=FixNodesAtPoints,
         pseudotime=pseudotime,
         pseudotimeLambda=pseudotimeLambda,
+        MaxNumberOfGraphCandidatesDict=MaxNumberOfGraphCandidatesDict,
     )
 
     NodePositions = ElData["NodePositions"]

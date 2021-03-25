@@ -15,6 +15,7 @@ setup.cfg
 setup.py
 usage.ipynb
 .circleci/config.yml
+.github/workflows/python-publish.yml
 data/circle_data.csv
 data/curve_data.csv
 data/tree_data.csv

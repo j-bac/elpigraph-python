@@ -71,6 +71,12 @@ def computeElasticPrincipalGraphWithGrammars(
     FixNodesAtPoints=[],
     pseudotime=None,
     pseudotimeLambda=0.01,
+    MaxNumberOfGraphCandidatesDict={
+        "AddNode2Node": float("inf"),
+        "BisectEdge": float("inf"),
+        "RemoveNode": float("inf"),
+        "ShrinkEdge": float("inf"),
+    },
 ):
 
     """
@@ -86,7 +92,7 @@ def computeElasticPrincipalGraphWithGrammars(
     #' @param InitNodes integer, number of points to include in the initial graph
     #' @param MaxNumberOfIterations integer, maximum number of steps to embed the nodes in the data
     #' @param TrimmingRadius real, maximal distance of point from a node to affect its embedment
-    #' @param eps real, minimal relative change in the position of the nodes to stop embedment 
+    #' @param eps real, minimal relative change in the position of the nodes to stop embedment
     #' @param Do_PCA boolean, should data and initial node positions be PCA trnasformed?
     #' @param InitNodePositions numerical 2D matrix, the k-by-m matrix with k m-dimensional positions of the nodes
     #' in the initial step
@@ -101,11 +107,11 @@ def computeElasticPrincipalGraphWithGrammars(
     #' @param drawAccuracyComplexity boolean, should the accuracy VS complexity plot be reported?
     #' @param drawPCAView boolean, should a 2D plot of the points and pricipal curve be dranw for the final configuration?
     #' @param drawEnergy boolean, should changes of evergy VS the number of nodes be reported?
-    #' @param n.cores either an integer (indicating the number of cores to used for the creation of a cluster) or 
+    #' @param n.cores either an integer (indicating the number of cores to used for the creation of a cluster) or
     #' cluster structure returned, e.g., by makeCluster. If a cluster structure is used, all the nodes must contains X
     #' (this is done using clusterExport)
     #' @param MinParOP integer, the minimum number of operations to use parallel computation
-    #' @param nReps integer, number of replica of the construction 
+    #' @param nReps integer, number of replica of the construction
     #' @param ProbPoint real between 0 and 1, probability of inclusing of a single point for each computation
     #' @param Subsets list of column names (or column number). When specified a principal tree will be computed for each of the subsets specified.
     #' @param NumEdges integer, the maximum nulber of edges
@@ -124,10 +130,10 @@ def computeElasticPrincipalGraphWithGrammars(
     #' helps speeding up the computation if a large number of points is present.
     #' @param GrowGrammars list of strings, the grammar to be used in the growth step
     #' @param ShrinkGrammars list of strings, the grammar to be used in the shrink step
-    #' @param SampleIC boolean, should the initial configuration be considered on the sampled points when applicable? 
+    #' @param SampleIC boolean, should the initial configuration be considered on the sampled points when applicable?
     #' @param AdjustVect boolean vector keeping track of the nodes for which the elasticity parameters have been adjusted.
     #' When true for a node its elasticity parameters will not be adjusted.
-    #' @param gamma 
+    #' @param gamma
     #' @param AdjustElasticMatrix a penalization function to adjust the elastic matrices after a configuration has been chosen (e.g., AdjustByConstant).
     #' If NULL (the default), no penalization will be used.
     #' @param AdjustElasticMatrix.Initial a penalization function to adjust the elastic matrices of the initial configuration (e.g., AdjustByConstant).
@@ -137,8 +143,8 @@ def computeElasticPrincipalGraphWithGrammars(
     #' @param Mu.Initial real, the mu parameter used the construct the elastic matrix associted with ther initial configuration if needed.
     #' If NULL, the value of Mu will be used.
     #' @param GrammarOptimization boolean, should grammar optimization be perfomred? If true grammar operations that do not increase the number of
-    #' nodes will be allowed 
-    #' @param MaxSteps integer, max number of applications of the grammar. This value need to be less than infinity if GrammarOptimization is set to true 
+    #' nodes will be allowed
+    #' @param MaxSteps integer, max number of applications of the grammar. This value need to be less than infinity if GrammarOptimization is set to true
     #' @param GrammarOrder character vector, the order of application of the grammars. It can be any combination of "Grow" and "Shrink"
     #' @param AvoidResampling booleand, should the sampling of initial conditions avoid reselecting the same points
     #' (or points neighbors if DensityRadius is specified)?
@@ -146,7 +152,7 @@ def computeElasticPrincipalGraphWithGrammars(
     #' @return A list of principal graph strucutures containing the trees constructed during the different replica of the algorithm.
     #' If the number of replicas is larger than 1. The the final element of the list is the "average tree", which is constructed by
     #' fitting the coordinates of the nodes of the reconstructed trees
-    #' @export 
+    #' @export
     #'
     #' @examples
     #'
@@ -236,7 +242,9 @@ def computeElasticPrincipalGraphWithGrammars(
                 else:
                     if AvoidResampling:
                         InitialConf = generateInitialConfiguration(
-                            X[~Used,],
+                            X[
+                                ~Used,
+                            ],
                             Nodes=InitNodes,
                             Configuration=Configuration,
                             DensityRadius=DensityRadius,
@@ -378,6 +386,7 @@ def computeElasticPrincipalGraphWithGrammars(
                     FixNodesAtPoints=FixNodesAtPoints,
                     pseudotime=pseudotime,
                     pseudotimeLambda=pseudotimeLambda,
+                    MaxNumberOfGraphCandidatesDict=MaxNumberOfGraphCandidatesDict,
                 )
             )
 
@@ -486,6 +495,7 @@ def computeElasticPrincipalGraphWithGrammars(
                 FixNodesAtPoints=FixNodesAtPoints,
                 pseudotime=pseudotime,
                 pseudotimeLambda=pseudotimeLambda,
+                MaxNumberOfGraphCandidatesDict=MaxNumberOfGraphCandidatesDict,
             )
         )
 
@@ -495,4 +505,3 @@ def computeElasticPrincipalGraphWithGrammars(
         ReturnList[-1]["ProbPoint"] = 1
 
     return ReturnList
-

@@ -60,6 +60,12 @@ def computeElasticPrincipalCircle(
     FixNodesAtPoints=[],
     pseudotime=None,
     pseudotimeLambda=0.01,
+    MaxNumberOfGraphCandidatesDict={
+        "AddNode2Node": float("inf"),
+        "BisectEdge": float("inf"),
+        "RemoveNode": float("inf"),
+        "ShrinkEdge": float("inf"),
+    },
 ):
 
     """
@@ -75,7 +81,7 @@ def computeElasticPrincipalCircle(
     #' @param InitNodes integer, number of points to include in the initial graph
     #' @param MaxNumberOfIterations integer, maximum number of steps to embed the nodes in the data
     #' @param TrimmingRadius real, maximal distance of point from a node to affect its embedment
-    #' @param eps real, minimal relative change in the position of the nodes to stop embedment 
+    #' @param eps real, minimal relative change in the position of the nodes to stop embedment
     #' @param Do_PCA boolean, should data and initial node positions be PCA trnasformed?
     #' @param InitNodePositions numerical 2D matrix, the k-by-m matrix with k m-dimensional positions of the nodes
     #' in the initial step
@@ -90,11 +96,11 @@ def computeElasticPrincipalCircle(
     #' @param drawAccuracyComplexity boolean, should the accuracy VS complexity plot be reported?
     #' @param drawPCAView boolean, should a 2D plot of the points and pricipal curve be dranw for the final configuration?
     #' @param drawEnergy boolean, should changes of evergy VS the number of nodes be reported?
-    #' @param n.cores either an integer (indicating the number of cores to used for the creation of a cluster) or 
+    #' @param n.cores either an integer (indicating the number of cores to used for the creation of a cluster) or
     #' cluster structure returned, e.g., by makeCluster. If a cluster structure is used, all the nodes must contains X
     #' (this is done using clusterExport)
     #' @param MinParOP integer, the minimum number of operations to use parallel computation
-    #' @param nReps integer, number of replica of the construction 
+    #' @param nReps integer, number of replica of the construction
     #' @param ProbPoint real between 0 and 1, probability of inclusing of a single point for each computation
     #' @param Subsets list of column names (or column number). When specified a principal circle will be computed for each of the subsets specified.
     #' @param NumEdges integer, the maximum nulber of edges
@@ -120,7 +126,7 @@ def computeElasticPrincipalCircle(
     #' @param ParallelRep boolean, should parallel execution be performed on the sampling instead of the the grammar evaluations?
     #' @param AvoidResampling booleand, should the sampling of initial conditions avoid reselecting the same points
     #' (or points neighbors if DensityRadius is specified)?
-    #' @param SampleIC boolean, should the initial configuration be considered on the sampled points when applicable? 
+    #' @param SampleIC boolean, should the initial configuration be considered on the sampled points when applicable?
     #' @param AdjustElasticMatrix.Initial a penalization function to adjust the elastic matrices of the initial configuration (e.g., AdjustByConstant).
     #' If NULL (the default), no penalization will be used.
     #' @param Lambda.Initial real, the lambda parameter used the construct the elastic matrix associted with ther initial configuration if needed.
@@ -130,7 +136,7 @@ def computeElasticPrincipalCircle(
     #'
     #' @return
     #'
-    #' A named list 
+    #' A named list
     #'
     #' @export
     #'
@@ -217,6 +223,7 @@ def computeElasticPrincipalCircle(
         FixNodesAtPoints=FixNodesAtPoints,
         pseudotime=pseudotime,
         pseudotimeLambda=pseudotimeLambda,
+        MaxNumberOfGraphCandidatesDict=MaxNumberOfGraphCandidatesDict,
     )
 
 
@@ -276,6 +283,12 @@ def computeElasticPrincipalTree(
     FixNodesAtPoints=[],
     pseudotime=None,
     pseudotimeLambda=0.01,
+    MaxNumberOfGraphCandidatesDict={
+        "AddNode2Node": float("inf"),
+        "BisectEdge": float("inf"),
+        "RemoveNode": float("inf"),
+        "ShrinkEdge": float("inf"),
+    },
 ):
     """
     #' Construct a principal elastic tree
@@ -290,7 +303,7 @@ def computeElasticPrincipalTree(
     #' @param InitNodes integer, number of points to include in the initial graph
     #' @param MaxNumberOfIterations integer, maximum number of steps to embed the nodes in the data
     #' @param TrimmingRadius real, maximal distance of point from a node to affect its embedment
-    #' @param eps real, minimal relative change in the position of the nodes to stop embedment 
+    #' @param eps real, minimal relative change in the position of the nodes to stop embedment
     #' @param Do_PCA boolean, should data and initial node positions be PCA trnasformed?
     #' @param InitNodePositions numerical 2D matrix, the k-by-m matrix with k m-dimensional positions of the nodes
     #' in the initial step
@@ -305,11 +318,11 @@ def computeElasticPrincipalTree(
     #' @param drawAccuracyComplexity boolean, should the accuracy VS complexity plot be reported?
     #' @param drawPCAView boolean, should a 2D plot of the points and pricipal curve be dranw for the final configuration?
     #' @param drawEnergy boolean, should changes of evergy VS the number of nodes be reported?
-    #' @param n.cores either an integer (indicating the number of cores to used for the creation of a cluster) or 
+    #' @param n.cores either an integer (indicating the number of cores to used for the creation of a cluster) or
     #' cluster structure returned, e.g., by makeCluster. If a cluster structure is used, all the nodes must contains X
     #' (this is done using clusterExport)
     #' @param MinParOP integer, the minimum number of operations to use parallel computation
-    #' @param nReps integer, number of replica of the construction 
+    #' @param nReps integer, number of replica of the construction
     #' @param ProbPoint real between 0 and 1, probability of inclusing of a single point for each computation
     #' @param Subsets list of column names (or column number). When specified a principal tree will be computed for each of the subsets specified.
     #' @param NumEdges integer, the maximum nulber of edges
@@ -335,7 +348,7 @@ def computeElasticPrincipalTree(
     #' @param ParallelRep boolean, should parallel execution be performed on the sampling instead of the the grammar evaluations?
     #' @param AvoidResampling booleand, should the sampling of initial conditions avoid reselecting the same points
     #' (or points neighbors if DensityRadius is specified)?
-    #' @param SampleIC boolean, should the initial configuration be considered on the sampled points when applicable? 
+    #' @param SampleIC boolean, should the initial configuration be considered on the sampled points when applicable?
     #' @param AdjustElasticMatrix.Initial a penalization function to adjust the elastic matrices of the initial configuration (e.g., AdjustByConstant).
     #' If NULL (the default), no penalization will be used.
     #' @param Lambda.Initial real, the lambda parameter used the construct the elastic matrix associted with ther initial configuration if needed.
@@ -346,7 +359,7 @@ def computeElasticPrincipalTree(
     #' @return A list of principal graph strucutures containing the trees constructed during the different replica of the algorithm.
     #' If the number of replicas is larger than 1. The the final element of the list is the "average tree", which is constructed by
     #' fitting the coordinates of the nodes of the reconstructed trees
-    #' @export 
+    #' @export
     #'
     #' @examples
     #'
@@ -428,6 +441,7 @@ def computeElasticPrincipalTree(
         FixNodesAtPoints=FixNodesAtPoints,
         pseudotime=pseudotime,
         pseudotimeLambda=pseudotimeLambda,
+        MaxNumberOfGraphCandidatesDict=MaxNumberOfGraphCandidatesDict,
     )
 
 
@@ -487,9 +501,15 @@ def computeElasticPrincipalCurve(
     FixNodesAtPoints=[],
     pseudotime=None,
     pseudotimeLambda=0.01,
+    MaxNumberOfGraphCandidatesDict={
+        "AddNode2Node": float("inf"),
+        "BisectEdge": float("inf"),
+        "RemoveNode": float("inf"),
+        "ShrinkEdge": float("inf"),
+    },
 ):
 
-    """ 
+    """
     #' Construct a princial elastic curve
     #'
     #' This function is a wrapper to the computeElasticPrincipalGraph function that constructs the appropriate initial graph and grammars
@@ -502,7 +522,7 @@ def computeElasticPrincipalCurve(
     #' @param InitNodes integer, number of points to include in the initial graph
     #' @param MaxNumberOfIterations integer, maximum number of steps to embed the nodes in the data
     #' @param TrimmingRadius real, maximal distance of point from a node to affect its embedment
-    #' @param eps real, minimal relative change in the position of the nodes to stop embedment 
+    #' @param eps real, minimal relative change in the position of the nodes to stop embedment
     #' @param Do_PCA boolean, should data and initial node positions be PCA trnasformed?
     #' @param InitNodePositions numerical 2D matrix, the k-by-m matrix with k m-dimensional positions of the nodes
     #' in the initial step
@@ -517,11 +537,11 @@ def computeElasticPrincipalCurve(
     #' @param drawAccuracyComplexity boolean, should the accuracy VS complexity plot be reported?
     #' @param drawPCAView boolean, should a 2D plot of the points and pricipal curve be dranw for the final configuration?
     #' @param drawEnergy boolean, should changes of evergy VS the number of nodes be reported?
-    #' @param n.cores either an integer (indicating the number of cores to used for the creation of a cluster) or 
+    #' @param n.cores either an integer (indicating the number of cores to used for the creation of a cluster) or
     #' cluster structure returned, e.g., by makeCluster. If a cluster structure is used, all the nodes must contains X
     #' (this is done using clusterExport)
     #' @param MinParOP integer, the minimum number of operations to use parallel computation
-    #' @param nReps integer, number of replica of the construction 
+    #' @param nReps integer, number of replica of the construction
     #' @param ProbPoint real between 0 and 1, probability of inclusing of a single point for each computation
     #' @param Subsets list of column names (or column number). When specified a principal curve will be computed for each of the subsets specified.
     #' @param NumEdges integer, the maximum nulber of edges
@@ -553,12 +573,12 @@ def computeElasticPrincipalCurve(
     #' @param ParallelRep boolean, should parallel execution be performed on the sampling instead of the the grammar evaluations?
     #' @param AvoidResampling booleand, should the sampling of initial conditions avoid reselecting the same points
     #' (or points neighbors if DensityRadius is specified)?
-    #' @param SampleIC boolean, should the initial configuration be considered on the sampled points when applicable? 
+    #' @param SampleIC boolean, should the initial configuration be considered on the sampled points when applicable?
     #'
     #' @return A list of principal graph strucutures containing the curves constructed during the different replica of the algorithm.
     #' If the number of replicas is larger than 1. The the final element of the list is the "average curve", which is constructed by
     #' fitting the coordinates of the nodes of the reconstructed curves
-    #' @export 
+    #' @export
     #'
     #' @examples
     #'
@@ -638,6 +658,7 @@ def computeElasticPrincipalCurve(
         FixNodesAtPoints=FixNodesAtPoints,
         pseudotime=pseudotime,
         pseudotimeLambda=pseudotimeLambda,
+        MaxNumberOfGraphCandidatesDict=MaxNumberOfGraphCandidatesDict,
     )
 
 
@@ -696,6 +717,7 @@ def fineTuneBR(
     GPU=False,
     FixNodesAtPoints=[],
     pseudotime=None,
+    pseudotimeLambda=0.01,
 ):
 
     """
@@ -711,7 +733,7 @@ def fineTuneBR(
     #' @param InitNodes integer, number of points to include in the initial graph
     #' @param MaxNumberOfIterations integer, maximum number of steps to embed the nodes in the data
     #' @param TrimmingRadius real, maximal distance of point from a node to affect its embedment
-    #' @param eps real, minimal relative change in the position of the nodes to stop embedment 
+    #' @param eps real, minimal relative change in the position of the nodes to stop embedment
     #' @param Do_PCA boolean, should data and initial node positions be PCA trnasformed?
     #' @param InitNodePositions numerical 2D matrix, the k-by-m matrix with k m-dimensional positions of the nodes
     #' in the initial step
@@ -726,11 +748,11 @@ def fineTuneBR(
     #' @param drawAccuracyComplexity boolean, should the accuracy VS complexity plot be reported?
     #' @param drawPCAView boolean, should a 2D plot of the points and pricipal curve be dranw for the final configuration?
     #' @param drawEnergy boolean, should changes of evergy VS the number of nodes be reported?
-    #' @param n.cores either an integer (indicating the number of cores to used for the creation of a cluster) or 
+    #' @param n.cores either an integer (indicating the number of cores to used for the creation of a cluster) or
     #' cluster structure returned, e.g., by makeCluster. If a cluster structure is used, all the nodes must contains X
     #' (this is done using clusterExport)
     #' @param MinParOP integer, the minimum number of operations to use parallel computation
-    #' @param nReps integer, number of replica of the construction 
+    #' @param nReps integer, number of replica of the construction
     #' @param ProbPoint real between 0 and 1, probability of inclusing of a single point for each computation
     #' @param Subsets list of column names (or column number). When specified a principal curve will be computed for each of the subsets specified.
     #' @param NumEdges integer, the maximum nulber of edges
@@ -759,13 +781,13 @@ def fineTuneBR(
     #' If NULL, the value of Lambda will be used.
     #' @param Mu.Initial real, the mu parameter used the construct the elastic matrix associted with ther initial configuration if needed.
     #' If NULL, the value of Mu will be used.
-    #' @param ParallelRep 
-    #' @param SampleIC boolean, should the initial configuration be considered on the sampled points when applicable? 
+    #' @param ParallelRep
+    #' @param SampleIC boolean, should the initial configuration be considered on the sampled points when applicable?
     #'
     #' @return A list of principal graph strucutures containing the curves constructed during the different replica of the algorithm.
     #' If the number of replicas is larger than 1. The the final element of the list is the "average curve", which is constructed by
     #' fitting the coordinates of the nodes of the reconstructed curves
-    #' @export 
+    #' @export
     #'
     #' @examples
     #'
@@ -858,6 +880,8 @@ def fineTuneBR(
         GPU=GPU,
         FixNodesAtPoints=FixNodesAtPoints,
         pseudotime=pseudotime,
+        pseudotimeLambda=pseudotimeLambda,
+        MaxNumberOfGraphCandidatesDict=MaxNumberOfGraphCandidatesDict,
     )
 
 
@@ -927,7 +951,7 @@ def GrowLeaves(
     #' @param InitNodes integer, number of points to include in the initial graph
     #' @param MaxNumberOfIterations integer, maximum number of steps to embed the nodes in the data
     #' @param TrimmingRadius real, maximal distance of point from a node to affect its embedment
-    #' @param eps real, minimal relative change in the position of the nodes to stop embedment 
+    #' @param eps real, minimal relative change in the position of the nodes to stop embedment
     #' @param Do_PCA boolean, should data and initial node positions be PCA trnasformed?
     #' @param InitNodePositions numerical 2D matrix, the k-by-m matrix with k m-dimensional positions of the nodes
     #' in the initial step
@@ -942,11 +966,11 @@ def GrowLeaves(
     #' @param drawAccuracyComplexity boolean, should the accuracy VS complexity plot be reported?
     #' @param drawPCAView boolean, should a 2D plot of the points and pricipal curve be dranw for the final configuration?
     #' @param drawEnergy boolean, should changes of evergy VS the number of nodes be reported?
-    #' @param n.cores either an integer (indicating the number of cores to used for the creation of a cluster) or 
+    #' @param n.cores either an integer (indicating the number of cores to used for the creation of a cluster) or
     #' cluster structure returned, e.g., by makeCluster. If a cluster structure is used, all the nodes must contains X
     #' (this is done using clusterExport)`
     #' @param MinParOP integer, the minimum number of operations to use parallel computation
-    #' @param nReps integer, number of replica of the construction 
+    #' @param nReps integer, number of replica of the construction
     #' @param ProbPoint real between 0 and 1, probability of inclusing of a single point for each computation
     #' @param Subsets list of column names (or column number). When specified a principal curve will be computed for each of the subsets specified.
     #' @param NumEdges integer, the maximum nulber of edges
@@ -975,13 +999,13 @@ def GrowLeaves(
     #' If NULL, the value of Lambda will be used.
     #' @param Mu.Initial real, the mu parameter used the construct the elastic matrix associted with ther initial configuration if needed.
     #' If NULL, the value of Mu will be used.
-    #' @param ParallelRep 
-    #' @param SampleIC boolean, should the initial configuration be considered on the sampled points when applicable? 
+    #' @param ParallelRep
+    #' @param SampleIC boolean, should the initial configuration be considered on the sampled points when applicable?
     #'
     #' @return A list of principal graph strucutures containing the curves constructed during the different replica of the algorithm.
     #' If the number of replicas is larger than 1. The the final element of the list is the "average curve", which is constructed by
     #' fitting the coordinates of the nodes of the reconstructed curves
-    #' @export 
+    #' @export
     #'
     #' @examples
     #'
@@ -1076,7 +1100,7 @@ def generateInitialConfiguration(
     verbose=False,
     FixNodesAtPoints=[],
 ):
-    """  
+    """
     #' Produce an initial graph with a given structure
     #'
     #' @param X numerical 2D matrix, the n-by-m matrix with the position of n m-dimensional points
@@ -1097,7 +1121,7 @@ def generateInitialConfiguration(
     #' @param DensityRadius numeric, the radius used to estimate local density. This need to be set when Configuration is equal to "Density"
     #' @param MaxPoints integer, the maximum number of points for which the local density will be estimated. If the number of data points is
     #' larger than MaxPoints, a subset of the original points will be sampled
-    #' @param PCADensity boolean, should PCA be applied to the data before computing the most dense area 
+    #' @param PCADensity boolean, should PCA be applied to the data before computing the most dense area
     #'
     #' @return
     #' @export
@@ -1177,7 +1201,12 @@ def generateInitialConfiguration(
 
         ID1 = np.random.choice(len(X))
 
-        Dist = PartialDistance(X[[ID1],], X).flatten()
+        Dist = PartialDistance(
+            X[
+                [ID1],
+            ],
+            X,
+        ).flatten()
         with np.errstate(divide="ignore"):
             Probs = 1 / (Dist)
         if DensityRadius:
@@ -1207,7 +1236,12 @@ def generateInitialConfiguration(
         RandClus = np.random.choice(10)
         ID1 = np.random.choice(np.where(KM.labels_ == RandClus)[0])
 
-        Dist = PartialDistance(X[[ID1],], X).flatten()
+        Dist = PartialDistance(
+            X[
+                [ID1],
+            ],
+            X,
+        ).flatten()
 
         with np.errstate(divide="ignore"):
             Probs = 1 / (Dist)
@@ -1252,7 +1286,14 @@ def generateInitialConfiguration(
 
             SampledIdxs = np.random.choice(len(tX), size=MaxPoints)
 
-            PartStruct = PartialDistance(tX[SampledIdxs,], tX[SampledIdxs,])
+            PartStruct = PartialDistance(
+                tX[
+                    SampledIdxs,
+                ],
+                tX[
+                    SampledIdxs,
+                ],
+            )
             PointsInNei = np.sum(PartStruct < DensityRadius, axis=1)
 
             if max(PointsInNei) < 2:
@@ -1265,7 +1306,13 @@ def generateInitialConfiguration(
             NodePositions = X[
                 SampledIdxs[
                     np.random.choice(
-                        np.where(PartStruct[IdMax,] < DensityRadius)[0], size=2
+                        np.where(
+                            PartStruct[
+                                IdMax,
+                            ]
+                            < DensityRadius
+                        )[0],
+                        size=2,
                     )
                 ],
                 :,
@@ -1288,7 +1335,13 @@ def generateInitialConfiguration(
             IdMax = np.argmax(PointsInNei)
             NodePositions = X[
                 np.random.choice(
-                    np.where(PartStruct[IdMax,] < DensityRadius)[0], size=2
+                    np.where(
+                        PartStruct[
+                            IdMax,
+                        ]
+                        < DensityRadius
+                    )[0],
+                    size=2,
                 ),
                 :,
             ]
@@ -1328,7 +1381,14 @@ def generateInitialConfiguration(
 
             SampledIdxs = np.random.choice(len(tX), size=MaxPoints)
 
-            PartStruct = PartialDistance(tX[SampledIdxs,], tX[SampledIdxs,])
+            PartStruct = PartialDistance(
+                tX[
+                    SampledIdxs,
+                ],
+                tX[
+                    SampledIdxs,
+                ],
+            )
             PointsInNei = np.sum(PartStruct < DensityRadius, axis=1)
 
             if max(PointsInNei) < 2:
@@ -1341,7 +1401,13 @@ def generateInitialConfiguration(
 
             NodePositions = X[
                 np.random.choice(
-                    np.where(PartStruct[IdMax,] < DensityRadius)[0], size=2
+                    np.where(
+                        PartStruct[
+                            IdMax,
+                        ]
+                        < DensityRadius
+                    )[0],
+                    size=2,
                 ),
                 :,
             ]
@@ -1365,7 +1431,13 @@ def generateInitialConfiguration(
 
             NodePositions = X[
                 np.random.choice(
-                    np.where(PartStruct[IdMax,] < DensityRadius)[0], size=2
+                    np.where(
+                        PartStruct[
+                            IdMax,
+                        ]
+                        < DensityRadius
+                    )[0],
+                    size=2,
                 ),
                 :,
             ]
@@ -1379,4 +1451,3 @@ def generateInitialConfiguration(
         return dict(NodePositions=NodePositions, Edges=edges)
     else:
         raise ValueError("Unsupported configuration!")
-

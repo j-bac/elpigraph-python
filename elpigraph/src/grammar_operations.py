@@ -14,7 +14,6 @@ from .supervised import (
     gen_pseudotime_augmented_graph_by_path,
 )
 from .._EMAdjustment import AdjustByConstant
-from . import grammar_operations2
 
 
 def proxy(Dict):
@@ -100,11 +99,30 @@ def proxy_cp(Dict):
 
 
 def GraphGrammarOperation(
-    X, NodePositions, ElasticMatrix, AdjustVect, Type, partition, FixNodesAtPoints=[]
+    X,
+    NodePositions,
+    ElasticMatrix,
+    AdjustVect,
+    Type,
+    partition,
+    FixNodesAtPoints=[],
+    MaxNumberOfGraphCandidatesDict={
+        "AddNode2Node": float("inf"),
+        "BisectEdge": float("inf"),
+        "RemoveNode": float("inf"),
+        "ShrinkEdge": float("inf"),
+    },
 ):
+
     if Type == "addnode2node":
         return AddNode2Node(
-            X, NodePositions, ElasticMatrix, partition, AdjustVect, FixNodesAtPoints
+            X,
+            NodePositions,
+            ElasticMatrix,
+            partition,
+            AdjustVect,
+            FixNodesAtPoints,
+            MaxNumberOfGraphCandidates=MaxNumberOfGraphCandidatesDict["AddNode2Node"],
         )
     elif Type == "addnode2node_1":
         return AddNode2Node(
@@ -129,11 +147,21 @@ def GraphGrammarOperation(
     elif Type == "removenode":
         return RemoveNode(NodePositions, ElasticMatrix, AdjustVect, FixNodesAtPoints)
     elif Type == "bisectedge":
-        return BisectEdge(NodePositions, ElasticMatrix, AdjustVect)
+        return BisectEdge(
+            NodePositions,
+            ElasticMatrix,
+            AdjustVect,
+            MaxNumberOfGraphCandidates=MaxNumberOfGraphCandidatesDict["BisectEdge"],
+        )
     elif Type == "bisectedge_3":
         return BisectEdge(NodePositions, ElasticMatrix, AdjustVect, Min_K=3)
     elif Type == "shrinkedge":
-        return ShrinkEdge(NodePositions, ElasticMatrix, AdjustVect)
+        return ShrinkEdge(
+            NodePositions,
+            ElasticMatrix,
+            AdjustVect,
+            MaxNumberOfGraphCandidates=MaxNumberOfGraphCandidatesDict["ShrinkEdge"],
+        )
     elif Type == "shrinkedge_3":
         return ShrinkEdge(NodePositions, ElasticMatrix, AdjustVect, Min_K=3)
     else:
@@ -151,6 +179,7 @@ def AddNode2Node(
     AdjustVect,
     FixNodesAtPoints,
     Max_K=float("inf"),
+    MaxNumberOfGraphCandidates=float("inf"),
 ):
     """
     #' Adds a node to each graph node
@@ -202,6 +231,15 @@ def AddNode2Node(
     else:
         idx_nodes = np.array(range(nNodes))
 
+    # In case we have limits on the number of candidates
+    if MaxNumberOfGraphCandidates < len(idx_nodes) and np.isinf(Max_K):
+        idx_nodes = np.argsort(assoc)[::-1][:MaxNumberOfGraphCandidates]
+
+    elif MaxNumberOfGraphCandidates < len(idx_nodes) and not (np.isinf(Max_K)):
+        nGraphs = [i for i in np.argsort(assoc)[::-1] if i in idx_nodes]
+        idx_nodes = np.array(nGraphs)[:MaxNumberOfGraphCandidates]
+
+    # In case we have fixed nodes
     if FixNodesAtPoints != []:
         idx_nodes = idx_nodes[~np.isin(idx_nodes, np.arange(len(FixNodesAtPoints)))]
 
@@ -214,16 +252,31 @@ def AddNode2Node(
     for j, i in enumerate(idx_nodes):
         MuProt[-1] = 0
         # Compute mean edge elasticity for edges with node i
-        meanL = Lambda[i, indL[i,]].mean(axis=0)
+        meanL = Lambda[
+            i,
+            indL[
+                i,
+            ],
+        ].mean(axis=0)
         # Add edge to elasticity matrix
         ElasticMatrices[j][nNodes, i] = ElasticMatrices[j][i, nNodes] = meanL
 
         if Connectivities[i] == 1:
             # Add node to terminal node
-            ineighbour = np.nonzero(indL[i,])[0]
+            ineighbour = np.nonzero(
+                indL[
+                    i,
+                ]
+            )[0]
             # Calculate new node position
             NewNodePosition = (
-                2 * NodePositions[i,] - NodePositions[ineighbour,]
+                2
+                * NodePositions[
+                    i,
+                ]
+                - NodePositions[
+                    ineighbour,
+                ]
             )
             # Complete Elasticity Matrix
             MuProt[nNodes] = Mus[ineighbour]
@@ -245,7 +298,13 @@ def AddNode2Node(
     return NodePositionsArray, ElasticMatrices, AdjustVectArray
 
 
-def BisectEdge(NodePositions, ElasticMatrix, AdjustVect, Min_K=1):
+def BisectEdge(
+    NodePositions,
+    ElasticMatrix,
+    AdjustVect,
+    Min_K=1,
+    MaxNumberOfGraphCandidates=float("inf"),
+):
     """
     # % This grammar operation inserts a node inside the middle of each edge
     # % The elasticity of the edges do not change
@@ -270,6 +329,21 @@ def BisectEdge(NodePositions, ElasticMatrix, AdjustVect, Min_K=1):
         nGraphs = np.where(EdgDegree >= Min_K)[0]
     else:
         nGraphs = np.array(range(Edges.shape[0]))
+
+    # In case we have limits on the number of candidates
+    if MaxNumberOfGraphCandidates < len(nGraphs):
+        edge_lengths = np.sum(
+            (NodePositions[Edges[:, 0], :] - NodePositions[Edges[:, 1], :]).T ** 2,
+            axis=0,
+        )
+        inds = np.argsort(edge_lengths)[::-1]
+        if Min_K > 1:
+            nGraphs = inds[np.isin(inds, nGraphs)][:MaxNumberOfGraphCandidates]
+            Edges = Edges[nGraphs]
+        else:
+            nGraphs = nGraphs[:MaxNumberOfGraphCandidates]
+            Edges = Edges[inds[nGraphs]]
+
     # Create prototypes for new NodePositions, ElasticMatrix and inds
     npProt = np.vstack((NodePositions, np.zeros((1, NodePositions.shape[1]))))
     emProt = np.vstack(
@@ -286,7 +360,12 @@ def BisectEdge(NodePositions, ElasticMatrix, AdjustVect, Min_K=1):
 
     for j, i in enumerate(nGraphs):
         NewNodePosition = (
-            NodePositions[Edges[i, 0],] + NodePositions[Edges[i, 1],]
+            NodePositions[
+                Edges[i, 0],
+            ]
+            + NodePositions[
+                Edges[i, 1],
+            ]
         ) / 2
 
         # Fill NodePosition
@@ -313,7 +392,7 @@ def BisectEdge(NodePositions, ElasticMatrix, AdjustVect, Min_K=1):
 
 
 def RemoveNode(NodePositions, ElasticMatrix, AdjustVect, FixNodesAtPoints):
-    """    
+    """
     ##  This grammar operation removes a leaf node (connectivity==1)
     """
     Lambda = ElasticMatrix.copy()
@@ -355,7 +434,13 @@ def RemoveNode(NodePositions, ElasticMatrix, AdjustVect, FixNodesAtPoints):
     return NodePositionsArray, ElasticMatrices, AdjustVectArray  # , NodeIndicesArray
 
 
-def ShrinkEdge(NodePositions, ElasticMatrix, AdjustVect, Min_K=1):
+def ShrinkEdge(
+    NodePositions,
+    ElasticMatrix,
+    AdjustVect,
+    Min_K=1,
+    MaxNumberOfGraphCandidates=float("inf"),
+):
     """
     # %
     # % This grammar operation removes an edge from the graph
@@ -382,12 +467,23 @@ def ShrinkEdge(NodePositions, ElasticMatrix, AdjustVect, Min_K=1):
 
     ind_sup1 = np.min(Degree, axis=1) > 1
     ind_min_K = np.max(Degree, axis=1) >= Min_K
-    ind = ind_sup1 & ind_min_K
+    ind = np.where(ind_sup1 & ind_min_K)[0]
 
-    start = start[ind]
-    stop = stop[ind]
     # calculate nb of graphs
-    nGraphs = start.shape[0]
+    nGraphs = len(ind)
+
+    # In case we have limits on the number of candidates
+    if MaxNumberOfGraphCandidates < nGraphs:
+        edge_lengths = np.sum(
+            (NodePositions[start, :] - NodePositions[stop, :]).T ** 2,
+            axis=0,
+        )
+        nGraphs = MaxNumberOfGraphCandidates
+        ind_l = np.argsort(edge_lengths)
+        ind_l = ind_l[np.isin(ind_l, ind)][:nGraphs]
+        start, stop = start[ind_l], stop[ind_l]
+    else:
+        start, stop = start[ind], stop[ind]
 
     # preallocate array
     NodePositionsArray = [
@@ -402,7 +498,14 @@ def ShrinkEdge(NodePositions, ElasticMatrix, AdjustVect, Min_K=1):
         em = ElasticMatrix.copy()
         # Reattaches all edges connected with stop[i] to start[i]
         # and make a new star with an elasticity average of two merged stars
-        em[start[i],] = np.maximum(Lambda[start[i],], Lambda[stop[i],])
+        em[start[i],] = np.maximum(
+            Lambda[
+                start[i],
+            ],
+            Lambda[
+                stop[i],
+            ],
+        )
         em[:, start[i]] = np.maximum(Lambda[:, start[i]], Lambda[:, stop[i]])
         em[start[i], start[i]] = (Mus[start[i]] + Mus[stop[i]]) / 2
         #         em[start[i], start[i]] = Mus[start[i]] + Mus[stop[i]] / 2  #### R bug ????
@@ -453,6 +556,12 @@ def ApplyOptimalGraphGrammarOperation(
     FixNodesAtPoints=[],
     pseudotime=None,
     pseudotimeLambda=0.01,
+    MaxNumberOfGraphCandidatesDict={
+        "AddNode2Node": float("inf"),
+        "BisectEdge": float("inf"),
+        "RemoveNode": float("inf"),
+        "ShrinkEdge": float("inf"),
+    },
 ):
 
     """
@@ -479,14 +588,14 @@ def ApplyOptimalGraphGrammarOperation(
     #' @param FinalEnergy string indicating the final elastic emergy associated with the configuration. Currently it can be "Base" or "Penalized"
     #' @param alpha positive numeric, the value of the alpha parameter of the penalized elastic energy
     #' @param beta positive numeric, the value of the beta parameter of the penalized elastic energy
-    #' @param gamma 
+    #' @param gamma
     #' @param FastSolve boolean, should FastSolve be used when fitting the points to the data?
     #' @param AvoidSolitary boolean, should configurations with "solitary nodes", i.e., nodes without associted points be discarded?
     #' @param EmbPointProb numeric between 0 and 1. If less than 1 point will be sampled at each iteration. Prob indicate the probability of
     #' using each points. This is an *experimental* feature, which may helps speeding up the computation if a large number of points is present.
-    #' @param AdjustVect 
-    #' @param AdjustElasticMatrix 
-    #' @param ... 
+    #' @param AdjustVect
+    #' @param AdjustElasticMatrix
+    #' @param ...
     #' @param MinParOp integer, the minimum number of operations to use parallel computation
     #'
     #' @return
@@ -518,6 +627,7 @@ def ApplyOptimalGraphGrammarOperation(
             opTypes[i],
             partition,
             FixNodesAtPoints,
+            MaxNumberOfGraphCandidatesDict,
         )
 
         #         NodePositionsArrayAll = np.concatenate((NodePositionsArrayAll,
@@ -676,54 +786,6 @@ def ApplyOptimalGraphGrammarOperation(
         NewNodePositions, minEnergy, partition, Dist, MSE, EP, RP = results[idx]
         AdjustVect = AdjustVectAll[idx]
         NewElasticMatrix = ElasticMatricesAll[idx]
-
-        ########################
-
-        ######### Ray multiprocessing
-    #             ray.init(num_cpus=n_cores)
-    #             Xrm = ray.put(X)
-    #             SquaredXrm=ray.put(SquaredX)
-    #             NodePositionsArrayAllrm = ray.put(NodePositionsArrayAll)
-    #             ElasticMatricesAllrm = ray.put(ElasticMatricesAll)
-    #             MaxNumberOfIterationsrm = ray.put(MaxNumberOfIterations)
-    #             epsrm = ray.put(eps)
-    #             Moderm= ray.put(Mode)
-    #             FinalEnergyrm= ray.put(FinalEnergy)
-    #             alpharm= ray.put(alpha)
-    #             betarm= ray.put(beta)
-    #             EmbPointProbrm= ray.put(EmbPointProb)
-    #             DisplayWarningsrm= ray.put(DisplayWarnings)
-    #             MaxBlockSizerm= ray.put(MaxBlockSize)
-    #             TrimmingRadiusrm= ray.put(TrimmingRadius)
-    #             result_ids = [ray_PrimitiveElasticGraphEmbedment.remote(Xrm,
-    #                                                NodePositionsArrayAllrm[i],
-    #                                                ElasticMatricesAll[i], MaxNumberOfIterationsrm, epsrm,
-    #                                                Mode=Moderm, FinalEnergy=FinalEnergyrm,
-    #                                                alpha=alpharm,beta=betarm,prob=EmbPointProbrm,
-    #                                                DisplayWarnings=DisplayWarningsrm,
-    #                                                PointWeights=None,
-    #                                                MaxBlockSize=MaxBlockSizerm,
-    #                                                verbose=False,
-    #                                                TrimmingRadius=TrimmingRadiusrm, SquaredX=SquaredXrm) for i in Valid_configurations]
-
-    #             result_ids = [ray_PrimitiveElasticGraphEmbedment.remote(X,
-    #                                                NodePositionsArrayAll[i],
-    #                                                ElasticMatricesAll[i], MaxNumberOfIterations, eps,
-    #                                                Mode=Mode, FinalEnergy=FinalEnergy,
-    #                                                alpha=alpha,beta=beta,prob=EmbPointProb,
-    #                                                DisplayWarnings=DisplayWarnings,
-    #                                                PointWeights=None,
-    #                                                MaxBlockSize=MaxBlockSize,
-    #                                                verbose=False,
-    #                                                TrimmingRadius=TrimmingRadius, SquaredX=SquaredX) for i in Valid_configurations]
-
-    #             resultlist = ray.get([i[1] for i in result_ids])
-    #             idx = resultlist.index(min(resultlist))
-    #             NewNodePositions, minEnergy, partition, Dist, MSE, EP, RP = ray.get(result_ids[idx])
-    #             AdjustVect = AdjustVectAll[idx]
-    #             NewElasticMatrix = ElasticMatricesAll[idx]
-    #             ray.shutdown()
-    #########################
 
     else:
         minEnergy = np.inf
@@ -897,4 +959,3 @@ def ApplyOptimalGraphGrammarOperation(
         AdjustVect=AdjustVect,
         Dist=Dist,
     )
-
