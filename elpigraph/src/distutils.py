@@ -26,16 +26,16 @@ import numba as nb
 @nb.njit(cache=True)
 def ComputePrimitiveGraphElasticEnergy(NodePositions, ElasticMatrix, dists):
     """
-        //' Compute the elastic energy associated with a particular configuration 
-    //' 
+        //' Compute the elastic energy associated with a particular configuration
+    //'
     //' This function computes the elastic energy associated to a set of points and graph embedded
-    //' into them. 
-    //' 
+    //' into them.
+    //'
     //' @param NodePositions A numeric k-by-m matrix containing the position of the k nodes of the embedded graph
     //' @param ElasticMatrix A numeric l-by-l matrix containing the elastic parameters associates with the edge
     //' of the embedded graph
     //' @param dists A numeric vector containind the squared distance of the data points to the closest node of the graph
-    //' 
+    //'
     //' @return A list with four elements:
     //' * ElasticEnergy is the total energy
     //' * MSE is the MSE component of the energy
@@ -119,18 +119,18 @@ def ComputePenalizedPrimitiveGraphElasticEnergy(
     NodePositions, ElasticMatrix, dists, alpha=0.1, beta=0.1
 ):
     """
-        //' Compute the penalized elastic energy associated with a particular configuration 
-    //' 
+        //' Compute the penalized elastic energy associated with a particular configuration
+    //'
     //' This function computes the elastic energy associated to a set of points and graph embedded
     //' into them.
-    //' 
+    //'
     //' @param NodePositions A numeric k-by-m matrix containing the position of the k nodes of the embedded graph
     //' @param ElasticMatrix A numeric l-by-l matrix containing the elastic parameters associates with the edge
     //' of the embedded graph
     //' @param dists A numeric vector containing the squared distance of the data points to the closest node of the graph
-    //' @param alpha 
+    //' @param alpha
     //' @param beta
-    //' 
+    //'
     //' @return A list with four elements:
     //' * ElasticEnergy is the total energy
     //' * MSE is the MSE component of the energy
@@ -225,7 +225,12 @@ def ComputeWeightedAverage(X, partition, PointWeights, NumberOfNodes):
         NodeClusterCenters[:, k] = (
             np.bincount(part, weights=X[:, k], minlength=NumberOfNodes + 1) / tmp
         )
-    return (NodeClusterCenters[1:,], NodeClusterRelativeSize[np.newaxis].T)
+    return (
+        NodeClusterCenters[
+            1:,
+        ],
+        NodeClusterRelativeSize[np.newaxis].T,
+    )
 
 
 def FitGraph2DataGivenPartition(X, PointWeights, SpringLaplacianMatrix, partition):
@@ -266,6 +271,56 @@ def FitSubGraph2DataGivenPartition(
     (move_NodeClusterCenters, move_NodeClusterRelativeSize,) = ComputeWeightedAverage(
         move_X, move_partition, move_PointWeights, NumberOfNodesToFit
     )
+
+    # SLAUMatrices
+    rs = np.zeros((NumberOfNodes))
+    rs[move_nodes_idx] = move_NodeClusterRelativeSize.flatten()
+    SLAUMatrix = np.diag(rs) + SpringLaplacianMatrix
+    move_SLAUMatrix = SLAUMatrix[move_nodes_idx][:, move_nodes_idx]
+    fixed_SLAUMatrix = SLAUMatrix[move_nodes_idx][:, fixed_nodes_idx]
+
+    # Fit
+    RightHandSide = move_NodeClusterRelativeSize * move_NodeClusterCenters
+    rhs1 = NodePositions[fixed_nodes_idx]
+    RightHandSide -= np.dot(fixed_SLAUMatrix, rhs1)
+    move_NewNodePositions = np.linalg.solve(move_SLAUMatrix, RightHandSide)
+
+    # Store
+    NewNodePositions[fixed_nodes_idx, :] = NodePositions[fixed_nodes_idx, :]
+    NewNodePositions[move_nodes_idx, :] = move_NewNodePositions
+
+    return NewNodePositions
+
+
+def FitSubGraph2DataGivenPartition_v2(
+    move_X,
+    move_PointWeights,
+    SpringLaplacianMatrix,
+    NodePositions,
+    move_partition,
+    move_nodes_idx,
+    PseudotimeNodePositions,
+):
+    """
+    Fits moving subpart of the graph to data while constraining some nodes to remain fixed
+    """
+
+    # params
+    NumberOfNodes = len(NodePositions)
+    NumberOfNodesToFit = len(move_nodes_idx)
+    fixed_nodes_idx = list(set(range(NumberOfNodes)) - set(move_nodes_idx))
+    # new node positions
+    NewNodePositions = np.zeros(NodePositions.shape)
+
+    # weighted average of moving nodes
+    (move_NodeClusterCenters, move_NodeClusterRelativeSize,) = ComputeWeightedAverage(
+        move_X, move_partition, move_PointWeights, NumberOfNodesToFit
+    )
+
+    if PseudotimeNodePositions is not None:
+        move_NodeClusterCenters = (
+            move_NodeClusterCenters + PseudotimeNodePositions[move_nodes_idx]
+        ) / 2
 
     # SLAUMatrices
     rs = np.zeros((NumberOfNodes))

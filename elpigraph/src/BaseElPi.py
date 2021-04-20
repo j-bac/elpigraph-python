@@ -62,6 +62,7 @@ def ElPrincGraph(
     #                 FastSolve = False,
     AvoidSolitary=False,
     EmbPointProb=1,
+    PointWeights=None,
     AdjustElasticMatrix=None,
     AdjustElasticMatrix_Initial=None,
     DisplayWarnings=False,
@@ -195,6 +196,7 @@ def ElPrincGraph(
             Xcp=Xcp,
             SquaredXcp=SquaredXcp,
             FixNodesAtPoints=FixNodesAtPoints,
+            PointWeights=PointWeights,
         )[0]
     else:
         Xcp = None
@@ -208,6 +210,7 @@ def ElPrincGraph(
             ElasticMatrix=ElasticMatrix,
             Mode=Mode,
             FixNodesAtPoints=FixNodesAtPoints,
+            PointWeights=PointWeights,
         )[0]
 
     UpdatedPG = dict(
@@ -317,6 +320,7 @@ def ElPrincGraph(
                         alpha=alpha,
                         beta=beta,
                         EmbPointProb=EmbPointProb,
+                        PointWeights=PointWeights,
                         AvoidSolitary=AvoidSolitary,
                         AdjustElasticMatrix=AdjustElasticMatrix,
                         DisplayWarnings=DisplayWarnings,
@@ -379,6 +383,7 @@ def ElPrincGraph(
                         alpha=alpha,
                         beta=beta,
                         EmbPointProb=EmbPointProb,
+                        PointWeights=PointWeights,
                         AvoidSolitary=AvoidSolitary,
                         AdjustElasticMatrix=AdjustElasticMatrix,
                         DisplayWarnings=DisplayWarnings,
@@ -573,6 +578,7 @@ def computeElasticPrincipalGraph(
     #                                 FastSolve = False,
     AvoidSolitary=False,
     EmbPointProb=1,
+    PointWeights=None,
     AdjustElasticMatrix=None,
     AdjustElasticMatrix_Initial=None,
     Lambda_Initial=None,
@@ -853,6 +859,7 @@ def computeElasticPrincipalGraph(
         verbose=verbose,
         AvoidSolitary=AvoidSolitary,
         EmbPointProb=EmbPointProb,
+        PointWeights=PointWeights,
         AdjustElasticMatrix=AdjustElasticMatrix,
         AdjustElasticMatrix_Initial=AdjustElasticMatrix_Initial,
         DisplayWarnings=DisplayWarnings,

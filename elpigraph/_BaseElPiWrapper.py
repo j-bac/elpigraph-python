@@ -49,6 +49,7 @@ def computeElasticPrincipalGraphWithGrammars(
     #                                              ParallelRep = False,
     Subsets=list(),
     ProbPoint=1,
+    PointWeights=None,
     Mode=1,
     FinalEnergy="Base",
     alpha=0,
@@ -296,6 +297,7 @@ def computeElasticPrincipalGraphWithGrammars(
                         SquaredXcp=SquaredXcp,
                         SquaredX=SquaredX,
                         FixNodesAtPoints=[],
+                        PointWeights=PointWeights,
                     )[0]
                 else:
                     InitNodePositions = PrimitiveElasticGraphEmbedment(
@@ -308,6 +310,7 @@ def computeElasticPrincipalGraphWithGrammars(
                         Mode=Mode,
                         SquaredX=SquaredX,
                         FixNodesAtPoints=[],
+                        PointWeights=PointWeights,
                     )[0]
 
             # Do we need to compute AdjustVect?
@@ -376,6 +379,7 @@ def computeElasticPrincipalGraphWithGrammars(
                     # FastSolve = FastSolve,
                     AvoidSolitary=AvoidSolitary,
                     EmbPointProb=EmbPointProb,
+                    PointWeights=PointWeights,
                     AdjustElasticMatrix=AdjustElasticMatrix,
                     AdjustElasticMatrix_Initial=AdjustElasticMatrix_Initial,
                     Lambda_Initial=Lambda_Initial,
@@ -438,6 +442,7 @@ def computeElasticPrincipalGraphWithGrammars(
                     Mode=Mode,
                     Xcp=Xcp,
                     SquaredXcp=SquaredXcp,
+                    PointWeights=PointWeights,
                 )[0]
 
             else:
@@ -449,6 +454,7 @@ def computeElasticPrincipalGraphWithGrammars(
                     eps=eps,
                     ElasticMatrix=EM,
                     Mode=Mode,
+                    PointWeights=PointWeights,
                 )[0]
 
         ReturnList.append(
@@ -485,6 +491,7 @@ def computeElasticPrincipalGraphWithGrammars(
                 # FastSolve = FastSolve,
                 AvoidSolitary=AvoidSolitary,
                 EmbPointProb=EmbPointProb,
+                PointWeights=PointWeights,
                 AdjustElasticMatrix=AdjustElasticMatrix,
                 AdjustElasticMatrix_Initial=AdjustElasticMatrix_Initial,
                 Lambda_Initial=Lambda_Initial,

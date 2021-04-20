@@ -1,4 +1,5 @@
 import numpy as np
+import numba as nb
 import networkx as nx
 import itertools
 from .graphs import ConstructGraph, GetSubGraph
@@ -32,9 +33,9 @@ def get_circle_or_curve(Edges, root_node):
 
 
 def get_tree(Edges, root_node):
-    """Given root node, decompose Edges into graph relations: 
+    """Given root node, decompose Edges into graph relations:
     - tree parent-children relations
-    - branches with (repeating) endpoints, 
+    - branches with (repeating) endpoints,
     - partitioning of nodes into branches ('single-ended')"""
     # ----get branches
     net = ConstructGraph({"Edges": [Edges]})
@@ -109,8 +110,8 @@ def partition_data_by_branch(X, SquaredX, NodePositions, branches, TrimmingRadiu
 
 # ------generate pseudotime centroid branches
 def nNodes_pseudotime(bX, bpseudotime, bnNodes):
-    """"
-    Argsorts pseudotime and create nNodes bins 
+    """ "
+    Argsorts pseudotime and create nNodes bins
     with even number of points  but potentially uneven amount of pseudotime
     """
     argsort_pseudotime = np.argsort(bpseudotime)
@@ -129,8 +130,8 @@ def nNodes_pseudotime(bX, bpseudotime, bnNodes):
 
 
 def bin_pseudotime(bX, bpseudotime, bnNodes):
-    """"
-    Argsorts pseudotime and create nNodes bins 
+    """ "
+    Argsorts pseudotime and create nNodes bins
     with even amounts of pseudotime but potentially uneven number of points
     """
     # ---create nodes with uniformly spread pseudotime
@@ -161,6 +162,97 @@ def interp_bins(nodes):
     u = np.hstack([[0], u])
     t = np.linspace(0, u.max(), len(nodes))
     return np.array([np.interp(t, u, coord) for coord in nodes.T]).T
+
+
+@nb.njit(cache=True)
+def nNodes_pseudotime_nb(bX, bpseudotime, bnNodes):
+    """ "
+    Argsorts pseudotime and create nNodes bins
+    with even number of points  but potentially uneven amount of pseudotime
+    """
+    argsort_pseudotime = np.argsort(bpseudotime)
+    PseudotimeNodePositions = np.zeros((bnNodes, bX.shape[1]))
+    MeanPseudotime = np.zeros(bnNodes)
+    idx_data = np.linspace(0, len(bX), bnNodes + 1).astype(np.int64)
+    for i in range(bnNodes):
+        MeanPseudotime[i] = bpseudotime[
+            argsort_pseudotime[idx_data[i] : idx_data[i + 1]]
+        ].mean()
+        for j in range(bX.shape[1]):
+            PseudotimeNodePositions[i, j] = bX[
+                argsort_pseudotime[idx_data[i] : idx_data[i + 1]], j
+            ].mean()
+
+    return PseudotimeNodePositions, MeanPseudotime
+
+
+@nb.njit
+def bin_points(bpseudotime, bnNodes):
+    bins = np.linspace(bpseudotime.min(), bpseudotime.max(), bnNodes + 1)
+    bins[0] = -np.inf
+    clusters = np.zeros(len(bpseudotime))
+    count = np.zeros(bnNodes)
+    for i in range(bnNodes):
+        idx_bin = (bpseudotime > bins[i]) & (bpseudotime <= bins[i + 1])
+        clusters[idx_bin] = i
+        count[i] = idx_bin.sum()
+    return count, bins, clusters
+
+
+@nb.njit
+def bin_pseudotime_nb(bX, bpseudotime, bnNodes):
+    """
+    Argsorts pseudotime and create nNodes bins
+    with even amounts of pseudotime but potentially uneven number of points
+    """
+    # ---create nodes with uniformly spread pseudotime
+    count, bins, clusters = bin_points(bpseudotime, bnNodes)
+
+    validNodes = count > 0
+
+    PseudotimeNodePositions = np.zeros((bnNodes, bX.shape[1]))
+    MeanPseudotime = np.zeros(bnNodes)
+    # for each branch node
+    for i in np.where(validNodes)[0]:
+
+        # index associated data
+        data_idx = clusters == i
+
+        # generate node
+        MeanPseudotime[i] = bpseudotime[data_idx].mean()
+
+        for j in range(bX.shape[1]):
+            PseudotimeNodePositions[i, j] = bX[data_idx, j].mean()
+
+    # handle edge case: empty bins node positions set to average of adjacent bins
+    for i in np.where(~validNodes)[0]:
+        b, a = np.max(np.array([0, i - 1])), np.min(np.array([bnNodes - 1, i + 1]))
+
+        MeanPseudotime[i] = MeanPseudotime[np.array([b, a])].mean()
+
+        for j in range(bX.shape[1]):
+            PseudotimeNodePositions[i, j] = PseudotimeNodePositions[
+                np.array([b, a]), j
+            ].mean()
+
+    return PseudotimeNodePositions, MeanPseudotime
+
+
+@nb.njit(cache=True)
+def interp_bins_nb(nodes):
+    """interpolate nodes evenly"""
+    # euclidean distances between consecutive points
+    dist = np.sqrt(((nodes[1:] - nodes[:-1]) ** 2).sum(axis=1))
+    u = np.cumsum(dist)
+    u = np.concatenate((np.array([0.0]), u))
+
+    t = np.linspace(0, u.max(), len(nodes))
+
+    out = np.zeros(nodes.shape)
+    for i in range(nodes.shape[1]):
+        out[:, i] = np.interp(t, u, nodes[:, i])
+
+    return out
 
 
 def gen_pseudotime_centroids(X, pseudotime, branches_single_end, branches_dataidx):
@@ -195,7 +287,7 @@ def gen_pseudotime_centroids(X, pseudotime, branches_single_end, branches_dataid
         (
             PseudotimeNodePositions[n : n + bnNodes],
             MeanPseudotime[n : n + bnNodes],
-        ) = nNodes_pseudotime(bX, bpseudotime, bnNodes)
+        ) = bin_pseudotime_nb(bX, bpseudotime, bnNodes)
 
         n += bnNodes
 
@@ -233,10 +325,10 @@ def gen_pseudotime_centroids_by_path(X, pseudotime, paths, paths_dataidx):
         bnNodes = len(bNodes)
 
         # generate paths ps node positions
-        _PseudotimeNodePositions, _MeanPseudotime = nNodes_pseudotime(
+        _PseudotimeNodePositions, _MeanPseudotime = bin_pseudotime_nb(
             bX, bpseudotime, bnNodes
         )
-        _PseudotimeNodePositions = interp_bins(_PseudotimeNodePositions)
+        _PseudotimeNodePositions = interp_bins_nb(_PseudotimeNodePositions)
 
         # add them to common array
         PseudotimeNodePositions[bNodes] += _PseudotimeNodePositions
@@ -261,7 +353,7 @@ def augment_graph(
 ):
     """
     generate a graph merging node positions and pseudotime node positions
-    with one edge between each of their nodes. 
+    with one edge between each of their nodes.
     pseudotime node positions and edges are placed as the top rows of the matrices
     """
     # ------for each branch, create elastic edges between pseudotime nodes & elpigraph nodes
@@ -292,11 +384,17 @@ def augment_graph(
 
 
 def augment_graph_by_path(
-    NodePositions, Edges, PseudotimeNodePositions, Mus, Lambdas, LinkMu, LinkLambda,
+    NodePositions,
+    Edges,
+    PseudotimeNodePositions,
+    Mus,
+    Lambdas,
+    LinkMu,
+    LinkLambda,
 ):
     """
     generate a graph merging node positions and pseudotime node positions
-    with one edge between each of their nodes. 
+    with one edge between each of their nodes.
     pseudotime node positions and edges are placed as the top rows of the matrices
     """
     # ------for each branch, create elastic edges between pseudotime nodes & elpigraph nodes
@@ -415,7 +513,13 @@ def gen_pseudotime_augmented_graph_by_path(
         MergedLambdas,
         MergedMus,
     ) = augment_graph_by_path(
-        NodePositions, Edges, PseudotimeNodePositions, Mus, Lambdas, LinkMu, LinkLambda,
+        NodePositions,
+        Edges,
+        PseudotimeNodePositions,
+        Mus,
+        Lambdas,
+        LinkMu,
+        LinkLambda,
     )
     return (
         MeanPseudotime,
@@ -424,4 +528,3 @@ def gen_pseudotime_augmented_graph_by_path(
         MergedEdges,
         len(PseudotimeNodePositions),
     )
-
