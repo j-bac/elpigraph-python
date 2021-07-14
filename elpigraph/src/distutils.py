@@ -209,7 +209,7 @@ def PartialDistance(A, B):
 
 
 def ComputeWeightedAverage(X, partition, PointWeights, NumberOfNodes):
-    X *= PointWeights
+    X = X * PointWeights
     # Auxiliary calculations
     M = X.shape[1]
     part = partition.ravel() + 1
@@ -300,6 +300,7 @@ def FitSubGraph2DataGivenPartition_v2(
     move_partition,
     move_nodes_idx,
     PseudotimeNodePositions,
+    PseudotimeLambda,
 ):
     """
     Fits moving subpart of the graph to data while constraining some nodes to remain fixed
@@ -319,8 +320,9 @@ def FitSubGraph2DataGivenPartition_v2(
 
     if PseudotimeNodePositions is not None:
         move_NodeClusterCenters = (
-            move_NodeClusterCenters + PseudotimeNodePositions[move_nodes_idx]
-        ) / 2
+            move_NodeClusterCenters
+            + PseudotimeNodePositions[move_nodes_idx] * PseudotimeLambda
+        ) / (1 + PseudotimeLambda)
 
     # SLAUMatrices
     rs = np.zeros((NumberOfNodes))

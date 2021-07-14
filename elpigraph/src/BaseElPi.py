@@ -17,7 +17,10 @@ from .core import (
     Encode2ElasticMatrix,
     DecodeElasticMatrix,
 )
-from .grammar_operations import ApplyOptimalGraphGrammarOperation
+from .grammar_operations import (
+    ApplyOptimalGraphGrammarOperation,
+    ApplyOptimalGraphGrammarOperation_v2,
+)
 from .reporting import ReportOnPrimitiveGraphEmbedment
 
 
@@ -303,7 +306,7 @@ def ElPrincGraph(
                         print("Growing")
                         t = time.time()
 
-                    UpdatedPG = ApplyOptimalGraphGrammarOperation(
+                    UpdatedPG = ApplyOptimalGraphGrammarOperation_v2(
                         X,
                         UpdatedPG["NodePositions"],
                         UpdatedPG["ElasticMatrix"],
@@ -366,7 +369,7 @@ def ElPrincGraph(
                     if ShowTimer:
                         print("Shrinking")
                         t = time.time()
-                    UpdatedPG = ApplyOptimalGraphGrammarOperation(
+                    UpdatedPG = ApplyOptimalGraphGrammarOperation_v2(
                         X,
                         UpdatedPG["NodePositions"],
                         UpdatedPG["ElasticMatrix"],
