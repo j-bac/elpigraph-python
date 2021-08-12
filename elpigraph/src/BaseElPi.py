@@ -154,6 +154,10 @@ def ElPrincGraph(
     #'
     #'
     """
+
+    if PointWeights is None:
+        PointWeights = np.ones((len(X), 1))
+
     if GrammarOptimization:
         print("Using grammar optimization")
         if np.isinf(MaxSteps):
@@ -306,7 +310,7 @@ def ElPrincGraph(
                         print("Growing")
                         t = time.time()
 
-                    UpdatedPG = ApplyOptimalGraphGrammarOperation_v2(
+                    UpdatedPG = ApplyOptimalGraphGrammarOperation(
                         X,
                         UpdatedPG["NodePositions"],
                         UpdatedPG["ElasticMatrix"],
@@ -369,7 +373,7 @@ def ElPrincGraph(
                     if ShowTimer:
                         print("Shrinking")
                         t = time.time()
-                    UpdatedPG = ApplyOptimalGraphGrammarOperation_v2(
+                    UpdatedPG = ApplyOptimalGraphGrammarOperation(
                         X,
                         UpdatedPG["NodePositions"],
                         UpdatedPG["ElasticMatrix"],

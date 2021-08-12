@@ -46,7 +46,6 @@ elpigraph/src/__init__.py
 elpigraph/src/core.py
 elpigraph/src/distutils.py
 elpigraph/src/grammar_operations.py
-elpigraph/src/grammar_operations2.py
 elpigraph/src/graphs.py
 elpigraph/src/reporting.py
 elpigraph/src/supervised.py

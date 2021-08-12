@@ -812,6 +812,7 @@ def ApplyOptimalGraphGrammarOperation(
                         root_node=0,
                         LinkMu=0,
                         LinkLambda=pseudotimeLambda,
+                        PointWeights=PointWeights,
                         TrimmingRadius=TrimmingRadius,
                     )
 
@@ -889,6 +890,7 @@ def ApplyOptimalGraphGrammarOperation(
                         root_node=0,
                         LinkMu=0,
                         LinkLambda=pseudotimeLambda,
+                        PointWeights=PointWeights,
                         TrimmingRadius=TrimmingRadius,
                     )
 
@@ -1246,6 +1248,7 @@ def ApplyOptimalGraphGrammarOperation_v2(
                         root_node=0,
                         LinkMu=0,
                         LinkLambda=pseudotimeLambda,
+                        PointWeights=PointWeights,
                         TrimmingRadius=TrimmingRadius,
                     )
 
@@ -1330,6 +1333,7 @@ def ApplyOptimalGraphGrammarOperation_v2(
                         root_node=0,
                         LinkMu=0,
                         LinkLambda=pseudotimeLambda,
+                        PointWeights=PointWeights,
                         TrimmingRadius=TrimmingRadius,
                     )
                     _split = int(len(MergedNodePositions) / 2)
