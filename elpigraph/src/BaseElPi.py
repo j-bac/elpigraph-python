@@ -310,7 +310,7 @@ def ElPrincGraph(
                         print("Growing")
                         t = time.time()
 
-                    UpdatedPG = ApplyOptimalGraphGrammarOperation(
+                    UpdatedPG = ApplyOptimalGraphGrammarOperation_v2(
                         X,
                         UpdatedPG["NodePositions"],
                         UpdatedPG["ElasticMatrix"],
@@ -373,7 +373,7 @@ def ElPrincGraph(
                     if ShowTimer:
                         print("Shrinking")
                         t = time.time()
-                    UpdatedPG = ApplyOptimalGraphGrammarOperation(
+                    UpdatedPG = ApplyOptimalGraphGrammarOperation_v2(
                         X,
                         UpdatedPG["NodePositions"],
                         UpdatedPG["ElasticMatrix"],
