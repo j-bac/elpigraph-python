@@ -6,8 +6,13 @@
 LICENSE
 MANIFEST.in
 README.md
+X_test.csv
+X_tree_circle.csv
 appveyor.yml
 differences.md
+elpi_loops.html
+ewing.csv
+ewings.html
 meta.yaml
 requirements.txt
 semi-supervised.ipynb

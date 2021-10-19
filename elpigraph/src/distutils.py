@@ -116,7 +116,7 @@ def RadialCount(A, B, A_squared, Dvect):
 
 @nb.njit(cache=True)
 def ComputePenalizedPrimitiveGraphElasticEnergy(
-    NodePositions, ElasticMatrix, dists, alpha=0.1, beta=0.1
+    NodePositions, ElasticMatrix, dists, alpha=0.01, beta=0.01
 ):
     """
         //' Compute the penalized elastic energy associated with a particular configuration
@@ -155,6 +155,77 @@ def ComputePenalizedPrimitiveGraphElasticEnergy(
 
     Lpenalized = L + alpha * lp
     EP = np.dot(Lpenalized, np.sum(dev ** 2, axis=1))
+    ####
+    indL = Lambda + Lambda.transpose() > 0
+    RP = 0
+    for i in range(StarCenterIndices.size):
+        leaves = indL[StarCenterIndices[i]]
+        ind_leaves = leaves.nonzero()[0]
+        K = ind_leaves.size
+        dev_ = NodePositions[StarCenterIndices[i]] - (
+            NodePositions[ind_leaves] / K
+        ).sum(axis=0)
+        RP += Mu[StarCenterIndices[i]] * (K ** beta) * (dev_ ** 2).sum()
+
+    ElasticEnergy = MSE + EP + RP
+
+    return ElasticEnergy, MSE, EP, RP
+
+
+@nb.njit(cache=True)
+def ComputePenalizedPrimitiveGraphElasticEnergy_v2(
+    NodePositions,
+    ElasticMatrix,
+    dists,
+    alpha=0.01,
+    beta=0.01,
+    PseudotimeNodePositions=None,
+):
+    """
+        //' Compute the penalized elastic energy associated with a particular configuration
+    //'
+    //' This function computes the elastic energy associated to a set of points and graph embedded
+    //' into them.
+    //'
+    //' @param NodePositions A numeric k-by-m matrix containing the position of the k nodes of the embedded graph
+    //' @param ElasticMatrix A numeric l-by-l matrix containing the elastic parameters associates with the edge
+    //' of the embedded graph
+    //' @param dists A numeric vector containing the squared distance of the data points to the closest node of the graph
+    //' @param alpha
+    //' @param beta
+    //'
+    //' @return A list with four elements:
+    //' * ElasticEnergy is the total energy
+    //' * MSE is the MSE component of the energy
+    //' * EP is the EP component of the energy
+    //' * RP is the RP component of the energy
+    """
+    MSE = dists.sum() / dists.size
+    Mu = np.diag(ElasticMatrix)
+    Lambda = np.triu(ElasticMatrix, 1)
+    StarCenterIndices = (Mu > 0).nonzero()[0]
+    (row, col) = Lambda.nonzero()
+    dev = NodePositions[row] - NodePositions[col]
+    L = np.zeros((len(row)))
+    for i in range(len(row)):
+        L[i] = Lambda[row[i], col[i]]
+    ### diff compared to base function
+    BinEM = (Lambda + Lambda.transpose()) > 0
+    Ks = BinEM.sum(axis=0)
+    lp = np.maximum(Ks[row], Ks[col])
+    lp = lp - 2
+    lp[np.where(lp < 0)] = 0
+
+    Lpenalized = L + alpha * lp
+    EP = np.dot(Lpenalized, np.sum(dev ** 2, axis=1))
+
+    if PseudotimeNodePositions is not None:
+        ps_dev = NodePositions - PseudotimeNodePositions
+        pseudotimeEP = np.dot(
+            np.repeat(L.min(), len(NodePositions)), np.sum(ps_dev ** 2, axis=1)
+        )
+        EP += pseudotimeEP
+
     ####
     indL = Lambda + Lambda.transpose() > 0
     RP = 0

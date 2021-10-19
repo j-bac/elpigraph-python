@@ -469,7 +469,7 @@ def PrimitiveElasticGraphBarycentricEmbedment(
     verbose=False,
     TrimmingRadius=float("inf"),
     SquaredX=None,
-    FixNodesAtPoints=None,
+    FixNodesAtPoints=[],
 ):
 
     """
@@ -686,7 +686,7 @@ def PrimitiveElasticGraphEmbedment(
     verbose=False,
     TrimmingRadius=float("inf"),
     SquaredX=None,
-    FixNodesAtPoints=None,
+    FixNodesAtPoints=[],
 ):
 
     """
@@ -903,7 +903,7 @@ def PrimitiveElasticGraphEmbedment_cp(
     SquaredX=None,
     Xcp=None,
     SquaredXcp=None,
-    FixNodesAtPoints=None,
+    FixNodesAtPoints=[],
 ):
 
     """
@@ -1120,7 +1120,7 @@ def PrimitiveElasticGraphEmbedment_v2(
     verbose=False,
     TrimmingRadius=float("inf"),
     SquaredX=None,
-    FixNodesAtPoints=None,
+    FixNodesAtPoints=[],
     PseudotimeNodePositions=None,
     PseudotimeLambda=None,
 ):
@@ -1169,16 +1169,20 @@ def PrimitiveElasticGraphEmbedment_v2(
 
     if FixNodesAtPoints != []:
         # -----Index data and graph into moving nodes and fixed nodes------#
-        flat_FixNodesAtPoints = [
-            item for sublist in FixNodesAtPoints for item in sublist
-        ]  # fixed datapoints
+        # flat_FixNodesAtPoints = [
+        #    item for sublist in FixNodesAtPoints for item in sublist
+        # ]  # fixed datapoints
 
-        # partition, dists = PartitionData(
-        #    X, NodePositions, MaxBlockSize, SquaredX, TrimmingRadius,
-        # )
-        # move_data_idx = np.where(~np.isin(partition, range(len(FixNodesAtPoints))))[0]
+        partition, dists = PartitionData(
+            X,
+            NodePositions,
+            MaxBlockSize,
+            SquaredX,
+            TrimmingRadius,
+        )
+        move_data_idx = np.where(~np.isin(partition, range(len(FixNodesAtPoints))))[0]
 
-        move_data_idx = [i for i in range(len(X)) if i not in flat_FixNodesAtPoints]
+        # move_data_idx = [i for i in range(len(X)) if i not in flat_FixNodesAtPoints]
         move_nodes_idx = np.arange(len(FixNodesAtPoints), len(NodePositions))
     else:
         move_data_idx = np.arange(len(X))
@@ -1223,21 +1227,11 @@ def PrimitiveElasticGraphEmbedment_v2(
                 PseudotimeLambda=PseudotimeLambda,
             )
         else:
-            # NewNodePositions = FitGraph2DataGivenPartition(
-            #    move_X,
-            #    move_PointWeights,
-            #    SpringLaplacianMatrix,
-            #    move_partition,
-            # )
-            NewNodePositions = FitSubGraph2DataGivenPartition_v2(
+            NewNodePositions = FitGraph2DataGivenPartition(
                 move_X,
                 move_PointWeights,
                 SpringLaplacianMatrix,
-                NodePositions,
                 move_partition,
-                move_nodes_idx,
-                PseudotimeNodePositions=PseudotimeNodePositions,
-                PseudotimeLambda=PseudotimeLambda,
             )
 
         # Look at differences
@@ -1325,8 +1319,13 @@ def PrimitiveElasticGraphEmbedment_v2(
             )
 
         elif FinalEnergy == "Penalized":
-            ElasticEnergy, MSE, EP, RP = ComputePenalizedPrimitiveGraphElasticEnergy(
-                NewNodePositions, ElasticMatrix, dists, alpha, beta
+            ElasticEnergy, MSE, EP, RP = ComputePenalizedPrimitiveGraphElasticEnergy_v2(
+                NewNodePositions,
+                ElasticMatrix,
+                dists,
+                alpha,
+                beta,
+                PseudotimeNodePositions,
             )
 
     return NewNodePositions, ElasticEnergy, partition, dists, MSE, EP, RP
@@ -1349,7 +1348,7 @@ def PrimitiveElasticGraphEmbedment_cp_v2(
     verbose=False,
     TrimmingRadius=float("inf"),
     SquaredX=None,
-    FixNodesAtPoints=None,
+    FixNodesAtPoints=[],
     PseudotimeNodePositions=None,
     PseudotimeLambda=None,
     Xcp=None,
@@ -1400,16 +1399,21 @@ def PrimitiveElasticGraphEmbedment_cp_v2(
 
     if FixNodesAtPoints != []:
         # -----Index data and graph into moving nodes and fixed nodes------#
+
         flat_FixNodesAtPoints = [
             item for sublist in FixNodesAtPoints for item in sublist
         ]  # fixed datapoints
 
-        # partition, dists = PartitionData(
-        #    X, NodePositions, MaxBlockSize, SquaredX, TrimmingRadius,
-        # )
-        # move_data_idx = np.where(~np.isin(partition, range(len(FixNodesAtPoints))))[0]
+        partition, dists = PartitionData(
+            X,
+            NodePositions,
+            MaxBlockSize,
+            SquaredX,
+            TrimmingRadius,
+        )
+        move_data_idx = np.where(~np.isin(partition, range(len(FixNodesAtPoints))))[0]
 
-        move_data_idx = [i for i in range(len(X)) if i not in flat_FixNodesAtPoints]
+        # move_data_idx = [i for i in range(len(X)) if i not in flat_FixNodesAtPoints]
         move_nodes_idx = np.arange(len(FixNodesAtPoints), len(NodePositions))
     else:
         move_data_idx = np.arange(len(X))
@@ -1557,8 +1561,13 @@ def PrimitiveElasticGraphEmbedment_cp_v2(
             )
 
         elif FinalEnergy == "Penalized":
-            ElasticEnergy, MSE, EP, RP = ComputePenalizedPrimitiveGraphElasticEnergy(
-                NewNodePositions, ElasticMatrix, dists, alpha, beta
+            ElasticEnergy, MSE, EP, RP = ComputePenalizedPrimitiveGraphElasticEnergy_v2(
+                NewNodePositions,
+                ElasticMatrix,
+                dists,
+                alpha,
+                beta,
+                PseudotimeNodePositions,
             )
 
     return NewNodePositions, ElasticEnergy, partition, dists, MSE, EP, RP

@@ -225,8 +225,8 @@ def nNodes_pseudotime_weighted_nb(bX, bpseudotime, bnNodes, bweights):
     idx = np.searchsorted(
         cum_arr, np.linspace(0, 1, bnNodes, endpoint=False)[1:], side="right"
     )
-    bX_chunks = np.split(bX[argsort_pseudotime], idx)
-    bps_chunks = np.split(bpseudotime[argsort_pseudotime], idx)
+    bX_chunks = nb.typed.List(np.split(bX[argsort_pseudotime], idx))
+    bps_chunks = nb.typed.List(np.split(bpseudotime[argsort_pseudotime], idx))
     PseudotimeNodePositions, MeanPseudotime = chunk(bX, bX_chunks, bps_chunks, bnNodes)
     return PseudotimeNodePositions, MeanPseudotime, bX_chunks
 
@@ -375,9 +375,11 @@ def gen_pseudotime_centroids_by_path(X, pseudotime, paths, paths_dataidx, PointW
         bnNodes = len(bNodes)
 
         # generate paths ps node positions
-        _PseudotimeNodePositions, _MeanPseudotime, bX_chunks = nNodes_pseudotime_weighted_nb(
-            bX, bpseudotime, bnNodes, bweights
-        )
+        (
+            _PseudotimeNodePositions,
+            _MeanPseudotime,
+            bX_chunks,
+        ) = nNodes_pseudotime_weighted_nb(bX, bpseudotime, bnNodes, bweights)
         _PseudotimeNodePositions = np.vstack(
             [
                 bX_chunks[i][vq(_PseudotimeNodePositions[[i]], bX_chunks[i])[0][0]]
