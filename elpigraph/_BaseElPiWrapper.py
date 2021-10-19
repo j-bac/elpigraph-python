@@ -183,7 +183,7 @@ def computeElasticPrincipalGraphWithGrammars(
 
             # Select the points to be used
             if ProbPoint < 1 and ProbPoint > 0:
-                SelPoints = np.random.uniform(len(X)) <= ProbPoint
+                SelPoints = np.random.random(len(X)) <= ProbPoint
             else:
                 SelPoints = np.array([True] * len(X))
 
