@@ -1,0 +1,8 @@
+.ipynb_checkpoints
+.vscode
+.idea
+dist/
+build/
+elpigraph.egg-info/
+__pycache__
+Rplots.pdf

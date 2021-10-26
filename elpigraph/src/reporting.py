@@ -3,7 +3,7 @@ from .core import DecodeElasticMatrix, PartitionData
 from .distutils import ComputePrimitiveGraphElasticEnergy
 
 def getPrimitiveGraphStructureBarCode(ElasticMatrix):
-    Mus = ElasticMatrix.diagonal()
+    #Mus = ElasticMatrix.diagonal()
     Lambda = ElasticMatrix.copy()
     np.fill_diagonal(Lambda, 0)
     indL = Lambda > 0
