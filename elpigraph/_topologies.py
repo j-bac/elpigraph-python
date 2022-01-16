@@ -61,6 +61,8 @@ def computeElasticPrincipalCircle(
     FixNodesAtPoints=[],
     pseudotime=None,
     pseudotimeLambda=0.01,
+    label=None,
+    labelLambda=0.01,
     MaxNumberOfGraphCandidatesDict={
         "AddNode2Node": float("inf"),
         "BisectEdge": float("inf"),
@@ -187,6 +189,7 @@ def computeElasticPrincipalCircle(
         InitNodePositions=InitNodePositions,
         InitEdges=InitEdges,
         AdjustVect=AdjustVect,
+        ElasticMatrix=ElasticMatrix,
         Configuration=Configuration,
         CenterData=CenterData,
         ComputeMSEP=ComputeMSEP,
@@ -225,6 +228,8 @@ def computeElasticPrincipalCircle(
         FixNodesAtPoints=FixNodesAtPoints,
         pseudotime=pseudotime,
         pseudotimeLambda=pseudotimeLambda,
+        label=label,
+        labelLambda=labelLambda,
         MaxNumberOfGraphCandidatesDict=MaxNumberOfGraphCandidatesDict,
     )
 
@@ -286,6 +291,8 @@ def computeElasticPrincipalTree(
     FixNodesAtPoints=[],
     pseudotime=None,
     pseudotimeLambda=0.01,
+    label=None,
+    labelLambda=0.01,
     MaxNumberOfGraphCandidatesDict={
         "AddNode2Node": float("inf"),
         "BisectEdge": float("inf"),
@@ -407,6 +414,7 @@ def computeElasticPrincipalTree(
         InitNodePositions=InitNodePositions,
         InitEdges=InitEdges,
         AdjustVect=AdjustVect,
+        ElasticMatrix=ElasticMatrix,
         Configuration=Configuration,
         CenterData=CenterData,
         ComputeMSEP=ComputeMSEP,
@@ -445,6 +453,8 @@ def computeElasticPrincipalTree(
         FixNodesAtPoints=FixNodesAtPoints,
         pseudotime=pseudotime,
         pseudotimeLambda=pseudotimeLambda,
+        label=label,
+        labelLambda=labelLambda,
         MaxNumberOfGraphCandidatesDict=MaxNumberOfGraphCandidatesDict,
     )
 
@@ -506,6 +516,8 @@ def computeElasticPrincipalCurve(
     FixNodesAtPoints=[],
     pseudotime=None,
     pseudotimeLambda=0.01,
+    label=None,
+    labelLambda=0.01,
     MaxNumberOfGraphCandidatesDict={
         "AddNode2Node": float("inf"),
         "BisectEdge": float("inf"),
@@ -626,6 +638,7 @@ def computeElasticPrincipalCurve(
         InitNodePositions=InitNodePositions,
         InitEdges=InitEdges,
         AdjustVect=AdjustVect,
+        ElasticMatrix=ElasticMatrix,
         Configuration=Configuration,
         CenterData=CenterData,
         ComputeMSEP=ComputeMSEP,
@@ -664,6 +677,8 @@ def computeElasticPrincipalCurve(
         FixNodesAtPoints=FixNodesAtPoints,
         pseudotime=pseudotime,
         pseudotimeLambda=pseudotimeLambda,
+        label=label,
+        labelLambda=labelLambda,
         MaxNumberOfGraphCandidatesDict=MaxNumberOfGraphCandidatesDict,
     )
 
@@ -725,6 +740,14 @@ def fineTuneBR(
     FixNodesAtPoints=[],
     pseudotime=None,
     pseudotimeLambda=0.01,
+    label=None,
+    labelLambda=0.01,
+    MaxNumberOfGraphCandidatesDict={
+        "AddNode2Node": float("inf"),
+        "BisectEdge": float("inf"),
+        "RemoveNode": float("inf"),
+        "ShrinkEdge": float("inf"),
+    },
 ):
 
     """
@@ -852,6 +875,7 @@ def fineTuneBR(
         InitNodePositions=InitNodePositions,
         InitEdges=InitEdges,
         AdjustVect=AdjustVect,
+        ElasticMatrix=ElasticMatrix,
         Configuration=Configuration,
         CenterData=CenterData,
         ComputeMSEP=ComputeMSEP,
@@ -889,6 +913,8 @@ def fineTuneBR(
         FixNodesAtPoints=FixNodesAtPoints,
         pseudotime=pseudotime,
         pseudotimeLambda=pseudotimeLambda,
+        label=label,
+        labelLambda=labelLambda,
         MaxNumberOfGraphCandidatesDict=MaxNumberOfGraphCandidatesDict,
     )
 
@@ -1062,6 +1088,7 @@ def GrowLeaves(
         InitNodePositions=InitNodePositions,
         InitEdges=InitEdges,
         AdjustVect=AdjustVect,
+        ElasticMatrix=ElasticMatrix,
         Configuration=Configuration,
         CenterData=CenterData,
         ComputeMSEP=ComputeMSEP,

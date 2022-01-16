@@ -6,6 +6,7 @@ from .core import (
     PartitionData_cp,
     PrimitiveElasticGraphEmbedment,
     PrimitiveElasticGraphEmbedment_v2,
+    PrimitiveElasticGraphEmbedment_v3,
     PrimitiveElasticGraphEmbedment_cp,
     PrimitiveElasticGraphEmbedment_cp_v2,
     PrimitiveElasticGraphBarycentricEmbedment,
@@ -792,7 +793,9 @@ def ApplyOptimalGraphGrammarOperation(
 
     else:
         minEnergy = np.inf
-
+        StoreMeanPseudotime = None
+        StoreMergedElasticMatrix = None
+        StoreMergedNodePositions = None
         if Xcp is None:
             for i in Valid_configurations:
                 # TODO add pointweights ?
@@ -951,19 +954,19 @@ def ApplyOptimalGraphGrammarOperation(
                     RP = rp
                     Dist = dist
 
-    return dict(
-        StoreMeanPseudotime=StoreMeanPseudotime,
-        StoreMergedElasticMatrix=StoreMergedElasticMatrix,
-        StoreMergedNodePositions=StoreMergedNodePositions,
-        NodePositions=NewNodePositions,
-        ElasticMatrix=NewElasticMatrix,
-        ElasticEnergy=minEnergy,
-        MSE=MSE,
-        EP=EP,
-        RP=RP,
-        AdjustVect=AdjustVect,
-        Dist=Dist,
-    )
+        return dict(
+            StoreMeanPseudotime=StoreMeanPseudotime,
+            StoreMergedElasticMatrix=StoreMergedElasticMatrix,
+            StoreMergedNodePositions=StoreMergedNodePositions,
+            NodePositions=NewNodePositions,
+            ElasticMatrix=NewElasticMatrix,
+            ElasticEnergy=minEnergy,
+            MSE=MSE,
+            EP=EP,
+            RP=RP,
+            AdjustVect=AdjustVect,
+            Dist=Dist,
+        )
 
 
 def ApplyOptimalGraphGrammarOperation_v2(
@@ -1069,12 +1072,6 @@ def ApplyOptimalGraphGrammarOperation_v2(
             MaxNumberOfGraphCandidatesDict,
         )
 
-        #         NodePositionsArrayAll = np.concatenate((NodePositionsArrayAll,
-        #                                                NodePositionsArray), axis=2)
-        #         ElasticMatricesAll = np.concatenate((ElasticMatricesAll,
-        #                                              ElasticMatrices), axis=2)
-        #     NodeIndicesArrayAll = np.concatenate((NodeIndicesArrayAll,
-        #                                           NodeIndicesArray), axis=1)
         NodePositionsArrayAll.extend(NodePositionsArray)
         ElasticMatricesAll.extend(ElasticMatrices)
         AdjustVectAll.extend(AdjustVectArray)
@@ -1228,7 +1225,9 @@ def ApplyOptimalGraphGrammarOperation_v2(
 
     else:
         minEnergy = np.inf
-
+        StoreMeanPseudotime = None
+        StoreMergedElasticMatrix = None
+        StoreMergedNodePositions = None
         if Xcp is None:
             for i in Valid_configurations:
                 # TODO add pointweights ?
@@ -1399,6 +1398,460 @@ def ApplyOptimalGraphGrammarOperation_v2(
                     RP = rp
                     Dist = dist
 
+    # if ~np.isfinite(minEnergy):
+    #    return "failed operation"
+    return dict(
+        StoreMeanPseudotime=StoreMeanPseudotime,
+        StoreMergedElasticMatrix=StoreMergedElasticMatrix,
+        StoreMergedNodePositions=StoreMergedNodePositions,
+        NodePositions=NewNodePositions,
+        ElasticMatrix=NewElasticMatrix,
+        ElasticEnergy=minEnergy,
+        MSE=MSE,
+        EP=EP,
+        RP=RP,
+        AdjustVect=AdjustVect,
+        Dist=Dist,
+    )
+
+
+def ApplyOptimalGraphGrammarOperation_v3(
+    X,
+    NodePositions,
+    ElasticMatrix,
+    opTypes,
+    AdjustVect=None,
+    SquaredX=None,
+    verbose=False,
+    MaxBlockSize=100000000,
+    MaxNumberOfIterations=100,
+    eps=0.01,
+    TrimmingRadius=float("inf"),
+    Mode=1,
+    FinalEnergy="Base",
+    alpha=1,
+    beta=1,
+    EmbPointProb=1,
+    PointWeights=None,
+    AvoidSolitary=False,
+    AdjustElasticMatrix=None,
+    DisplayWarnings=True,
+    n_cores=1,
+    MinParOp=20,
+    multiproc_shared_variables=None,
+    Xcp=None,
+    SquaredXcp=None,
+    FixNodesAtPoints=[],
+    pseudotime=None,
+    pseudotimeLambda=0.01,
+    label=None,
+    labelLambda=0.01,
+    MaxNumberOfGraphCandidatesDict={
+        "AddNode2Node": float("inf"),
+        "BisectEdge": float("inf"),
+        "RemoveNode": float("inf"),
+        "ShrinkEdge": float("inf"),
+    },
+):
+
+    """
+    # Multiple grammar application --------------------------------------------
+    #' Application of the grammar operation. This in an internal function that should not be used in by the end-user
+    #'
+    #' @param X numerical 2D matrix, the n-by-m matrix with the position of n m-dimensional points
+    #' @param NodePositions numerical 2D matrix, the k-by-m matrix with the position of k m-dimensional points
+    #' @param ElasticMatrix numerical 2D matrix, the k-by-k elastic matrix
+    #' @param operationtypes string vector containing the operation to use
+    #' @param SquaredX rowSums(X^2), if NULL it will be computed
+    #' @param verbose boolean. Should addition information be displayed
+    #' @param n.cores integer. How many cores to use. If EnvCl is not NULL, that cliuster setup will be used,
+    #' otherwise a SOCK cluster willbe used
+    #' @param EnvCl a cluster structure returned, e.g., by makeCluster.
+    #' If a cluster structure is used, all the nodes must be able to access all the variable needed by PrimitiveElasticGraphEmbedment
+    #' @param MaxNumberOfIterations is an integer number indicating the maximum number of iterations for the EM algorithm
+    #' @param TrimmingRadius is a real value indicating the trimming radius, a parameter required for robust principal graphs
+    #' (see https://github.com/auranic/Elastic-principal-graphs/wiki/Robust-principal-graphs)
+    #' @param eps a real number indicating the minimal relative change in the nodenpositions
+    #' to be considered the graph embedded (convergence criteria)
+    #' @param Mode integer, the energy mode. It can be 1 (difference is computed using the position of the nodes) and
+    #' 2 (difference is computed using the changes in elestic energy of the configuraztions)
+    #' @param FinalEnergy string indicating the final elastic emergy associated with the configuration. Currently it can be "Base" or "Penalized"
+    #' @param alpha positive numeric, the value of the alpha parameter of the penalized elastic energy
+    #' @param beta positive numeric, the value of the beta parameter of the penalized elastic energy
+    #' @param gamma
+    #' @param FastSolve boolean, should FastSolve be used when fitting the points to the data?
+    #' @param AvoidSolitary boolean, should configurations with "solitary nodes", i.e., nodes without associted points be discarded?
+    #' @param EmbPointProb numeric between 0 and 1. If less than 1 point will be sampled at each iteration. Prob indicate the probability of
+    #' using each points. This is an *experimental* feature, which may helps speeding up the computation if a large number of points is present.
+    #' @param AdjustVect
+    #' @param AdjustElasticMatrix
+    #' @param ...
+    #' @param MinParOp integer, the minimum number of operations to use parallel computation
+    #'
+    #' @return
+    #'
+    #' @examples
+    """
+
+    NodePositionsArrayAll = []
+    ElasticMatricesAll = []
+    AdjustVectAll = []
+
+    if Xcp is None:
+        partition, _ = PartitionData(
+            X, NodePositions, MaxBlockSize, SquaredX, TrimmingRadius
+        )
+    else:
+        partition, _ = PartitionData_cp(
+            Xcp, NodePositions, MaxBlockSize, SquaredXcp, TrimmingRadius
+        )
+
+    for i in range(len(opTypes)):
+        if verbose:
+            print(" Operation type : ", opTypes[i])
+        (NodePositionsArray, ElasticMatrices, AdjustVectArray,) = GraphGrammarOperation(
+            X,
+            NodePositions,
+            ElasticMatrix,
+            AdjustVect,
+            opTypes[i],
+            partition,
+            FixNodesAtPoints,
+            MaxNumberOfGraphCandidatesDict,
+        )
+
+        NodePositionsArrayAll.extend(NodePositionsArray)
+        ElasticMatricesAll.extend(ElasticMatrices)
+        AdjustVectAll.extend(AdjustVectArray)
+
+    if verbose:
+        print("Optimizing graphs")
+
+    Valid_configurations = range(len(NodePositionsArrayAll))
+
+    if AvoidSolitary:
+        Valid_configurations = []
+        if Xcp is None:
+            for i in range(len(NodePositionsArrayAll)):
+                partition = PartitionData(
+                    X=X,
+                    MaxBlockSize=MaxBlockSize,
+                    NodePositions=NodePositionsArrayAll[i],
+                    SquaredX=SquaredX,
+                    TrimmingRadius=TrimmingRadius,
+                )[0]
+                if all(
+                    np.isin(
+                        np.array(range(NodePositionsArrayAll[i].shape[0])),
+                        partition[partition > -1],
+                    )
+                ):
+                    Valid_configurations.append(i)
+
+        else:
+            for i in range(len(NodePositionsArrayAll)):
+                partition = PartitionData_cp(
+                    Xcp,
+                    MaxBlockSize,
+                    NodePositionsArrayAll[i],
+                    SquaredXcp,
+                    TrimmingRadius=TrimmingRadius,
+                )[0]
+                if all(
+                    np.isin(
+                        np.array(range(NodePositionsArrayAll[i].shape[0])),
+                        partition[partition > -1],
+                    )
+                ):
+                    Valid_configurations.append(i)
+
+        if verbose:
+            print(
+                len(Valid_configurations),
+                "configurations out of ",
+                len(NodePositionsArrayAll),
+                "used",
+            )
+        if Valid_configurations == []:
+            return "failed operation"
+    #     NodePositionArrayAll = NodePositionArrayAll[...,Valid_configurations]
+    #     ElasticMatricesAll = ElasticMatricesAll[...,Valid_configurations]
+    #     AdjustVectAll = AdjustVectAll[Valid_configurations]
+
+    if AdjustElasticMatrix:
+        for i in Valid_configurations:
+            ElasticMatricesAll[i], AdjustVectAll[i] = AdjustByConstant(
+                ElasticMatricesAll[i], AdjustVectAll[i]
+            )
+
+    if n_cores > 1 and len(Valid_configurations) // (MinParOp + 1) > 1:
+
+        #             X_remote, X_shape, SquaredX_remote, SquaredX_shape = multiproc_shared_variables
+        #             ####### Multiprocessing
+        #             with Pool(processes=n_cores,
+        #                       initializer=init_worker,
+        #                       initargs=(X_remote,
+        #                                 X_shape,
+        #                                 SquaredX_remote,
+        #                                 SquaredX_shape,
+        #                                 NodePositionsArrayAll,
+        #                                 ElasticMatricesAll,
+        #                                 MaxNumberOfIterations,
+        #                                 TrimmingRadius,
+        #                                 eps,
+        #                                 Mode,
+        #                                 FinalEnergy,
+        #                                 alpha,
+        #                                 beta,
+        #                                 EmbPointProb,
+        #                                 DisplayWarnings,
+        #                                 None,
+        #                                 MaxBlockSize,
+        #                                 False)) as pool:
+
+        #                 results = pool.map(proxy_multiproc,Valid_configurations)
+
+        with mp.Pool(n_cores) as pool:
+            if Xcp is None:
+                results = pool.map(
+                    proxy,
+                    [
+                        dict(
+                            X=X,
+                            NodePositions=NodePositionsArrayAll[i],
+                            ElasticMatrix=ElasticMatricesAll[i],
+                            MaxNumberOfIterations=MaxNumberOfIterations,
+                            eps=eps,
+                            Mode=Mode,
+                            FinalEnergy=FinalEnergy,
+                            alpha=alpha,
+                            beta=beta,
+                            prob=EmbPointProb,
+                            DisplayWarnings=DisplayWarnings,
+                            PointWeights=PointWeights,
+                            MaxBlockSize=MaxBlockSize,
+                            verbose=False,
+                            TrimmingRadius=TrimmingRadius,
+                            SquaredX=SquaredX,
+                        )
+                        for i in Valid_configurations
+                    ],
+                )
+            else:
+                results = pool.map(
+                    proxy_cp,
+                    [
+                        dict(
+                            X=X,
+                            NodePositions=NodePositionsArrayAll[i],
+                            ElasticMatrix=ElasticMatricesAll[i],
+                            MaxNumberOfIterations=MaxNumberOfIterations,
+                            eps=eps,
+                            Mode=Mode,
+                            FinalEnergy=FinalEnergy,
+                            alpha=alpha,
+                            beta=beta,
+                            prob=EmbPointProb,
+                            DisplayWarnings=DisplayWarnings,
+                            PointWeights=PointWeights,
+                            MaxBlockSize=MaxBlockSize,
+                            verbose=False,
+                            TrimmingRadius=TrimmingRadius,
+                            SquaredX=SquaredX,
+                            Xcp=Xcp,
+                            SquaredXcp=SquaredXcp,
+                        )
+                        for i in Valid_configurations
+                    ],
+                )
+
+        list_energies = [r[1] for r in results]
+        idx = list_energies.index(min(list_energies))
+        NewNodePositions, minEnergy, partition, Dist, MSE, EP, RP = results[idx]
+        AdjustVect = AdjustVectAll[idx]
+        NewElasticMatrix = ElasticMatricesAll[idx]
+
+    else:
+        minEnergy = np.inf
+        StoreMeanPseudotime = None
+        StoreMergedElasticMatrix = None
+        StoreMergedNodePositions = None
+        if Xcp is None:
+            for i in Valid_configurations:
+                # TODO add pointweights ?
+                if pseudotime is not None and len(NodePositions) > 10:
+                    (
+                        MeanPseudotime,
+                        MergedNodePositions,
+                        MergedElasticMatrix,
+                        MergedEdges,
+                        nPseudoNodes,
+                    ) = gen_pseudotime_augmented_graph_by_path(
+                        X,
+                        SquaredX,
+                        NodePositionsArrayAll[i],
+                        ElasticMatricesAll[i],
+                        pseudotime,
+                        root_node=0,
+                        LinkMu=0,
+                        LinkLambda=pseudotimeLambda,
+                        PointWeights=PointWeights,
+                        TrimmingRadius=TrimmingRadius,
+                    )
+
+                    _split = int(len(MergedNodePositions) / 2)
+                    FitNodePositions = MergedNodePositions[_split:]
+                    PseudotimeNodePositions = MergedNodePositions[:_split]
+                    FitElasticMatrix = ElasticMatricesAll[i]
+
+                else:
+                    FitNodePositions = NodePositionsArrayAll[i]
+                    FitElasticMatrix = ElasticMatricesAll[i]
+                    PseudotimeNodePositions = None
+                    nPseudoNodes = 0
+                (
+                    nodep,
+                    ElasticEnergy,
+                    part,
+                    dist,
+                    mse,
+                    ep,
+                    rp,
+                ) = PrimitiveElasticGraphEmbedment_v3(
+                    X,
+                    FitNodePositions,
+                    FitElasticMatrix,
+                    MaxNumberOfIterations,
+                    eps,
+                    Mode=Mode,
+                    FinalEnergy=FinalEnergy,
+                    alpha=alpha,
+                    beta=beta,
+                    prob=EmbPointProb,
+                    DisplayWarnings=DisplayWarnings,
+                    PointWeights=PointWeights,
+                    MaxBlockSize=MaxBlockSize,
+                    verbose=False,
+                    TrimmingRadius=TrimmingRadius,
+                    SquaredX=SquaredX,
+                    FixNodesAtPoints=FixNodesAtPoints,
+                    PseudotimeNodePositions=PseudotimeNodePositions,
+                    PseudotimeLambda=pseudotimeLambda,
+                    Label=label,
+                    LabelLambda=labelLambda,
+                )
+
+                if ElasticEnergy < minEnergy:
+                    if pseudotime is not None and len(NodePositions) > 10:
+                        StoreMeanPseudotime = MeanPseudotime
+                        StoreMergedElasticMatrix = MergedElasticMatrix
+                        StoreMergedNodePositions = np.concatenate(
+                            (PseudotimeNodePositions, nodep)
+                        )
+                        NewNodePositions = nodep
+                    else:
+                        StoreMeanPseudotime = None
+                        StoreMergedElasticMatrix = None
+                        StoreMergedNodePositions = None
+                        NewNodePositions = nodep
+                    NewElasticMatrix = ElasticMatricesAll[i]
+                    partition = part
+                    AdjustVect = AdjustVectAll[i]
+                    minEnergy = ElasticEnergy
+                    MSE = mse
+                    EP = ep
+                    RP = rp
+                    Dist = dist
+
+        else:
+            for i in Valid_configurations:
+                # TODO add pointweights ?
+                if pseudotime is not None and len(NodePositions) > 10:
+                    (
+                        MeanPseudotime,
+                        MergedNodePositions,
+                        MergedElasticMatrix,
+                        MergedEdges,
+                        nPseudoNodes,
+                    ) = gen_pseudotime_augmented_graph_by_path(
+                        X,
+                        SquaredX,
+                        NodePositionsArrayAll[i],
+                        ElasticMatricesAll[i],
+                        pseudotime,
+                        root_node=0,
+                        LinkMu=0,
+                        LinkLambda=pseudotimeLambda,
+                        PointWeights=PointWeights,
+                        TrimmingRadius=TrimmingRadius,
+                    )
+                    _split = int(len(MergedNodePositions) / 2)
+                    FitNodePositions = MergedNodePositions[_split:]
+                    PseudotimeNodePositions = MergedNodePositions[:_split]
+                    FitElasticMatrix = ElasticMatricesAll[i]
+                else:
+                    FitNodePositions = NodePositionsArrayAll[i]
+                    FitElasticMatrix = ElasticMatricesAll[i]
+                    PseudotimeNodePositions = None
+                    nPseudoNodes = 0
+                (
+                    nodep,
+                    ElasticEnergy,
+                    part,
+                    dist,
+                    mse,
+                    ep,
+                    rp,
+                ) = PrimitiveElasticGraphEmbedment_cp_v2(
+                    X,
+                    FitNodePositions,
+                    FitElasticMatrix,
+                    MaxNumberOfIterations,
+                    eps,
+                    Mode=Mode,
+                    FinalEnergy=FinalEnergy,
+                    alpha=alpha,
+                    beta=beta,
+                    prob=EmbPointProb,
+                    DisplayWarnings=DisplayWarnings,
+                    PointWeights=PointWeights,
+                    MaxBlockSize=MaxBlockSize,
+                    verbose=False,
+                    TrimmingRadius=TrimmingRadius,
+                    SquaredX=SquaredX,
+                    Xcp=Xcp,
+                    SquaredXcp=SquaredXcp,
+                    FixNodesAtPoints=FixNodesAtPoints,
+                    PseudotimeNodePositions=PseudotimeNodePositions,
+                    PseudotimeLambda=pseudotimeLambda,
+                    Label=label,
+                    LabelLambda=labelLambda,
+                )
+
+                if ElasticEnergy < minEnergy:
+                    if pseudotime is not None and len(NodePositions) > 10:
+                        StoreMeanPseudotime = MeanPseudotime
+                        StoreMergedElasticMatrix = MergedElasticMatrix
+                        StoreMergedNodePositions = np.concatenate(
+                            (PseudotimeNodePositions, nodep)
+                        )
+                        NewNodePositions = nodep
+                    else:
+                        StoreMeanPseudotime = None
+                        StoreMergedElasticMatrix = None
+                        StoreMergedNodePositions = None
+                        NewNodePositions = nodep
+                    NewElasticMatrix = ElasticMatricesAll[i]
+                    partition = part
+                    AdjustVect = AdjustVectAll[i]
+                    minEnergy = ElasticEnergy
+                    MSE = mse
+                    EP = ep
+                    RP = rp
+                    Dist = dist
+
+    # if ~np.isfinite(minEnergy):
+    #    return "failed operation"
     return dict(
         StoreMeanPseudotime=StoreMeanPseudotime,
         StoreMergedElasticMatrix=StoreMergedElasticMatrix,

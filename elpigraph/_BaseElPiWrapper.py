@@ -72,6 +72,8 @@ def computeElasticPrincipalGraphWithGrammars(
     FixNodesAtPoints=[],
     pseudotime=None,
     pseudotimeLambda=0.01,
+    label=None,
+    labelLambda=0.01,
     MaxNumberOfGraphCandidatesDict={
         "AddNode2Node": float("inf"),
         "BisectEdge": float("inf"),
@@ -390,6 +392,8 @@ def computeElasticPrincipalGraphWithGrammars(
                     FixNodesAtPoints=FixNodesAtPoints,
                     pseudotime=pseudotime,
                     pseudotimeLambda=pseudotimeLambda,
+                    label=label,
+                    labelLambda=labelLambda,
                     MaxNumberOfGraphCandidatesDict=MaxNumberOfGraphCandidatesDict,
                 )
             )
@@ -502,6 +506,8 @@ def computeElasticPrincipalGraphWithGrammars(
                 FixNodesAtPoints=FixNodesAtPoints,
                 pseudotime=pseudotime,
                 pseudotimeLambda=pseudotimeLambda,
+                label=label,
+                labelLambda=labelLambda,
                 MaxNumberOfGraphCandidatesDict=MaxNumberOfGraphCandidatesDict,
             )
         )

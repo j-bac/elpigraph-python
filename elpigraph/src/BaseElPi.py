@@ -1,5 +1,6 @@
 import numpy as np
 
+
 try:
     import cupy
 except:
@@ -20,7 +21,9 @@ from .core import (
 from .grammar_operations import (
     ApplyOptimalGraphGrammarOperation,
     ApplyOptimalGraphGrammarOperation_v2,
+    ApplyOptimalGraphGrammarOperation_v3,
 )
+
 from .reporting import ReportOnPrimitiveGraphEmbedment
 
 
@@ -74,6 +77,8 @@ def ElPrincGraph(
     FixNodesAtPoints=[],
     pseudotime=None,
     pseudotimeLambda=0.01,
+    label=None,
+    labelLambda=0.01,
     MaxNumberOfGraphCandidatesDict={
         "AddNode2Node": float("inf"),
         "BisectEdge": float("inf"),
@@ -310,7 +315,7 @@ def ElPrincGraph(
                         print("Growing")
                         t = time.time()
 
-                    UpdatedPG = ApplyOptimalGraphGrammarOperation_v2(
+                    UpdatedPG = ApplyOptimalGraphGrammarOperation_v3(
                         X,
                         UpdatedPG["NodePositions"],
                         UpdatedPG["ElasticMatrix"],
@@ -338,6 +343,8 @@ def ElPrincGraph(
                         FixNodesAtPoints=FixNodesAtPoints,
                         pseudotime=pseudotime,
                         pseudotimeLambda=pseudotimeLambda,
+                        label=label,
+                        labelLambda=labelLambda,
                         MaxNumberOfGraphCandidatesDict=MaxNumberOfGraphCandidatesDict,
                     )
 
@@ -373,7 +380,7 @@ def ElPrincGraph(
                     if ShowTimer:
                         print("Shrinking")
                         t = time.time()
-                    UpdatedPG = ApplyOptimalGraphGrammarOperation_v2(
+                    UpdatedPG = ApplyOptimalGraphGrammarOperation_v3(
                         X,
                         UpdatedPG["NodePositions"],
                         UpdatedPG["ElasticMatrix"],
@@ -401,6 +408,8 @@ def ElPrincGraph(
                         FixNodesAtPoints=FixNodesAtPoints,
                         pseudotime=pseudotime,
                         pseudotimeLambda=pseudotimeLambda,
+                        label=label,
+                        labelLambda=labelLambda,
                         MaxNumberOfGraphCandidatesDict=MaxNumberOfGraphCandidatesDict,
                     )
 
@@ -596,6 +605,8 @@ def computeElasticPrincipalGraph(
     FixNodesAtPoints=[],
     pseudotime=None,
     pseudotimeLambda=0.01,
+    label=None,
+    labelLambda=0.01,
     MaxNumberOfGraphCandidatesDict={
         "AddNode2Node": float("inf"),
         "BisectEdge": float("inf"),
@@ -877,13 +888,19 @@ def computeElasticPrincipalGraph(
         FixNodesAtPoints=FixNodesAtPoints,
         pseudotime=pseudotime,
         pseudotimeLambda=pseudotimeLambda,
+        label=label,
+        labelLambda=labelLambda,
         MaxNumberOfGraphCandidatesDict=MaxNumberOfGraphCandidatesDict,
     )
 
-    NodePositions = ElData["NodePositions"]
-    AllNodePositions = ElData["AllNodePositions"]
-    AllMergedNodePositions = ElData["AllMergedNodePositions"]
     Edges = DecodeElasticMatrix(ElData["ElasticMatrix"])
+    NodePositions = ElData["NodePositions"]
+    if "AllNodePositions" not in ElData.keys():
+        AllNodePositions = {}
+        AllMergedNodePositions = {}
+    else:
+        AllNodePositions = ElData["AllNodePositions"]
+        AllMergedNodePositions = ElData["AllMergedNodePositions"]
 
     # if drawEnergy and ElData['ReportTable'] is not None:
     #    print('MSDEnergyPlot not yet implemented')

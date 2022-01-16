@@ -11,6 +11,12 @@ from .core import (
     DecodeElasticMatrix,
 )
 
+
+#####################################
+### Time supervision utils ###
+#####################################
+
+
 # -----extract oriented branches and associated data
 def bf_search(dict_branches, root_node):
     """ breadth-first tree search: returns edges and nodes ordering for dict_branches given root_node"""
@@ -214,6 +220,23 @@ def chunk(bX, bX_chunks, bps_chunks, bnNodes):
     return PseudotimeNodePositions, MeanPseudotime
 
 
+@nb.njit
+def nNodes_pseudotime_even_nb(bX, bpseudotime, bnNodes):
+    """
+    Argsorts pseudotime and create nNodes bins
+    with roughly even amount of weights but potentially uneven amount of pseudotime
+    """
+    argsort_pseudotime = np.argsort(bpseudotime)
+    sorted_weights = np.ones(len(bpseudotime))
+    cum_arr = sorted_weights.cumsum() / sorted_weights.sum()
+    idx = np.searchsorted(cum_arr, np.linspace(0, 1, bnNodes + 1)[1:-1], side="right")
+    bX_chunks = nb.typed.List(np.split(bX[argsort_pseudotime], idx))
+    bps_chunks = nb.typed.List(np.split(bpseudotime[argsort_pseudotime], idx))
+    PseudotimeNodePositions, MeanPseudotime = chunk(bX, bX_chunks, bps_chunks, bnNodes)
+    return PseudotimeNodePositions, MeanPseudotime, bX_chunks
+
+
+@nb.njit
 def nNodes_pseudotime_weighted_nb(bX, bpseudotime, bnNodes, bweights):
     """
     Argsorts pseudotime and create nNodes bins
@@ -222,9 +245,7 @@ def nNodes_pseudotime_weighted_nb(bX, bpseudotime, bnNodes, bweights):
     argsort_pseudotime = np.argsort(bpseudotime)
     sorted_weights = bweights[argsort_pseudotime]
     cum_arr = sorted_weights.cumsum() / sorted_weights.sum()
-    idx = np.searchsorted(
-        cum_arr, np.linspace(0, 1, bnNodes, endpoint=False)[1:], side="right"
-    )
+    idx = np.searchsorted(cum_arr, np.linspace(0, 1, bnNodes + 1)[1:-1], side="right")
     bX_chunks = nb.typed.List(np.split(bX[argsort_pseudotime], idx))
     bps_chunks = nb.typed.List(np.split(bpseudotime[argsort_pseudotime], idx))
     PseudotimeNodePositions, MeanPseudotime = chunk(bX, bX_chunks, bps_chunks, bnNodes)
@@ -380,6 +401,18 @@ def gen_pseudotime_centroids_by_path(X, pseudotime, paths, paths_dataidx, PointW
             _MeanPseudotime,
             bX_chunks,
         ) = nNodes_pseudotime_weighted_nb(bX, bpseudotime, bnNodes, bweights)
+        if np.any(np.array([len(b) for b in bX_chunks]) < 2):
+            # generate paths ps node positions
+            (
+                _PseudotimeNodePositions,
+                _MeanPseudotime,
+                bX_chunks,
+            ) = nNodes_pseudotime_even_nb(
+                bX,
+                bpseudotime,
+                bnNodes,
+            )
+
         _PseudotimeNodePositions = np.vstack(
             [
                 bX_chunks[i][vq(_PseudotimeNodePositions[[i]], bX_chunks[i])[0][0]]

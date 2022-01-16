@@ -1,6 +1,7 @@
 import numpy as np
 import numba as nb
-
+import igraph
+from .graphs import GetSubGraph
 
 # def ComputePrimitiveGraphElasticEnergy(NodePositions, ElasticMatrix, dists):
 #     MSE = dists.sum() / np.size(dists)
@@ -243,6 +244,91 @@ def ComputePenalizedPrimitiveGraphElasticEnergy_v2(
     return ElasticEnergy, MSE, EP, RP
 
 
+def ComputePenalizedPrimitiveGraphElasticEnergy_v3(
+    NodePositions,
+    ElasticMatrix,
+    part,
+    dists,
+    alpha=0.01,
+    beta=0.01,
+    PseudotimeNodePositions=None,
+    Label=None,
+    LabelLambda=None,
+):
+    """
+        //' Compute the penalized elastic energy associated with a particular configuration
+    //'
+    //' This function computes the elastic energy associated to a set of points and graph embedded
+    //' into them.
+    //'
+    //' @param NodePositions A numeric k-by-m matrix containing the position of the k nodes of the embedded graph
+    //' @param ElasticMatrix A numeric l-by-l matrix containing the elastic parameters associates with the edge
+    //' of the embedded graph
+    //' @param dists A numeric vector containing the squared distance of the data points to the closest node of the graph
+    //' @param alpha
+    //' @param beta
+    //'
+    //' @return A list with four elements:
+    //' * ElasticEnergy is the total energy
+    //' * MSE is the MSE component of the energy
+    //' * EP is the EP component of the energy
+    //' * RP is the RP component of the energy
+    """
+    MSE = dists.sum() / dists.size
+    Mu = np.diag(ElasticMatrix)
+    Lambda = np.triu(ElasticMatrix, 1)
+    StarCenterIndices = (Mu > 0).nonzero()[0]
+    (row, col) = Lambda.nonzero()
+    dev = NodePositions[row] - NodePositions[col]
+    L = np.zeros((len(row)))
+    for i in range(len(row)):
+        L[i] = Lambda[row[i], col[i]]
+    ### diff compared to base function
+    BinEM = (Lambda + Lambda.transpose()) > 0
+    Ks = BinEM.sum(axis=0)
+    lp = np.maximum(Ks[row], Ks[col])
+    lp = lp - 2
+    lp[np.where(lp < 0)] = 0
+
+    Lpenalized = L + alpha * lp
+    EP = np.dot(Lpenalized, np.sum(dev ** 2, axis=1))
+
+    # ---pseudotime penalty
+    if PseudotimeNodePositions is not None:
+        ps_dev = NodePositions - PseudotimeNodePositions
+        pseudotimeEP = np.dot(
+            np.repeat(L.min(), len(NodePositions)), np.sum(ps_dev ** 2, axis=1)
+        )
+        EP += pseudotimeEP
+
+    ####
+    indL = Lambda + Lambda.transpose() > 0
+    RP = 0
+    for i in range(StarCenterIndices.size):
+        leaves = indL[StarCenterIndices[i]]
+        ind_leaves = leaves.nonzero()[0]
+        K = ind_leaves.size
+        dev_ = NodePositions[StarCenterIndices[i]] - (
+            NodePositions[ind_leaves] / K
+        ).sum(axis=0)
+        RP += Mu[StarCenterIndices[i]] * (K ** beta) * (dev_ ** 2).sum()
+
+    ElasticEnergy = MSE + EP + RP
+
+    # ---categorical penalty
+    if Label is not None:
+        try:
+            LL = LabelLoss(Label, LabelLambda, part, ElasticMatrix)
+        except Exception as e:
+            print(e)
+            import pdb
+
+            pdb.set_trace()
+        ElasticEnergy = ElasticEnergy * (1 + LL)
+
+    return ElasticEnergy, MSE, EP, RP
+
+
 @nb.njit(cache=True)
 def sum_squares_2d_array_along_axis1(arr):
     res = np.empty(arr.shape[0], dtype=arr.dtype)
@@ -413,3 +499,50 @@ def FitSubGraph2DataGivenPartition_v2(
     NewNodePositions[move_nodes_idx, :] = move_NewNodePositions
 
     return NewNodePositions
+
+
+#####################################
+### Categorical supervision utils ###
+#####################################
+
+
+# @nb.njit
+def normalized_entropy_times_cardinality(num_labels):
+    """Calculates the normalized entropy of labels
+
+    Parameters
+    ----------
+    num_labels : int array, shape = [n_samples]
+        The labels
+    """
+    if len(num_labels) == 0:
+        return 1.0
+    pi = np.bincount(num_labels).astype(np.float64)
+    pi = pi[pi > 0]
+    pi_sum = np.sum(pi)
+    # log(a / b) should be calculated as log(a) - log(b) for
+    # possible loss of precision
+    return (
+        -np.sum((pi / pi_sum) * (np.log(pi) - np.log(pi_sum)))
+        / np.log(len(num_labels))
+        * len(num_labels)
+    )
+
+
+# @nb.njit
+def LabelLoss(Label, LabelLambda, part, EM):
+    valid_nodes = np.unique(part)
+    n_nodes = int(np.sum(valid_nodes >= 0))
+    _EM = EM.copy()
+    np.fill_diagonal(_EM, 0)
+    net = igraph.Graph.Adjacency((_EM > 0).tolist(), mode="undirected")
+    branches = GetSubGraph(net, "branches")
+    branches_dataidx = [np.isin(part, b) for b in branches]
+
+    entropy = 0
+    for i in range(len(branches)):
+        entropy += normalized_entropy_times_cardinality(Label[branches_dataidx[i]])
+        # normalize 0/1
+    LL = LabelLambda * entropy / len(part)
+    # ElasticEn * (1 + LabelLoss)
+    return LL
