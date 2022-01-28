@@ -10,7 +10,12 @@ from .distutils import *
 
 
 def PartitionData_cp(
-    Xcp, NodePositions, MaxBlockSize, SquaredXcp, TrimmingRadius=float("inf")
+    Xcp,
+    NodePositions,
+    MaxBlockSize,
+    SquaredXcp,
+    TrimmingRadius=float("inf"),
+    precomp=False,
 ):
     """
     # Partition the data by proximity to graph nodes
@@ -37,6 +42,8 @@ def PartitionData_cp(
     n = Xcp.shape[0]
     partition = cupy.zeros((n, 1), dtype=int)
     dists = cupy.zeros((n, 1))
+    d = cupy.zeros((n, len(NodePositions)))
+
     # Calculate squared length of centroids
     cent = NodePositionscp.T
     centrLength = (cent ** 2).sum(axis=0)
@@ -48,7 +55,7 @@ def PartitionData_cp(
         if last > n:
             last = n
         # Calculate distances
-        d = (
+        _d = (
             SquaredXcp[i:last]
             + centrLength
             - 2
@@ -59,20 +66,24 @@ def PartitionData_cp(
                 cent,
             )
         )
-        tmp = d.argmin(axis=1)
+        tmp = _d.argmin(axis=1)
         partition[i:last] = tmp[:, cupy.newaxis]
-        dists[i:last] = d[cupy.arange(d.shape[0]), tmp][:, cupy.newaxis]
+        dists[i:last] = _d[cupy.arange(_d.shape[0]), tmp][:, cupy.newaxis]
+        d[i:last] = _d
+
     # Apply trimming
     if not cupy.isinf(TrimmingRadius):
         ind = dists > (TrimmingRadius ** 2)
         partition[ind] = -1
         dists[ind] = TrimmingRadius ** 2
-
-    return cupy.asnumpy(partition), cupy.asnumpy(dists)
+    if precomp:
+        return cupy.asnumpy(partition), cupy.asnumpy(dists), cupy.asnumpy(d)
+    else:
+        return cupy.asnumpy(partition), cupy.asnumpy(dists)
 
 
 def PartitionData(
-    X, NodePositions, MaxBlockSize, SquaredX, TrimmingRadius=float("inf")
+    X, NodePositions, MaxBlockSize, SquaredX, TrimmingRadius=float("inf"), precomp=False
 ):
     """
     # Partition the data by proximity to graph nodes
@@ -98,6 +109,7 @@ def PartitionData(
     n = X.shape[0]
     partition = np.zeros((n, 1), dtype=int)
     dists = np.zeros((n, 1))
+    d = np.zeros((n, len(NodePositions)))
     # Calculate squared length of centroids
     cent = NodePositions.T
     centrLength = (cent ** 2).sum(axis=0)
@@ -108,7 +120,7 @@ def PartitionData(
         if last > n:
             last = n
         # Calculate distances
-        d = (
+        _d = (
             SquaredX[i:last]
             + centrLength
             - 2
@@ -119,15 +131,61 @@ def PartitionData(
                 cent,
             )
         )
-        tmp = d.argmin(axis=1)
+        tmp = _d.argmin(axis=1)
         partition[i:last] = tmp[:, np.newaxis]
-        dists[i:last] = d[np.arange(d.shape[0]), tmp][:, np.newaxis]
+        dists[i:last] = _d[np.arange(_d.shape[0]), tmp][:, np.newaxis]
+        d[i:last] = _d
+
     # Apply trimming
     if not np.isinf(TrimmingRadius):
         ind = dists > (TrimmingRadius ** 2)
         partition[ind] = -1
         dists[ind] = TrimmingRadius ** 2
-    return partition, dists
+    if precomp:
+        return partition, dists, d
+    else:
+        return partition, dists
+
+
+def RePartitionData(
+    X,
+    NodePositions,
+    NewNodePositions,
+    NodeIndicesArray,
+    opType,
+    precomp_d,
+    SquaredX,
+    TrimmingRadius=np.inf,
+):
+
+    if "remove" in opType:
+        d = precomp_d[:, NodeIndicesArray]
+    elif "shrink" in opType:
+        repositioned_node_idx = np.all(
+            NodePositions[NodeIndicesArray] != NewNodePositions, axis=1
+        )
+        newcent = NewNodePositions[repositioned_node_idx].T
+        newcentrLength = (newcent ** 2).sum(axis=0)
+        new_d = SquaredX + newcentrLength - 2 * np.dot(X, newcent)
+        d = precomp_d[:, NodeIndicesArray]
+        d[:, repositioned_node_idx] = new_d
+
+    else:  # grow grammar:
+        newcent = NewNodePositions[[-1]].T
+        newcentrLength = (newcent ** 2).sum(axis=0)
+        new_d = SquaredX + newcentrLength - 2 * np.dot(X, newcent)
+        d = np.hstack((precomp_d, new_d))
+
+    tmp = d.argmin(axis=1)
+    partition = tmp[:, np.newaxis]
+    dists = d[np.arange(d.shape[0]), tmp][:, np.newaxis]
+    # Apply trimming
+    if not np.isinf(TrimmingRadius):
+        ind = dists > (TrimmingRadius ** 2)
+        partition[ind] = -1
+        dists[ind] = TrimmingRadius ** 2
+
+    return partition, dists, d
 
 
 def PartitionDataBarycenter(
@@ -411,24 +469,6 @@ def DecodeElasticMatrix2(ElasticMatrix):
     Lambdas = Lambda[Edges[:, 0], Edges[:, 1]]
 
     return Edges, Lambdas, Mus
-
-
-# def ComputeRelativeChangeOfNodePositions(NodePositions, NewNodePositions):
-#     '''
-#     #' Estimates the relative difference between two node configurations
-#     #'
-#     #' @param NodePositions a k-by-m numeric matrix with the coordiantes of the nodes in the old configuration
-#     #' @param NewNodePositions a k-by-m numeric matrix with the coordiantes of the nodes in the new configuration
-#     #' @param Mode an integer indicating the modality used to compute the difference (currently only 1 is an accepted value)
-#     #' @param X an n-by-m numeric matrix with the coordinates of the data points
-#     #'
-#     #' @return
-#     #' @export
-#     #'
-#     #' @examples
-#     '''
-#     return np.max(np.sum((NodePositions - NewNodePositions)**2, axis=1) /
-#                np.sum(NewNodePositions**2, axis=1))
 
 
 @nb.njit(cache=True)
@@ -1123,6 +1163,9 @@ def PrimitiveElasticGraphEmbedment_v2(
     FixNodesAtPoints=[],
     PseudotimeNodePositions=None,
     PseudotimeLambda=None,
+    partition=None,
+    dists=None,
+    precomp_d=None,
 ):
 
     """
@@ -1173,20 +1216,32 @@ def PrimitiveElasticGraphEmbedment_v2(
         #    item for sublist in FixNodesAtPoints for item in sublist
         # ]  # fixed datapoints
 
-        partition, dists = PartitionData(
-            X,
-            NodePositions,
-            MaxBlockSize,
-            SquaredX,
-            TrimmingRadius,
-        )
+        # partition, dists = PartitionData(
+        #    X,
+        #    NodePositions,
+        #    MaxBlockSize,
+        #    SquaredX,
+        #    TrimmingRadius,
+        # )
         move_data_idx = np.where(~np.isin(partition, range(len(FixNodesAtPoints))))[0]
 
         # move_data_idx = [i for i in range(len(X)) if i not in flat_FixNodesAtPoints]
         move_nodes_idx = np.arange(len(FixNodesAtPoints), len(NodePositions))
+        partition, dists, _ = RePartitionData(
+            None,
+            None,
+            None,
+            NodeIndicesArray=move_nodes_idx,
+            opType="removenode",
+            precomp_d=precomp_d,
+            SquaredX=None,
+        )
+        move_partition, move_dists = partition[move_data_idx], dists[move_data_idx]
     else:
         move_data_idx = np.arange(len(X))
         move_nodes_idx = np.arange(len(NodePositions))
+        move_partition = partition
+        move_dists = dists
 
     # fitted subset
     move_X, move_PointWeights, move_SquaredX, move_NodePositions = (
@@ -1194,15 +1249,6 @@ def PrimitiveElasticGraphEmbedment_v2(
         PointWeights[move_data_idx],
         SquaredX[move_data_idx],
         NodePositions[move_nodes_idx],
-    )
-
-    # Main iterative EM cycle: partition, fit given the partition, repeat
-    move_partition, move_dists = PartitionData(
-        move_X,
-        move_NodePositions,
-        MaxBlockSize,
-        move_SquaredX,
-        TrimmingRadius,
     )
 
     if verbose or Mode == 2:

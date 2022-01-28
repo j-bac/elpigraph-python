@@ -315,7 +315,7 @@ def ElPrincGraph(
                         print("Growing")
                         t = time.time()
 
-                    UpdatedPG = ApplyOptimalGraphGrammarOperation_v3(
+                    UpdatedPG = ApplyOptimalGraphGrammarOperation_v2(
                         X,
                         UpdatedPG["NodePositions"],
                         UpdatedPG["ElasticMatrix"],
@@ -343,8 +343,8 @@ def ElPrincGraph(
                         FixNodesAtPoints=FixNodesAtPoints,
                         pseudotime=pseudotime,
                         pseudotimeLambda=pseudotimeLambda,
-                        label=label,
-                        labelLambda=labelLambda,
+                        # label=label,
+                        # labelLambda=labelLambda,
                         MaxNumberOfGraphCandidatesDict=MaxNumberOfGraphCandidatesDict,
                     )
 
@@ -380,7 +380,7 @@ def ElPrincGraph(
                     if ShowTimer:
                         print("Shrinking")
                         t = time.time()
-                    UpdatedPG = ApplyOptimalGraphGrammarOperation_v3(
+                    UpdatedPG = ApplyOptimalGraphGrammarOperation_v2(
                         X,
                         UpdatedPG["NodePositions"],
                         UpdatedPG["ElasticMatrix"],
@@ -408,8 +408,8 @@ def ElPrincGraph(
                         FixNodesAtPoints=FixNodesAtPoints,
                         pseudotime=pseudotime,
                         pseudotimeLambda=pseudotimeLambda,
-                        label=label,
-                        labelLambda=labelLambda,
+                        # label=label,
+                        # labelLambda=labelLambda,
                         MaxNumberOfGraphCandidatesDict=MaxNumberOfGraphCandidatesDict,
                     )
 
