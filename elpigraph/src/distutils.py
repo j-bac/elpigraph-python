@@ -25,7 +25,9 @@ from .graphs import GetSubGraph
 
 
 @nb.njit(cache=True)
-def ComputePrimitiveGraphElasticEnergy(NodePositions, ElasticMatrix, dists):
+def ComputePrimitiveGraphElasticEnergy(
+    NodePositions, ElasticMatrix, dists, PointWeights=None
+):
     """
         //' Compute the elastic energy associated with a particular configuration
     //'
@@ -44,7 +46,8 @@ def ComputePrimitiveGraphElasticEnergy(NodePositions, ElasticMatrix, dists):
     //' * RP is the RP component of the energy
     """
 
-    MSE = dists.sum() / dists.size
+    MSE = np.sum(dists * PointWeights) / np.sum(PointWeights)
+
     Mu = np.diag(ElasticMatrix)
     Lambda = np.triu(ElasticMatrix, 1)
     StarCenterIndices = (Mu > 0).nonzero()[0]
@@ -180,6 +183,7 @@ def ComputePenalizedPrimitiveGraphElasticEnergy_v2(
     dists,
     alpha=0.01,
     beta=0.01,
+    PointWeights=None,
     PseudotimeNodePositions=None,
 ):
     """
@@ -201,7 +205,8 @@ def ComputePenalizedPrimitiveGraphElasticEnergy_v2(
     //' * EP is the EP component of the energy
     //' * RP is the RP component of the energy
     """
-    MSE = dists.sum() / dists.size
+    MSE = np.sum(dists * PointWeights) / np.sum(PointWeights)
+
     Mu = np.diag(ElasticMatrix)
     Lambda = np.triu(ElasticMatrix, 1)
     StarCenterIndices = (Mu > 0).nonzero()[0]

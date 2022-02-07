@@ -971,6 +971,17 @@ def GrowLeaves(
     DisplayWarnings=False,
     StoreGraphEvolution=False,
     GPU=False,
+    FixNodesAtPoints=[],
+    pseudotime=None,
+    pseudotimeLambda=0.01,
+    label=None,
+    labelLambda=0.01,
+    MaxNumberOfGraphCandidatesDict={
+        "AddNode2Node": float("inf"),
+        "BisectEdge": float("inf"),
+        "RemoveNode": float("inf"),
+        "ShrinkEdge": float("inf"),
+    },
 ):
 
     """
@@ -1076,7 +1087,7 @@ def GrowLeaves(
         InitNodes=InitNodes,
         Lambda=Lambda,
         Mu=Mu,
-        GrowGrammars=np.array([["addnodetonode_1"]]),
+        GrowGrammars=np.array([["addnode2node_1"]]),
         ShrinkGrammars=np.array([]),
         GrammarOrder=["Grow"],
         GrammarOptimization=False,
@@ -1123,6 +1134,12 @@ def GrowLeaves(
         DisplayWarnings=DisplayWarnings,
         StoreGraphEvolution=StoreGraphEvolution,
         GPU=GPU,
+        FixNodesAtPoints=FixNodesAtPoints,
+        pseudotime=pseudotime,
+        pseudotimeLambda=pseudotimeLambda,
+        label=label,
+        labelLambda=labelLambda,
+        MaxNumberOfGraphCandidatesDict=MaxNumberOfGraphCandidatesDict,
     )
 
 

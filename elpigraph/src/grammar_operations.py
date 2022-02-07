@@ -16,6 +16,7 @@ from .core import (
 from .supervised import (
     gen_pseudotime_augmented_graph,
     gen_pseudotime_augmented_graph_by_path,
+    old_gen_pseudotime_augmented_graph_by_path,
 )
 from .._EMAdjustment import AdjustByConstant
 
@@ -45,6 +46,7 @@ def GraphGrammarOperation(
         "RemoveNode": float("inf"),
         "ShrinkEdge": float("inf"),
     },
+    PointWeights=None,
 ):
 
     if Type == "addnode2node":
@@ -56,6 +58,7 @@ def GraphGrammarOperation(
             AdjustVect,
             FixNodesAtPoints,
             MaxNumberOfGraphCandidates=MaxNumberOfGraphCandidatesDict["AddNode2Node"],
+            PointWeights=PointWeights,
         )
     elif Type == "addnode2node_1":
         return AddNode2Node(
@@ -66,6 +69,7 @@ def GraphGrammarOperation(
             AdjustVect,
             FixNodesAtPoints,
             Max_K=1,
+            PointWeights=PointWeights,
         )
     elif Type == "addnode2node_2":
         return AddNode2Node(
@@ -76,6 +80,7 @@ def GraphGrammarOperation(
             AdjustVect,
             FixNodesAtPoints,
             Max_K=2,
+            PointWeights=PointWeights,
         )
     elif Type == "removenode":
         return RemoveNode(NodePositions, ElasticMatrix, AdjustVect, FixNodesAtPoints)
@@ -249,6 +254,7 @@ def AddNode2Node(
     FixNodesAtPoints,
     Max_K=float("inf"),
     MaxNumberOfGraphCandidates=float("inf"),
+    PointWeights=None,
 ):
     """
     #' Adds a node to each graph node
@@ -277,7 +283,15 @@ def AddNode2Node(
     indL = Lambda > 0
     Connectivities = indL.sum(axis=0)
     # add pointweights here if added
-    assoc = np.bincount(partition[partition > -1].ravel(), minlength=nNodes)
+    if PointWeights is not None:
+        assoc = np.bincount(
+            partition[partition > -1].ravel(),
+            weights=PointWeights.ravel(),
+            minlength=nNodes,
+        )
+    else:
+        assoc = np.bincount(partition[partition > -1].ravel(), minlength=nNodes)
+
     # Create prototypes for new NodePositions, ElasticMatrix and inds
     npProt = np.vstack((NodePositions, np.zeros((1, NodePositions.shape[1]))))
     emProt = np.vstack(
@@ -1024,6 +1038,7 @@ def ApplyOptimalGraphGrammarOperation_v2(
             partition,
             FixNodesAtPoints,
             MaxNumberOfGraphCandidatesDict,
+            PointWeights=PointWeights,
         )
 
         NodePositionsArrayAll.extend(NodePositionsArray)
@@ -1120,58 +1135,30 @@ def ApplyOptimalGraphGrammarOperation_v2(
         #                 results = pool.map(proxy_multiproc,Valid_configurations)
 
         with mp.Pool(n_cores) as pool:
-            if Xcp is None:
-                results = pool.map(
-                    proxy,
-                    [
-                        dict(
-                            X=X,
-                            NodePositions=NodePositionsArrayAll[i],
-                            ElasticMatrix=ElasticMatricesAll[i],
-                            MaxNumberOfIterations=MaxNumberOfIterations,
-                            eps=eps,
-                            Mode=Mode,
-                            FinalEnergy=FinalEnergy,
-                            alpha=alpha,
-                            beta=beta,
-                            prob=EmbPointProb,
-                            DisplayWarnings=DisplayWarnings,
-                            PointWeights=PointWeights,
-                            MaxBlockSize=MaxBlockSize,
-                            verbose=False,
-                            TrimmingRadius=TrimmingRadius,
-                            SquaredX=SquaredX,
-                        )
-                        for i in Valid_configurations
-                    ],
-                )
-            else:
-                results = pool.map(
-                    proxy_cp,
-                    [
-                        dict(
-                            X=X,
-                            NodePositions=NodePositionsArrayAll[i],
-                            ElasticMatrix=ElasticMatricesAll[i],
-                            MaxNumberOfIterations=MaxNumberOfIterations,
-                            eps=eps,
-                            Mode=Mode,
-                            FinalEnergy=FinalEnergy,
-                            alpha=alpha,
-                            beta=beta,
-                            prob=EmbPointProb,
-                            DisplayWarnings=DisplayWarnings,
-                            PointWeights=PointWeights,
-                            MaxBlockSize=MaxBlockSize,
-                            verbose=False,
-                            TrimmingRadius=TrimmingRadius,
-                            SquaredX=SquaredX,
-                            Xcp=Xcp,
-                            SquaredXcp=SquaredXcp,
-                        )
-                        for i in Valid_configurations
-                    ],
-                )
+            results = pool.map(
+                proxy,
+                [
+                    dict(
+                        X=X,
+                        NodePositions=NodePositionsArrayAll[i],
+                        ElasticMatrix=ElasticMatricesAll[i],
+                        MaxNumberOfIterations=MaxNumberOfIterations,
+                        eps=eps,
+                        Mode=Mode,
+                        FinalEnergy=FinalEnergy,
+                        alpha=alpha,
+                        beta=beta,
+                        prob=EmbPointProb,
+                        DisplayWarnings=DisplayWarnings,
+                        PointWeights=PointWeights,
+                        MaxBlockSize=MaxBlockSize,
+                        verbose=False,
+                        TrimmingRadius=TrimmingRadius,
+                        SquaredX=SquaredX,
+                    )
+                    for i in Valid_configurations
+                ],
+            )
 
         list_energies = [r[1] for r in results]
         idx = list_energies.index(min(list_energies))
@@ -1181,52 +1168,73 @@ def ApplyOptimalGraphGrammarOperation_v2(
 
     else:
         minEnergy = np.inf
-        StoreMeanPseudotime = None
         StoreMergedElasticMatrix = None
         StoreMergedNodePositions = None
-        if Xcp is None:
-            for i in Valid_configurations:
-                newpartition, newdists, newprecomp_d = RePartitionData(
+        cache_PseudotimeNodePositions = {}
+        for i in Valid_configurations:
+            newpartition, newdists, newprecomp_d = RePartitionData(
+                X,
+                NodePositions,
+                NodePositionsArrayAll[i],
+                NodeIndicesArrayAll[i],
+                opTypesAll[i],
+                precomp_d,
+                SquaredX,
+                TrimmingRadius=np.inf,
+            )
+            if pseudotime is not None and len(NodePositions) > 10:
+                (
+                    MergedNodePositions,
+                    MergedElasticMatrix,
+                    MergedEdges,
+                    nPseudoNodes,
+                    cache_PseudotimeNodePositions,
+                ) = gen_pseudotime_augmented_graph_by_path(
                     X,
-                    NodePositions,
-                    NodePositionsArrayAll[i],
-                    NodeIndicesArrayAll[i],
-                    opTypesAll[i],
-                    precomp_d,
                     SquaredX,
-                    TrimmingRadius=np.inf,
+                    NodePositionsArrayAll[i],
+                    ElasticMatricesAll[i],
+                    pseudotime,
+                    root_node=0,
+                    LinkMu=0,
+                    LinkLambda=pseudotimeLambda,
+                    PointWeights=PointWeights,
+                    TrimmingRadius=TrimmingRadius,
+                    partition=newpartition,
+                    cache_PseudotimeNodePositions=cache_PseudotimeNodePositions,
                 )
-                if pseudotime is not None and len(NodePositions) > 10:
-                    (
-                        MeanPseudotime,
-                        MergedNodePositions,
-                        MergedElasticMatrix,
-                        MergedEdges,
-                        nPseudoNodes,
-                    ) = gen_pseudotime_augmented_graph_by_path(
-                        X,
-                        SquaredX,
-                        NodePositionsArrayAll[i],
-                        ElasticMatricesAll[i],
-                        pseudotime,
-                        root_node=0,
-                        LinkMu=0,
-                        LinkLambda=pseudotimeLambda,
-                        PointWeights=PointWeights,
-                        TrimmingRadius=TrimmingRadius,
-                        partition=newpartition,
-                    )
 
-                    _split = int(len(MergedNodePositions) / 2)
-                    FitNodePositions = MergedNodePositions[_split:]
-                    PseudotimeNodePositions = MergedNodePositions[:_split]
-                    FitElasticMatrix = ElasticMatricesAll[i]
+                # (
+                #    MeanPseudotime,
+                #    MergedNodePositions,
+                #    MergedElasticMatrix,
+                #    MergedEdges,
+                #    nPseudoNodes,
+                # ) = old_gen_pseudotime_augmented_graph_by_path(
+                #    X,
+                #    SquaredX,
+                #    NodePositionsArrayAll[i],
+                #    ElasticMatricesAll[i],
+                #    pseudotime,
+                #    root_node=0,
+                #    LinkMu=0,
+                #    LinkLambda=pseudotimeLambda,
+                #    PointWeights=PointWeights,
+                #    TrimmingRadius=TrimmingRadius,
+                #    partition=newpartition,
+                # )
 
-                else:
-                    FitNodePositions = NodePositionsArrayAll[i]
-                    FitElasticMatrix = ElasticMatricesAll[i]
-                    PseudotimeNodePositions = None
-                    nPseudoNodes = 0
+                _split = int(len(MergedNodePositions) / 2)
+                FitNodePositions = MergedNodePositions[_split:]
+                PseudotimeNodePositions = MergedNodePositions[:_split]
+                FitElasticMatrix = ElasticMatricesAll[i]
+
+            else:
+                FitNodePositions = NodePositionsArrayAll[i]
+                FitElasticMatrix = ElasticMatricesAll[i]
+                PseudotimeNodePositions = None
+
+            if Xcp is None:
                 (
                     nodep,
                     ElasticEnergy,
@@ -1259,72 +1267,7 @@ def ApplyOptimalGraphGrammarOperation_v2(
                     dists=newdists,
                     precomp_d=newprecomp_d,
                 )
-
-                if ElasticEnergy < minEnergy:
-                    if pseudotime is not None and len(NodePositions) > 10:
-                        StoreMeanPseudotime = MeanPseudotime
-                        StoreMergedElasticMatrix = MergedElasticMatrix
-                        StoreMergedNodePositions = np.concatenate(
-                            (PseudotimeNodePositions, nodep)
-                        )
-                        NewNodePositions = nodep
-                    else:
-                        StoreMeanPseudotime = None
-                        StoreMergedElasticMatrix = None
-                        StoreMergedNodePositions = None
-                        NewNodePositions = nodep
-                    NewElasticMatrix = ElasticMatricesAll[i]
-                    partition = part
-                    AdjustVect = AdjustVectAll[i]
-                    minEnergy = ElasticEnergy
-                    MSE = mse
-                    EP = ep
-                    RP = rp
-                    Dist = dist
-
-        else:
-            for i in Valid_configurations:
-                # TODO add pointweights ?
-                newpartition, newdists, newprecomp_d = RePartitionData(
-                    X,
-                    NodePositions,
-                    NodePositionsArrayAll[i],
-                    NodeIndicesArrayAll[i],
-                    opTypesAll[i],
-                    precomp_d,
-                    SquaredX,
-                    TrimmingRadius=np.inf,
-                )
-
-                if pseudotime is not None and len(NodePositions) > 10:
-                    (
-                        MeanPseudotime,
-                        MergedNodePositions,
-                        MergedElasticMatrix,
-                        MergedEdges,
-                        nPseudoNodes,
-                    ) = gen_pseudotime_augmented_graph_by_path(
-                        X,
-                        SquaredX,
-                        NodePositionsArrayAll[i],
-                        ElasticMatricesAll[i],
-                        pseudotime,
-                        root_node=0,
-                        LinkMu=0,
-                        LinkLambda=pseudotimeLambda,
-                        PointWeights=PointWeights,
-                        TrimmingRadius=TrimmingRadius,
-                        partition=newpartition,
-                    )
-                    _split = int(len(MergedNodePositions) / 2)
-                    FitNodePositions = MergedNodePositions[_split:]
-                    PseudotimeNodePositions = MergedNodePositions[:_split]
-                    FitElasticMatrix = ElasticMatricesAll[i]
-                else:
-                    FitNodePositions = NodePositionsArrayAll[i]
-                    FitElasticMatrix = ElasticMatricesAll[i]
-                    PseudotimeNodePositions = None
-                    nPseudoNodes = 0
+            else:
                 (
                     nodep,
                     ElasticEnergy,
@@ -1360,32 +1303,29 @@ def ApplyOptimalGraphGrammarOperation_v2(
                     precomp_d=newprecomp_d,
                 )
 
-                if ElasticEnergy < minEnergy:
-                    if pseudotime is not None and len(NodePositions) > 10:
-                        StoreMeanPseudotime = MeanPseudotime
-                        StoreMergedElasticMatrix = MergedElasticMatrix
-                        StoreMergedNodePositions = np.concatenate(
-                            (PseudotimeNodePositions, nodep)
-                        )
-                        NewNodePositions = nodep
-                    else:
-                        StoreMeanPseudotime = None
-                        StoreMergedElasticMatrix = None
-                        StoreMergedNodePositions = None
-                        NewNodePositions = nodep
-                    NewElasticMatrix = ElasticMatricesAll[i]
-                    partition = part
-                    AdjustVect = AdjustVectAll[i]
-                    minEnergy = ElasticEnergy
-                    MSE = mse
-                    EP = ep
-                    RP = rp
-                    Dist = dist
+            if ElasticEnergy < minEnergy:
+                if pseudotime is not None and len(NodePositions) > 10:
+                    StoreMergedElasticMatrix = MergedElasticMatrix
+                    StoreMergedNodePositions = np.concatenate(
+                        (PseudotimeNodePositions, nodep)
+                    )
+                    NewNodePositions = nodep
+                else:
+                    StoreMergedElasticMatrix = None
+                    StoreMergedNodePositions = None
+                    NewNodePositions = nodep
+                NewElasticMatrix = ElasticMatricesAll[i]
+                partition = part
+                AdjustVect = AdjustVectAll[i]
+                minEnergy = ElasticEnergy
+                MSE = mse
+                EP = ep
+                RP = rp
+                Dist = dist
 
     # if ~np.isfinite(minEnergy):
     #    return "failed operation"
     return dict(
-        StoreMeanPseudotime=StoreMeanPseudotime,
         StoreMergedElasticMatrix=StoreMergedElasticMatrix,
         StoreMergedNodePositions=StoreMergedNodePositions,
         NodePositions=NewNodePositions,

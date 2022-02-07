@@ -12,7 +12,9 @@ import copy
 from .PCA import PCA, TruncPCA, PCA_gpu, TruncSVD_gpu
 from .core import (
     PrimitiveElasticGraphEmbedment,
+    PrimitiveElasticGraphEmbedment_v2,
     PrimitiveElasticGraphEmbedment_cp,
+    PrimitiveElasticGraphEmbedment_cp_v2,
     PartitionData,
     PartitionData_cp,
     Encode2ElasticMatrix,
@@ -275,6 +277,7 @@ def ElPrincGraph(
                 TrimmingRadius=TrimmingRadius,
             ),
             ComputeMSEP=ComputeMSEP,
+            PointWeights=PointWeights,
         )
 
         return dict(
@@ -292,7 +295,6 @@ def ElPrincGraph(
     start = time.time()
     times = {}
 
-    AllMeanPseudotime = {}
     AllMergedElasticMatrices = {}
     AllMergedNodePositions = {}
     AllNodePositions = {}
@@ -475,9 +477,6 @@ def ElPrincGraph(
             AllElasticMatrices[UpdatedPG["NodePositions"].shape[0]] = UpdatedPG[
                 "ElasticMatrix"
             ]
-            AllMeanPseudotime[UpdatedPG["NodePositions"].shape[0]] = UpdatedPG[
-                "StoreMeanPseudotime"
-            ]
             AllMergedElasticMatrices[UpdatedPG["NodePositions"].shape[0]] = UpdatedPG[
                 "StoreMergedElasticMatrix"
             ]
@@ -550,7 +549,6 @@ def ElPrincGraph(
         times=times,
         AllNodePositions=AllNodePositions,
         AllElasticMatrices=AllElasticMatrices,
-        AllMeanPseudotime=AllMeanPseudotime,
         AllMergedElasticMatrices=AllMergedElasticMatrices,
         AllMergedNodePositions=AllMergedNodePositions,
     )
@@ -940,7 +938,6 @@ def computeElasticPrincipalGraph(
         times=ElData["times"],
         AllNodePositions=AllNodePositions,
         AllElasticMatrices=ElData["AllElasticMatrices"],
-        AllMeanPseudotime=ElData["AllMeanPseudotime"],
         AllMergedElasticMatrices=ElData["AllMergedElasticMatrices"],
         AllMergedNodePositions=AllMergedNodePositions,
     )

@@ -837,7 +837,7 @@ def PrimitiveElasticGraphEmbedment(
             # if FixNodesAtPoints != []:
             #    dists = np.concatenate((FixedNodesDists, move_dists))
             ElasticEnergy, MSE, EP, RP = ComputePrimitiveGraphElasticEnergy(
-                NewNodePositions, ElasticMatrix, move_dists
+                NewNodePositions, ElasticMatrix, move_dists, move_PointWeights
             )
 
         if Mode == 1:
@@ -913,12 +913,17 @@ def PrimitiveElasticGraphEmbedment(
     if (FinalEnergy != "Base") or (not (verbose) and (Mode != 2)):
         if FinalEnergy == "Base":
             ElasticEnergy, MSE, EP, RP = ComputePrimitiveGraphElasticEnergy(
-                NewNodePositions, ElasticMatrix, dists
+                NewNodePositions, ElasticMatrix, dists, PointWeights
             )
 
         elif FinalEnergy == "Penalized":
-            ElasticEnergy, MSE, EP, RP = ComputePenalizedPrimitiveGraphElasticEnergy(
-                NewNodePositions, ElasticMatrix, dists, alpha, beta
+            ElasticEnergy, MSE, EP, RP = ComputePenalizedPrimitiveGraphElasticEnergy_v2(
+                NewNodePositions,
+                ElasticMatrix,
+                dists,
+                alpha,
+                beta,
+                PointWeights=PointWeights,
             )
 
     return NewNodePositions, ElasticEnergy, partition, dists, MSE, EP, RP
@@ -1056,7 +1061,7 @@ def PrimitiveElasticGraphEmbedment_cp(
             # if FixNodesAtPoints != []:
             #    dists = np.concatenate((FixedNodesDists, move_dists))
             ElasticEnergy, MSE, EP, RP = ComputePrimitiveGraphElasticEnergy(
-                NewNodePositions, ElasticMatrix, move_dists
+                NewNodePositions, ElasticMatrix, move_dists, move_PointWeights
             )
 
         if Mode == 1:
@@ -1132,12 +1137,17 @@ def PrimitiveElasticGraphEmbedment_cp(
     if (FinalEnergy != "Base") or (not (verbose) and (Mode != 2)):
         if FinalEnergy == "Base":
             ElasticEnergy, MSE, EP, RP = ComputePrimitiveGraphElasticEnergy(
-                NewNodePositions, ElasticMatrix, dists
+                NewNodePositions, ElasticMatrix, dists, PointWeights
             )
 
         elif FinalEnergy == "Penalized":
-            ElasticEnergy, MSE, EP, RP = ComputePenalizedPrimitiveGraphElasticEnergy(
-                NewNodePositions, ElasticMatrix, dists, alpha, beta
+            ElasticEnergy, MSE, EP, RP = ComputePenalizedPrimitiveGraphElasticEnergy_v2(
+                NewNodePositions,
+                ElasticMatrix,
+                dists,
+                alpha,
+                beta,
+                PointWeights=PointWeights,
             )
 
     return NewNodePositions, ElasticEnergy, partition, dists, MSE, EP, RP
@@ -1361,7 +1371,7 @@ def PrimitiveElasticGraphEmbedment_v2(
     if (FinalEnergy != "Base") or (not (verbose) and (Mode != 2)):
         if FinalEnergy == "Base":
             ElasticEnergy, MSE, EP, RP = ComputePrimitiveGraphElasticEnergy(
-                NewNodePositions, ElasticMatrix, dists
+                NewNodePositions, ElasticMatrix, dists, PointWeights
             )
 
         elif FinalEnergy == "Penalized":
@@ -1371,6 +1381,7 @@ def PrimitiveElasticGraphEmbedment_v2(
                 dists,
                 alpha,
                 beta,
+                PointWeights,
                 PseudotimeNodePositions,
             )
 
@@ -1630,6 +1641,9 @@ def PrimitiveElasticGraphEmbedment_cp_v2(
     FixNodesAtPoints=[],
     PseudotimeNodePositions=None,
     PseudotimeLambda=None,
+    partition=None,
+    dists=None,
+    precomp_d=None,
     Xcp=None,
     SquaredXcp=None,
 ):
@@ -1678,28 +1692,39 @@ def PrimitiveElasticGraphEmbedment_cp_v2(
 
     if FixNodesAtPoints != []:
         # -----Index data and graph into moving nodes and fixed nodes------#
+        # flat_FixNodesAtPoints = [
+        #    item for sublist in FixNodesAtPoints for item in sublist
+        # ]  # fixed datapoints
 
-        flat_FixNodesAtPoints = [
-            item for sublist in FixNodesAtPoints for item in sublist
-        ]  # fixed datapoints
-
-        partition, dists = PartitionData(
-            X,
-            NodePositions,
-            MaxBlockSize,
-            SquaredX,
-            TrimmingRadius,
-        )
+        # partition, dists = PartitionData(
+        #    X,
+        #    NodePositions,
+        #    MaxBlockSize,
+        #    SquaredX,
+        #    TrimmingRadius,
+        # )
         move_data_idx = np.where(~np.isin(partition, range(len(FixNodesAtPoints))))[0]
 
         # move_data_idx = [i for i in range(len(X)) if i not in flat_FixNodesAtPoints]
         move_nodes_idx = np.arange(len(FixNodesAtPoints), len(NodePositions))
+        partition, dists, _ = RePartitionData(
+            None,
+            None,
+            None,
+            NodeIndicesArray=move_nodes_idx,
+            opType="removenode",
+            precomp_d=precomp_d,
+            SquaredX=None,
+        )
+        move_partition, move_dists = partition[move_data_idx], dists[move_data_idx]
     else:
         move_data_idx = np.arange(len(X))
         move_nodes_idx = np.arange(len(NodePositions))
+        move_partition = partition
+        move_dists = dists
 
     # fitted subset
-    (move_X, move_Xcp, move_PointWeights, move_SquaredXcp, move_NodePositions,) = (
+    move_X, move_Xcp, move_PointWeights, move_SquaredXcp, move_NodePositions = (
         X[move_data_idx, :],
         Xcp[move_data_idx, :],
         PointWeights[move_data_idx],
@@ -1707,20 +1732,14 @@ def PrimitiveElasticGraphEmbedment_cp_v2(
         NodePositions[move_nodes_idx],
     )
 
-    # Main iterative EM cycle: partition, fit given the partition, repeat
-    move_partition, move_dists = PartitionData_cp(
-        move_Xcp,
-        move_NodePositions,
-        MaxBlockSize,
-        move_SquaredXcp,
-        TrimmingRadius,
-    )
-
     if verbose or Mode == 2:
         # if FixNodesAtPoints != []:
         #    dists = np.concatenate((FixedNodesDists, move_dists))
         OldElasticEnergy, MSE, EP, RP = ComputePrimitiveGraphElasticEnergy(
-            NodePositions, ElasticMatrix, move_dists
+            NodePositions,
+            ElasticMatrix,
+            move_dists,
+            move_PointWeights,
         )
 
     ElasticEnergy = 0
@@ -1760,7 +1779,7 @@ def PrimitiveElasticGraphEmbedment_cp_v2(
             # if FixNodesAtPoints != []:
             #    dists = np.concatenate((FixedNodesDists, move_dists))
             ElasticEnergy, MSE, EP, RP = ComputePrimitiveGraphElasticEnergy(
-                NewNodePositions, ElasticMatrix, move_dists
+                NewNodePositions, ElasticMatrix, move_dists, move_PointWeights
             )
 
         if Mode == 1:
@@ -1836,7 +1855,10 @@ def PrimitiveElasticGraphEmbedment_cp_v2(
     if (FinalEnergy != "Base") or (not (verbose) and (Mode != 2)):
         if FinalEnergy == "Base":
             ElasticEnergy, MSE, EP, RP = ComputePrimitiveGraphElasticEnergy(
-                NewNodePositions, ElasticMatrix, dists
+                NewNodePositions,
+                ElasticMatrix,
+                dists,
+                PointWeights,
             )
 
         elif FinalEnergy == "Penalized":
@@ -1846,6 +1868,7 @@ def PrimitiveElasticGraphEmbedment_cp_v2(
                 dists,
                 alpha,
                 beta,
+                PointWeights,
                 PseudotimeNodePositions,
             )
 

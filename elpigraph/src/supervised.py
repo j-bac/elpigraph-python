@@ -227,29 +227,27 @@ def chunk(bX, bX_chunks, bps_chunks, bnNodes):
 
 
 @nb.njit(cache=True)
-def chunk_v2(bX, bX_chunks, bps_chunks, bnNodes):
+def chunkv3(bX, bX_chunks, bps_chunks, bnNodes):
     PseudotimeNodePositions = np.full((bnNodes, bX.shape[1]), np.nan)
-    MeanPseudotime = np.full(bnNodes, np.nan)
     invalidNodes = []
     for i, bX_chunk, bs_chunk in zip(np.arange(bnNodes), bX_chunks, bps_chunks):
         if len(bs_chunk):
-            MeanPseudotime[i] = bs_chunk[len(bs_chunk) // 2]
-            PseudotimeNodePositions[i] = bX_chunk[len(bs_chunk) // 2]
+            for j in range(bX.shape[1]):
+                PseudotimeNodePositions[i, j] = bX_chunk[:, j].mean()
         else:
             invalidNodes.append(i)
 
     # handle edge case: empty bins node positions set to average of adjacent bins
     for i in invalidNodes:
         b, a = np.max(np.array([0, i - 1])), np.min(np.array([bnNodes - 1, i + 1]))
-
-        MeanPseudotime[i] = np.nanmean(MeanPseudotime[np.array([b, a])])
+        if b in invalidNodes and a in invalidNodes:
+            return PseudotimeNodePositions, True
 
         for j in range(bX.shape[1]):
             PseudotimeNodePositions[i, j] = np.nanmean(
                 PseudotimeNodePositions[np.array([b, a]), j]
             )
-
-    return PseudotimeNodePositions, MeanPseudotime
+    return PseudotimeNodePositions, False
 
 
 @nb.njit(cache=True)
@@ -264,9 +262,7 @@ def nNodes_pseudotime_even_nb(bX, bpseudotime, bnNodes):
     idx = np.searchsorted(cum_arr, np.linspace(0, 1, bnNodes + 1)[1:-1], side="right")
     bX_chunks = nb.typed.List(np.split(bX[argsort_pseudotime], idx))
     bps_chunks = nb.typed.List(np.split(bpseudotime[argsort_pseudotime], idx))
-    PseudotimeNodePositions, MeanPseudotime = chunk_v2(
-        bX, bX_chunks, bps_chunks, bnNodes
-    )
+    PseudotimeNodePositions, MeanPseudotime = chunk(bX, bX_chunks, bps_chunks, bnNodes)
     return PseudotimeNodePositions, MeanPseudotime, bX_chunks
 
 
@@ -282,10 +278,40 @@ def nNodes_pseudotime_weighted_nb(bX, bpseudotime, bnNodes, bweights):
     idx = np.searchsorted(cum_arr, np.linspace(0, 1, bnNodes + 1)[1:-1], side="right")
     bX_chunks = nb.typed.List(np.split(bX[argsort_pseudotime], idx))
     bps_chunks = nb.typed.List(np.split(bpseudotime[argsort_pseudotime], idx))
-    PseudotimeNodePositions, MeanPseudotime = chunk_v2(
-        bX, bX_chunks, bps_chunks, bnNodes
-    )
+    PseudotimeNodePositions, MeanPseudotime = chunk(bX, bX_chunks, bps_chunks, bnNodes)
     return PseudotimeNodePositions, MeanPseudotime, bX_chunks
+
+
+@nb.njit(cache=True)
+def nNodes_pseudotime_even_nbv3(bX, bpseudotime, bnNodes):
+    """
+    Argsorts pseudotime and create nNodes bins
+    with roughly even amount of weights but potentially uneven amount of pseudotime
+    """
+    argsort_pseudotime = np.argsort(bpseudotime)
+    sorted_weights = np.ones(len(bpseudotime))
+    cum_arr = sorted_weights.cumsum() / sorted_weights.sum()
+    idx = np.searchsorted(cum_arr, np.linspace(0, 1, bnNodes + 1)[1:-1], side="right")
+    bX_chunks = nb.typed.List(np.split(bX[argsort_pseudotime], idx))
+    bps_chunks = nb.typed.List(np.split(bpseudotime[argsort_pseudotime], idx))
+    PseudotimeNodePositions = chunkv3(bX, bX_chunks, bps_chunks, bnNodes)[0]
+    return PseudotimeNodePositions, bX_chunks
+
+
+@nb.njit(cache=True)
+def nNodes_pseudotime_weighted_nbv3(bX, bpseudotime, bnNodes, bweights):
+    """
+    Argsorts pseudotime and create nNodes bins
+    with roughly even amount of weights but potentially uneven amount of pseudotime
+    """
+    argsort_pseudotime = np.argsort(bpseudotime)
+    sorted_weights = bweights[argsort_pseudotime]
+    cum_arr = sorted_weights.cumsum() / sorted_weights.sum()
+    idx = np.searchsorted(cum_arr, np.linspace(0, 1, bnNodes + 1)[1:-1], side="right")
+    bX_chunks = nb.typed.List(np.split(bX[argsort_pseudotime], idx))
+    bps_chunks = nb.typed.List(np.split(bpseudotime[argsort_pseudotime], idx))
+    PseudotimeNodePositions, invalid = chunkv3(bX, bX_chunks, bps_chunks, bnNodes)
+    return PseudotimeNodePositions, bX_chunks, invalid
 
 
 @nb.njit
@@ -469,7 +495,7 @@ def old_gen_pseudotime_centroids_by_path(
     return PseudotimeNodePositions, MeanPseudotime, nonempty_paths
 
 
-def gen_pseudotime_centroids_by_path(
+def old_gen_pseudotime_centroids_by_path(
     X, NodePositions, pseudotime, paths, paths_dataidx, PointWeights
 ):
     """generate pseudotime centroids for each path of the graph"""
@@ -515,12 +541,12 @@ def gen_pseudotime_centroids_by_path(
                     bnNodes,
                 )
 
-            # _PseudotimeNodePositions = np.vstack(
-            #    [
-            #        bX_chunks[i][vq(_PseudotimeNodePositions[[i]], bX_chunks[i])[0][0]]
-            #        for i in range(bnNodes)
-            #    ]
-            # )
+            _PseudotimeNodePositions = np.vstack(
+                [
+                    bX_chunks[i][vq(_PseudotimeNodePositions[[i]], bX_chunks[i])[0][0]]
+                    for i in range(bnNodes)
+                ]
+            )
             _PseudotimeNodePositions = interp_bins_nb(_PseudotimeNodePositions)
 
             # add them to common array
@@ -531,6 +557,86 @@ def gen_pseudotime_centroids_by_path(
     PseudotimeNodePositions /= nNodes_bincount[:, None]
     MeanPseudotime /= nNodes_bincount
     return PseudotimeNodePositions, MeanPseudotime, paths
+
+
+def _gen_pseudotime_centroids_singlepath(bX, bpseudotime, bnNodes, bweights):
+    # generate paths ps node positions
+    (_PseudotimeNodePositions, bX_chunks, invalid) = nNodes_pseudotime_weighted_nbv3(
+        bX, bpseudotime, bnNodes, bweights
+    )
+    if invalid:
+        # generate paths ps node positions
+        (_PseudotimeNodePositions, bX_chunks,) = nNodes_pseudotime_even_nbv3(
+            bX,
+            bpseudotime,
+            bnNodes,
+        )
+
+    tmp = []
+    for i in range(bnNodes):
+        if len(bX_chunks[i]) == 0:
+            tmp.append(_PseudotimeNodePositions[i])
+        else:
+            tmp.append(
+                bX_chunks[i][vq(_PseudotimeNodePositions[[i]], bX_chunks[i])[0][0]]
+            )
+    _PseudotimeNodePositions = np.vstack(tmp)
+    _PseudotimeNodePositions = interp_bins_nb(_PseudotimeNodePositions)
+    return _PseudotimeNodePositions
+
+
+def gen_pseudotime_centroids_by_path(
+    X,
+    NodePositions,
+    pseudotime,
+    paths,
+    paths_dataidx,
+    PointWeights,
+    cache_PseudotimeNodePositions={},
+):
+    """generate pseudotime centroids for each path of the graph"""
+
+    # ---generate pseudotime nodes
+    nodes_list = list(itertools.chain.from_iterable(paths.values()))
+    nNodes = len(NodePositions)
+    nNodes_bincount = np.bincount(nodes_list)
+    PseudotimeNodePositions = np.zeros((nNodes, X.shape[1]))
+
+    for (
+        k,
+        bdata,
+    ) in paths_dataidx.items():  # for data associated with each branch
+
+        # paths data points, pseudotime, Nodes, nNodes
+        bX, bpseudotime, bweights = X[bdata], pseudotime[bdata], PointWeights[bdata]
+        bNodes = paths[k]
+        bnNodes = len(bNodes)
+
+        if len(np.where(bdata)[0]) <= bnNodes:
+            # ignore paths with associated ndatapoints less than nNodes
+            PseudotimeNodePositions[bNodes] += NodePositions[bNodes]
+        else:
+            bytes_bdata = bdata.tobytes()
+            if (bytes_bdata, bnNodes) in cache_PseudotimeNodePositions.keys():
+                # retrieve precomputed path
+                _PseudotimeNodePositions = cache_PseudotimeNodePositions[
+                    (bytes_bdata, bnNodes)
+                ]
+            else:
+                # unseen params, generate the path
+                _PseudotimeNodePositions = _gen_pseudotime_centroids_singlepath(
+                    bX, bpseudotime, bnNodes, bweights
+                )
+                cache_PseudotimeNodePositions[
+                    (bytes_bdata, bnNodes)
+                ] = _PseudotimeNodePositions
+
+            # add them to common array
+            PseudotimeNodePositions[bNodes] += _PseudotimeNodePositions
+
+    # divide to average nodes that appear in multiple paths
+    PseudotimeNodePositions /= nNodes_bincount[:, None]
+    return PseudotimeNodePositions, paths, cache_PseudotimeNodePositions
 
 
 # ------for each branch, create elastic edges between pseudotime nodes & elpigraph nodes and merge pseudotime and elpigraph nodesp, elasticmatrix
@@ -675,7 +781,7 @@ def gen_pseudotime_augmented_graph(
     )
 
 
-def gen_pseudotime_augmented_graph_by_path(
+def old_gen_pseudotime_augmented_graph_by_path(
     X,
     SquaredX,
     NodePositions,
@@ -704,7 +810,7 @@ def gen_pseudotime_augmented_graph_by_path(
         PseudotimeNodePositions,
         MeanPseudotime,
         nonempty_paths,
-    ) = gen_pseudotime_centroids_by_path(
+    ) = old_gen_pseudotime_centroids_by_path(
         X, NodePositions, pseudotime, paths, paths_dataidx, PointWeights
     )
 
@@ -730,4 +836,69 @@ def gen_pseudotime_augmented_graph_by_path(
         MergedElasticMatrix,
         MergedEdges,
         len(PseudotimeNodePositions),
+    )
+
+
+def gen_pseudotime_augmented_graph_by_path(
+    X,
+    SquaredX,
+    NodePositions,
+    ElasticMatrix,
+    pseudotime,
+    root_node,
+    LinkMu,
+    LinkLambda,
+    PointWeights,
+    TrimmingRadius=float("inf"),
+    partition=None,
+    cache_PseudotimeNodePositions={},
+):
+    # ------extract oriented paths and associated data
+    Edges, Lambdas, Mus = DecodeElasticMatrix(ElasticMatrix)
+
+    paths = get_shortest_paths(Edges, root_node)
+    if partition is None:
+        paths_dataidx = partition_data_by_branch(
+            X, SquaredX, NodePositions, paths, TrimmingRadius
+        )
+    else:
+        paths_dataidx = partition_data_by_branch_precomp(partition, paths)
+
+    # ------generate pseudotime centroid branches
+    (
+        PseudotimeNodePositions,
+        nonempty_paths,
+        cache_PseudotimeNodePositions,
+    ) = gen_pseudotime_centroids_by_path(
+        X,
+        NodePositions,
+        pseudotime,
+        paths,
+        paths_dataidx,
+        PointWeights,
+        cache_PseudotimeNodePositions,
+    )
+
+    # ------for each branch, create elastic edges between pseudotime nodes & elpigraph nodes and merge pseudotime and elpigraph nodesp, elasticmatrix
+    (
+        MergedNodePositions,
+        MergedElasticMatrix,
+        MergedEdges,
+        MergedLambdas,
+        MergedMus,
+    ) = augment_graph_by_path(
+        NodePositions,
+        Edges,
+        PseudotimeNodePositions,
+        Mus,
+        Lambdas,
+        LinkMu,
+        LinkLambda,
+    )
+    return (
+        MergedNodePositions,
+        MergedElasticMatrix,
+        MergedEdges,
+        len(PseudotimeNodePositions),
+        cache_PseudotimeNodePositions,
     )
