@@ -224,9 +224,9 @@ def addLoops(
     init_edges,
     min_path_len=None,
     nnodes=None,
-    max_inner_fraction=0.2,
-    min_node_n_points=5,
-    max_n_points=np.inf,
+    max_inner_fraction=0.1,
+    min_node_n_points=2,
+    max_n_points=None,
     # max_empty_curve_fraction=.2,
     min_compactness=0.5,
     radius=None,
@@ -250,18 +250,31 @@ def addLoops(
     leaves = [k for k, v in epg.degree if v == 1]
 
     if min_path_len is None:
-        min_path_len = len(init_nodes_pos) // 6
-    if radius is None:
-        edge_lengths = np.sqrt(np.sum((init_nodes_pos[init_edges[:, 0], :] - init_nodes_pos[init_edges[:, 1], :]) ** 2,axis=1,))
-        radius = np.mean(edge_lengths) * min_path_len
-        # scipy.spatial.distance.pdist(init_nodes_pos[leaves]))
+        min_path_len = len(init_nodes_pos) // 5
+    if max_n_points is None:
+        max_n_points = int(len(X) * 0.05)
     if weights is None:
         weights = np.ones(len(X))[:, None]
     if nnodes is None:
-        nnodes = min(16, max(8, len(init_nodes_pos) // 6))
+        nnodes = min(16, max(6, len(init_nodes_pos) // 6))
+    if radius is None:
+        edge_lengths = np.sqrt(
+            np.sum(
+                (
+                    init_nodes_pos[init_edges[:, 0], :]
+                    - init_nodes_pos[init_edges[:, 1], :]
+                )
+                ** 2,
+                axis=1,
+            )
+        )
+        radius = np.mean(edge_lengths) * min(min_path_len, nnodes)
+        # scipy.spatial.distance.pdist(init_nodes_pos[leaves]))
 
     if verbose:
-        print(f'Using default parameters: radius={radius:.2f}, min_path_len={min_path_len},nnodes={nnodes}')
+        print(
+            f"Using default parameters: max_n_points={max_n_points}, radius={radius:.2f}, min_path_len={min_path_len}, nnodes={nnodes}"
+        )
 
     # --- Get candidate nodes to connect
     dist, ind = (
@@ -307,7 +320,9 @@ def addLoops(
     new_leaves = []
     new_part = []
     new_energy = []
+    new_inner_fraction = []
     for i, l in enumerate(leaves):
+        inner_fractions = []
         energies = []
         merged_edges = []
         merged_nodep = []
@@ -343,7 +358,7 @@ def addLoops(
                     raise e
 
             # ---get nodep, edges, create new graph with added loop
-            nodep, edges = pg['NodePositions'], pg['Edges'][0]
+            nodep, edges = pg["NodePositions"], pg["Edges"][0]
             # _part, _part_dist = elpigraph.src.core.PartitionData(
             #    X_fit, nodep, 10 ** 6, np.sum(X_fit ** 2, axis=1, keepdims=1)
             # )
@@ -410,12 +425,15 @@ def addLoops(
                 inside_idx = in_hull(cycle_2d, X_cycle_2d)
 
                 if sum(inside_idx) == 0:
-                    inner_fraction == 0.0
+                    inner_fraction = 0.0
                 else:
                     cycle_centroid = np.mean(cycle_2d, axis=0, keepdims=1)
                     X_inside = X_cycle_2d[inside_idx]
 
-                    w = mahalanobis(X_inside, cycle_centroid)
+                    if len(X_inside) == 1:
+                        w = np.ones(len(X_inside))
+                    else:
+                        w = mahalanobis(X_inside, cycle_centroid)
 
                     # points belonging to cycle shrunk by 10% or within 2 std of centroid (mahalanobis < 2)
                     shrunk_cycle_2d = shrink_or_swell_shapely_polygon(
@@ -452,11 +470,15 @@ def addLoops(
                     if intersect:
                         valid = False
 
+                # idx for min_node_n_points test: points that are away from the center
+                ix_outside = np.ones(len(cycle_points), dtype=bool)
+                ix_outside[np.arange(len(X))[cycle_points][inside_idx][idx_close]]=False
                 if (
                     any(
-                        np.bincount(cent_part.flat, minlength=len(_merged_nodep))[
-                            len(init_nodes_pos) :
-                        ]
+                        np.bincount(
+                            cent_part[ix_outside].flat,
+                            minlength=len(_merged_nodep),
+                        )[len(init_nodes_pos) :]
                         < min_node_n_points
                     )  # if empty cycle node
                     or (
@@ -470,6 +492,7 @@ def addLoops(
 
             # ---> if cycle is invalid, continue
             if not valid:
+                inner_fractions.append(np.inf)
                 energies.append(np.inf)
                 merged_edges.append(np.inf)
                 merged_nodep.append(np.inf)
@@ -493,7 +516,7 @@ def addLoops(
                 # ElasticEnergy, MSE, EP, RP = elpigraph.src.core.ComputePenalizedPrimitiveGraphElasticEnergy(_merged_nodep,
                 #                                                                                            ElasticMatrix,
                 #                                                                                            dist2proj,alpha=0.01,beta=0)
-
+                inner_fractions.append(inner_fraction)
                 energies.append(MSE)
                 merged_edges.append(_merged_edges)
                 merged_nodep.append(_merged_nodep)
@@ -513,6 +536,7 @@ def addLoops(
                 new_leaves.append(loop_leaves[best])
                 new_part.append(merged_part[best])
                 new_energy.append(energies[best])
+                new_inner_fraction.append(inner_fractions[best])
                 _merged_edges = merged_edges[best]
                 _merged_nodep = merged_nodep[best]
 
@@ -548,7 +572,10 @@ def addLoops(
                     cycle_centroid = np.mean(cycle_2d, axis=0, keepdims=1)
                     X_inside = X_cycle_2d[inside_idx]
 
-                    w = mahalanobis(X_inside, cycle_centroid)
+                    if len(X_inside) == 1:
+                        w = np.ones(len(X_inside))
+                    else:
+                        w = mahalanobis(X_inside, cycle_centroid)
 
                     # points belonging to cycle shrunk by 10% or within 2 std of centroid (mahalanobis < 2)
                     shrunk_cycle_2d = shrink_or_swell_shapely_polygon(
@@ -569,6 +596,7 @@ def addLoops(
                     idx_close = in_shrunk_cycle | (w < 1)
                     w = 1 - w / w.max()
                     w[idx_close] = 1
+                    inner_fraction = np.sum(w) / np.sum(cycle_points)
 
                     compactness = pp_compactness(cycle_2d)
 
@@ -577,6 +605,7 @@ def addLoops(
                     )
                     plt.scatter(*X[:, :2].T, alpha=0.1, s=5)
                     plt.scatter(*X_fit[:, :2].T, s=5)
+                    plt.scatter(*_merged_nodep[:, :2].T, c="k")
                     for e in _merged_edges:
                         plt.plot(
                             [_merged_nodep[e[0], 0], _merged_nodep[e[1], 0]],
@@ -589,15 +618,15 @@ def addLoops(
 
                     plt.show()
 
-    # ignore equivalent loops (with more than 2/3 shared points)
+    # ignore equivalent loops (with more than 2/3 shared points and nodes)
     valid = np.ones(len(new_part))
     for i in range(len(new_part) - 1):
         for j in range(i + 1, len(new_part)):
             if (
                 len(np.intersect1d(new_part[i], new_part[j]))
-                / min(len(new_part[i]), len(new_part[j]))
+                / max(len(new_part[i]), len(new_part[j]))
             ) > (2 / 3):
-                if np.argmin([new_energy[i], new_energy[j]]) == 0:
+                if np.argmin([new_inner_fraction[i], new_inner_fraction[j]]) == 0:
                     valid[i] = 0
                 else:
                     valid[j] = 0
@@ -607,11 +636,12 @@ def addLoops(
     new_leaves = [e for i, e in enumerate(new_leaves) if valid[i]]
     new_part = [e for i, e in enumerate(new_part) if valid[i]]
     new_energy = [e for i, e in enumerate(new_energy) if valid[i]]
+    new_inner_fraction = [e for i, e in enumerate(new_inner_fraction) if valid[i]]
 
     ### form graph with all valid loops found ###
     if (new_edges == []) or (sum(valid) == 0):
         if verbose:
-            print('No valid loops found')
+            print("No valid loops found")
         return (None, None, None, None, None)
 
     for i, loop_edges in enumerate(new_edges):
