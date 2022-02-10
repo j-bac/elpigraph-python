@@ -239,6 +239,36 @@ def addLoops(
     verbose=False,
     key="epg",
 ):
+    """
+    This function tries to add extra paths to the graph 
+    by computing a series of principal curves connecting two nodes and retaining plausible ones using heuristic parameters
+
+    min_path_len: int, default=None
+        Minimum distance along the graph (in number of nodes) that separates the two nodes to connect with a principal curve
+    n_nodes: int, default=None
+        Number of nodes in the candidate principal curves
+    max_inner_fraction: float in [0,1], default=0.1
+        Maximum fraction of points inside vs outside the loop Controls how empty the loop formed with the added path should be.
+    min_node_n_points: int, default=1
+        Minimum number of points associated to nodes of the principal curve (prevents creating paths through empty space)
+    max_n_points: int, default=5% of the number of points
+        Maximum number of points inside the loop
+    min_compactness: float in [0,1], default=0.5
+        Minimum 'roundness' of the loop (1=more round) (if very narrow loops are not desired)
+    radius: float, default=None
+        Max distance in space that separates the two nodes to connect with a principal curve
+    allow_same_branch: bool, default=True
+        Whether to allow new paths to connect two nodes from the same branch
+    fit_loops: bool, default=True
+        Whether to refit the graph to data after adding the new paths
+    plot: bool, default=False
+        Whether to plot selected candidate paths 
+    verbose: bool, default=False
+    copy: bool, default=False
+    use_weights: bool, default=False
+        Whether to use point weights
+    use_partition: bool or list, default=False
+    """
 
     # --- Init parameters, variables
     epg = nx.Graph(init_edges.tolist())
