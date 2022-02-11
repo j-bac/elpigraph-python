@@ -395,6 +395,9 @@ def ComputeSpringLaplacianMatrix(ElasticMatrix):
     Mu = np.diag(ElasticMatrix)
     # create the matrix with edge elasticity moduli at non-diagonal elements
     Lambda = ElasticMatrix - np.diag(Mu)
+    # set mu of endpoints to 0.
+    endpoints = np.where((np.bincount(np.concatenate(Lambda.nonzero())) // 2) == 1)[0]
+    Mu[endpoints] = 0.0
     # Diagonal matrix of edge elasticities
     LambdaSums = Lambda.sum(axis=0)
     # E matrix (contribution from edges) is simply weighted Laplacian

@@ -240,7 +240,7 @@ def addLoops(
     key="epg",
 ):
     """
-    This function tries to add extra paths to the graph 
+    This function tries to add extra paths to the graph
     by computing a series of principal curves connecting two nodes and retaining plausible ones using heuristic parameters
 
     min_path_len: int, default=None
@@ -262,7 +262,7 @@ def addLoops(
     fit_loops: bool, default=True
         Whether to refit the graph to data after adding the new paths
     plot: bool, default=False
-        Whether to plot selected candidate paths 
+        Whether to plot selected candidate paths
     verbose: bool, default=False
     copy: bool, default=False
     use_weights: bool, default=False
@@ -283,10 +283,10 @@ def addLoops(
         min_path_len = len(init_nodes_pos) // 5
     if max_n_points is None:
         max_n_points = int(len(X) * 0.05)
+    if min_node_n_points is None:
+        min_node_n_points = np.bincount(part.flat).min()
     if weights is None:
         weights = np.ones(len(X))[:, None]
-    if nnodes is None:
-        nnodes = min(16, max(6, len(init_nodes_pos) // 6))
     if radius is None:
         edge_lengths = np.sqrt(
             np.sum(
@@ -298,12 +298,15 @@ def addLoops(
                 axis=1,
             )
         )
-        radius = np.mean(edge_lengths) * min(min_path_len, nnodes)
-        # scipy.spatial.distance.pdist(init_nodes_pos[leaves]))
+        radius = np.mean(edge_lengths) * len(init_nodes_pos) / 20
+        if nnodes is None:
+            nnodes = min(16, max(6, int(radius / np.mean(edge_lengths))))
+        elif nnodes < 6:
+            raise ValueError("nnodes should be at least 6")
 
     if verbose:
         print(
-            f"Using default parameters: max_n_points={max_n_points}, radius={radius:.2f}, min_path_len={min_path_len}, nnodes={nnodes}"
+            f"Using default parameters: max_n_points={max_n_points}, radius={radius:.2f}, min_node_n_points={min_node_n_points},min_path_len={min_path_len}, nnodes={nnodes}"
         )
 
     # --- Get candidate nodes to connect
@@ -502,7 +505,9 @@ def addLoops(
 
                 # idx for min_node_n_points test: points that are away from the center
                 ix_outside = np.ones(len(cycle_points), dtype=bool)
-                ix_outside[np.arange(len(X))[cycle_points][inside_idx][idx_close]]=False
+                ix_outside[
+                    np.arange(len(X))[cycle_points][inside_idx][idx_close]
+                ] = False
                 if (
                     any(
                         np.bincount(
