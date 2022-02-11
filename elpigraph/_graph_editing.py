@@ -278,7 +278,15 @@ def addLoops(
         X, init_nodes_pos, 10 ** 6, SquaredX=SquaredX
     )
     leaves = [k for k, v in epg.degree if v == 1]
-
+    edge_lengths = np.sqrt(
+        np.sum(
+            (init_nodes_pos[init_edges[:, 0], :] - init_nodes_pos[init_edges[:, 1], :])
+            ** 2,
+            axis=1,
+        )
+    )
+    if radius is None:
+        radius = np.mean(edge_lengths) * len(init_nodes_pos) / 20
     if min_path_len is None:
         min_path_len = len(init_nodes_pos) // 5
     if max_n_points is None:
@@ -287,18 +295,6 @@ def addLoops(
         min_node_n_points = max(1, np.bincount(part.flat).min())
     if weights is None:
         weights = np.ones(len(X))[:, None]
-    if radius is None:
-        edge_lengths = np.sqrt(
-            np.sum(
-                (
-                    init_nodes_pos[init_edges[:, 0], :]
-                    - init_nodes_pos[init_edges[:, 1], :]
-                )
-                ** 2,
-                axis=1,
-            )
-        )
-        radius = np.mean(edge_lengths) * len(init_nodes_pos) / 20
     if nnodes is None:
         nnodes = min(16, max(6, int(radius / np.mean(edge_lengths))))
     elif nnodes < 6:
