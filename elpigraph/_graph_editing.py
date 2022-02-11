@@ -284,7 +284,7 @@ def addLoops(
     if max_n_points is None:
         max_n_points = int(len(X) * 0.05)
     if min_node_n_points is None:
-        min_node_n_points = np.bincount(part.flat).min()
+        min_node_n_points = max(1, np.bincount(part.flat).min())
     if weights is None:
         weights = np.ones(len(X))[:, None]
     if radius is None:
@@ -299,10 +299,10 @@ def addLoops(
             )
         )
         radius = np.mean(edge_lengths) * len(init_nodes_pos) / 20
-        if nnodes is None:
-            nnodes = min(16, max(6, int(radius / np.mean(edge_lengths))))
-        elif nnodes < 6:
-            raise ValueError("nnodes should be at least 6")
+    if nnodes is None:
+        nnodes = min(16, max(6, int(radius / np.mean(edge_lengths))))
+    elif nnodes < 6:
+        raise ValueError("nnodes should be at least 6")
 
     if verbose:
         print(
