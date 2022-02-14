@@ -286,7 +286,7 @@ def addLoops(
         )
     )
     if radius is None:
-        radius = np.mean(edge_lengths) * len(init_nodes_pos) / 20
+        radius = np.mean(edge_lengths) * len(init_nodes_pos) / 10
     if min_path_len is None:
         min_path_len = len(init_nodes_pos) // 5
     if max_n_points is None:

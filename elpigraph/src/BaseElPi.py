@@ -17,6 +17,7 @@ from .core import (
     PrimitiveElasticGraphEmbedment_cp_v2,
     PartitionData,
     PartitionData_cp,
+    MakeUniformElasticMatrix,
     Encode2ElasticMatrix,
     DecodeElasticMatrix,
 )
@@ -807,19 +808,19 @@ def computeElasticPrincipalGraph(
             )
 
         if ElasticMatrix is not None:
-            InitEdges, Lambda, Mu = DecodeElasticMatrix(ElasticMatrix)
+            InitEdges, _, _ = DecodeElasticMatrix(ElasticMatrix)
         AddEdges = np.vstack((np.arange(nFixedNodes), closest_node + nFixedNodes)).T
 
         # concatenate
         InitNodePositions = np.concatenate((FixedNodePositions, InitNodePositions))
         InitEdges = np.concatenate((AddEdges, InitEdges + nFixedNodes))
-        ElasticMatrix = Encode2ElasticMatrix(
-            Edges=InitEdges, Lambdas=Lambda_Initial, Mus=Mu_Initial
+        ElasticMatrix = MakeUniformElasticMatrix(
+            Edges=InitEdges, Lambda=Lambda_Initial, Mu=Mu_Initial
         )
 
     if ElasticMatrix is None:
-        InitElasticMatrix = Encode2ElasticMatrix(
-            Edges=InitEdges, Lambdas=Lambda_Initial, Mus=Mu_Initial
+        InitElasticMatrix = MakeUniformElasticMatrix(
+            Edges=InitEdges, Lambda=Lambda_Initial, Mu=Mu_Initial
         )
     else:
         if verbose:

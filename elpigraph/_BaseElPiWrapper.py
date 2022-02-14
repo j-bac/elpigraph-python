@@ -8,6 +8,7 @@ from ._topologies import generateInitialConfiguration
 from .src.distutils import PartialDistance
 from .src.core import (
     Encode2ElasticMatrix,
+    MakeUniformElasticMatrix,
     PrimitiveElasticGraphEmbedment,
     PrimitiveElasticGraphEmbedment_cp,
 )
@@ -282,8 +283,8 @@ def computeElasticPrincipalGraphWithGrammars(
                 InitEdges = InitialConf["Edges"]
 
                 # Compute the initial elastic matrix
-                InitialElasticMatrix = Encode2ElasticMatrix(
-                    Edges=InitialConf["Edges"], Lambdas=Lambda, Mus=Mu
+                InitialElasticMatrix = MakeUniformElasticMatrix(
+                    Edges=InitialConf["Edges"], Lambda=Lambda, Mu=Mu
                 )
                 # Compute the initial node position
                 if GPU:
