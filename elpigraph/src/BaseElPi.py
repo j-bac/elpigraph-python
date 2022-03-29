@@ -1,5 +1,6 @@
 import numpy as np
 
+
 try:
     import cupy
 except:
@@ -11,13 +12,21 @@ import copy
 from .PCA import PCA, TruncPCA, PCA_gpu, TruncSVD_gpu
 from .core import (
     PrimitiveElasticGraphEmbedment,
+    PrimitiveElasticGraphEmbedment_v2,
     PrimitiveElasticGraphEmbedment_cp,
+    PrimitiveElasticGraphEmbedment_cp_v2,
     PartitionData,
     PartitionData_cp,
+    MakeUniformElasticMatrix,
     Encode2ElasticMatrix,
     DecodeElasticMatrix,
 )
-from .grammar_operations import ApplyOptimalGraphGrammarOperation
+from .grammar_operations import (
+    ApplyOptimalGraphGrammarOperation,
+    ApplyOptimalGraphGrammarOperation_v2,
+    ApplyOptimalGraphGrammarOperation_v3,
+)
+
 from .reporting import ReportOnPrimitiveGraphEmbedment
 
 
@@ -62,17 +71,29 @@ def ElPrincGraph(
     #                 FastSolve = False,
     AvoidSolitary=False,
     EmbPointProb=1,
+    PointWeights=None,
     AdjustElasticMatrix=None,
     AdjustElasticMatrix_Initial=None,
     DisplayWarnings=False,
     StoreGraphEvolution=False,
     GPU=False,
+    FixNodesAtPoints=[],
+    pseudotime=None,
+    pseudotimeLambda=0.01,
+    label=None,
+    labelLambda=0.01,
+    MaxNumberOfGraphCandidatesDict={
+        "AddNode2Node": float("inf"),
+        "BisectEdge": float("inf"),
+        "RemoveNode": float("inf"),
+        "ShrinkEdge": float("inf"),
+    },
 ):
     """
     #' Core function to construct a principal elastic graph
     #'
     #' The core function that takes the n m-dimensional points and construct a principal elastic graph using the
-    #' grammars provided. 
+    #' grammars provided.
     #'
     #' @param X numerical 2D matrix, the n-by-m matrix with the position of n m-dimensional points
     #' @param NumNodes integer, the number of nodes of the principal graph
@@ -88,12 +109,12 @@ def ElPrincGraph(
     #' @param NodesPositions numerical 2D matrix, the k-by-m matrix with k m-dimensional positions of the nodes
     #' in the initial step
     #' @param ElasticMatrix numerical 2D matrix, the k-by-k elastic matrix
-    #' @param n.cores either an integer (indicating the number of cores to used for the creation of a cluster) or 
+    #' @param n.cores either an integer (indicating the number of cores to used for the creation of a cluster) or
     #' cluster structure returned, e.g., by makeCluster. If a cluster structure is used, all the nodes must contains X
     #' (this is done using clusterExport)
     #' @param MinParOP integer, the minimum number of operations to use parallel computation
     #' @param MaxNumberOfIterations integer, maximum number of steps to embed the nodes in the data
-    #' @param eps real, minimal relative change in the position of the nodes to stop embedment 
+    #' @param eps real, minimal relative change in the position of the nodes to stop embedment
     #' @param TrimmingRadius real, maximal distance of point from a node to affect its embedment
     #' @param NumEdges integer, the maximum nulber of edges
     #' @param Mode integer, the energy computation mode
@@ -116,8 +137,8 @@ def ElPrincGraph(
     #' If None (the default), no penalization will be used.
     #' @param AdjustVect boolean vector keeping track of the nodes for which the elasticity parameters have been adjusted.
     #' When True for a node its elasticity parameters will not be adjusted.
-    #' @param gamma 
-    #' @param verbose 
+    #' @param gamma
+    #' @param verbose
     #' @param AdjustElasticMatrix.Initial a penalization function to adjust the elastic matrices of the initial configuration (e.g., AdjustByConstant).
     #' If None (the default), no penalization will be used.
     #'
@@ -138,9 +159,12 @@ def ElPrincGraph(
     #'
     #' This is a low level function. See  \code{\link{computeElasticPrincipalCircle}},
     #' \code{\link{computeElasticPrincipalCurve}}, or \code{\link{computeElasticPrincipalTree}}
-    #' 
+    #'
     #'
     """
+
+    if PointWeights is None:
+        PointWeights = np.ones((len(X), 1))
 
     if GrammarOptimization:
         print("Using grammar optimization")
@@ -155,6 +179,12 @@ def ElPrincGraph(
 
     if not CompileReport:
         verbose = False
+
+    if "RemoveNode" in MaxNumberOfGraphCandidatesDict:
+        if np.isfinite(MaxNumberOfGraphCandidatesDict["RemoveNode"]):
+            raise ValueError(
+                "MaxNumberOfGraphCandidates limitation not yet available for RemoveNode. Keep it to infinity"
+            )
 
     if isinstance(ElasticMatrix, np.ndarray):
         if np.any(ElasticMatrix != ElasticMatrix.T):
@@ -180,6 +210,8 @@ def ElPrincGraph(
             Mode=Mode,
             Xcp=Xcp,
             SquaredXcp=SquaredXcp,
+            FixNodesAtPoints=FixNodesAtPoints,
+            PointWeights=PointWeights,
         )[0]
     else:
         Xcp = None
@@ -192,6 +224,8 @@ def ElPrincGraph(
             eps=eps,
             ElasticMatrix=ElasticMatrix,
             Mode=Mode,
+            FixNodesAtPoints=FixNodesAtPoints,
+            PointWeights=PointWeights,
         )[0]
 
     UpdatedPG = dict(
@@ -226,7 +260,7 @@ def ElPrincGraph(
 
     if verbose:
         print(
-            "BARCODE\tENERGY\tNNODES\tNEDGES\tNRIBS\tNSTARS\tNRAYS\tNRAYS2\tMSE\tMSEP\tFVE\tFVEP\tUE\tUR\tURN\tURN2\tURSD\n"
+            "\nBARCODE\tENERGY\tNNODES\tNEDGES\tNRIBS\tNSTARS\tNRAYS\tNRAYS2\tMSE\tMSEP\tFVE\tFVEP\tUE\tUR\tURN\tURN2\tURSD\n"
         )
 
     # now we grow the graph up to NumNodes
@@ -244,6 +278,7 @@ def ElPrincGraph(
                 TrimmingRadius=TrimmingRadius,
             ),
             ComputeMSEP=ComputeMSEP,
+            PointWeights=PointWeights,
         )
 
         return dict(
@@ -257,11 +292,12 @@ def ElPrincGraph(
 
     FailedOperations = 0
     Steps = 0
-    FirstPrint = True
 
     start = time.time()
     times = {}
 
+    AllMergedElasticMatrices = {}
+    AllMergedNodePositions = {}
     AllNodePositions = {}
     AllElasticMatrices = {}
 
@@ -272,14 +308,6 @@ def ElPrincGraph(
         ) and not GrammarOptimization:
             break
 
-        if verbose and ShowTimer:
-            print("Nodes = ", UpdatedPG["NodePositions"].shape[0])
-
-        if verbose and not ShowTimer:
-            if FirstPrint:
-                print("Nodes = ", end=" ")
-                FirstPrint = False
-            print(UpdatedPG["NodePositions"].shape[0], end=" ")
         OldPG = copy.deepcopy(UpdatedPG)
 
         for OpType in GrammarOrder:
@@ -290,7 +318,7 @@ def ElPrincGraph(
                         print("Growing")
                         t = time.time()
 
-                    UpdatedPG = ApplyOptimalGraphGrammarOperation(
+                    UpdatedPG = ApplyOptimalGraphGrammarOperation_v2(
                         X,
                         UpdatedPG["NodePositions"],
                         UpdatedPG["ElasticMatrix"],
@@ -307,6 +335,7 @@ def ElPrincGraph(
                         alpha=alpha,
                         beta=beta,
                         EmbPointProb=EmbPointProb,
+                        PointWeights=PointWeights,
                         AvoidSolitary=AvoidSolitary,
                         AdjustElasticMatrix=AdjustElasticMatrix,
                         DisplayWarnings=DisplayWarnings,
@@ -314,6 +343,12 @@ def ElPrincGraph(
                         MinParOp=MinParOp,
                         Xcp=Xcp,
                         SquaredXcp=SquaredXcp,
+                        FixNodesAtPoints=FixNodesAtPoints,
+                        pseudotime=pseudotime,
+                        pseudotimeLambda=pseudotimeLambda,
+                        # label=label,
+                        # labelLambda=labelLambda,
+                        MaxNumberOfGraphCandidatesDict=MaxNumberOfGraphCandidatesDict,
                     )
 
                     if UpdatedPG == "failed operation":
@@ -348,7 +383,7 @@ def ElPrincGraph(
                     if ShowTimer:
                         print("Shrinking")
                         t = time.time()
-                    UpdatedPG = ApplyOptimalGraphGrammarOperation(
+                    UpdatedPG = ApplyOptimalGraphGrammarOperation_v2(
                         X,
                         UpdatedPG["NodePositions"],
                         UpdatedPG["ElasticMatrix"],
@@ -365,6 +400,7 @@ def ElPrincGraph(
                         alpha=alpha,
                         beta=beta,
                         EmbPointProb=EmbPointProb,
+                        PointWeights=PointWeights,
                         AvoidSolitary=AvoidSolitary,
                         AdjustElasticMatrix=AdjustElasticMatrix,
                         DisplayWarnings=DisplayWarnings,
@@ -372,6 +408,12 @@ def ElPrincGraph(
                         MinParOp=MinParOp,
                         Xcp=Xcp,
                         SquaredXcp=SquaredXcp,
+                        FixNodesAtPoints=FixNodesAtPoints,
+                        pseudotime=pseudotime,
+                        pseudotimeLambda=pseudotimeLambda,
+                        # label=label,
+                        # labelLambda=labelLambda,
+                        MaxNumberOfGraphCandidatesDict=MaxNumberOfGraphCandidatesDict,
                     )
 
                     if UpdatedPG == "failed operation":
@@ -435,6 +477,12 @@ def ElPrincGraph(
             ]
             AllElasticMatrices[UpdatedPG["NodePositions"].shape[0]] = UpdatedPG[
                 "ElasticMatrix"
+            ]
+            AllMergedElasticMatrices[UpdatedPG["NodePositions"].shape[0]] = UpdatedPG[
+                "StoreMergedElasticMatrix"
+            ]
+            AllMergedNodePositions[UpdatedPG["NodePositions"].shape[0]] = UpdatedPG[
+                "StoreMergedNodePositions"
             ]
 
     if not verbose:
@@ -502,6 +550,8 @@ def ElPrincGraph(
         times=times,
         AllNodePositions=AllNodePositions,
         AllElasticMatrices=AllElasticMatrices,
+        AllMergedElasticMatrices=AllMergedElasticMatrices,
+        AllMergedNodePositions=AllMergedNodePositions,
     )
 
 
@@ -543,6 +593,7 @@ def computeElasticPrincipalGraph(
     #                                 FastSolve = False,
     AvoidSolitary=False,
     EmbPointProb=1,
+    PointWeights=None,
     AdjustElasticMatrix=None,
     AdjustElasticMatrix_Initial=None,
     Lambda_Initial=None,
@@ -550,13 +601,24 @@ def computeElasticPrincipalGraph(
     DisplayWarnings=False,
     StoreGraphEvolution=False,
     GPU=False,
+    FixNodesAtPoints=[],
+    pseudotime=None,
+    pseudotimeLambda=0.01,
+    label=None,
+    labelLambda=0.01,
+    MaxNumberOfGraphCandidatesDict={
+        "AddNode2Node": float("inf"),
+        "BisectEdge": float("inf"),
+        "RemoveNode": float("inf"),
+        "ShrinkEdge": float("inf"),
+    },
 ):
 
     """
     #' Regularize data and construct a principal elastic graph
     #'
     #' This allow to perform basic data regularization before constructing a principla elastic graph.
-    #' 
+    #'
     #'
     #' @param Data numerical 2D matrix, the n-by-m matrix with the position of n m-dimensional points
     #' @param NumNodes integer, the number of nodes of the principal graph
@@ -572,11 +634,11 @@ def computeElasticPrincipalGraph(
     #' @param InitEdges numerical 2D matrix, the e-by-2 matrix with e end-points of the edges connecting the nodes
     #' @param ElasticMatrix numerical 2D matrix, the e-by-e matrix containing the elasticity parameters of the edges
     #' @param MaxNumberOfIterations integer, maximum number of steps to embed the nodes in the data
-    #' @param eps real, minimal relative change in the position of the nodes to stop embedment 
+    #' @param eps real, minimal relative change in the position of the nodes to stop embedment
     #' @param TrimmingRadius real, maximal distance of point from a node to affect its embedment
     #' @param verbose boolean, should debugging information be reported?
     #' @param ShowTimer boolean, should the time to construct the graph be computed and reported for each step?
-    #' @param n_cores either an integer (indicating the number of cores to used for the creation of a cluster) or 
+    #' @param n_cores either an integer (indicating the number of cores to used for the creation of a cluster) or
     #' cluster structure returned, e.g., by makeCluster. If a cluster structure is used, all the nodes must contains X
     #' (this is done using clusterExport)
     #' @param MinParOp integer, the minimum number of operations to use parallel computation
@@ -590,7 +652,7 @@ def computeElasticPrincipalGraph(
     #' helps speeding up the computation if a large number of points is present.
     #' @param FinalEnergy string indicating the final elastic emergy associated with the configuration. Currently it can be "Base" or "Penalized"
     #' @param alpha positive numeric, the value of the alpha parameter of the penalized elastic energy
-    #' @param beta positive numeric, the value of the beta parameter of the penalized elastic energy 
+    #' @param beta positive numeric, the value of the beta parameter of the penalized elastic energy
     #' @param ... optional parameter that will be passed to the AdjustHOS function
     #' @param AdjustVect boolean vector keeping track of the nodes for which the elasticity parameters have been adjusted.
     #' When True for a node its elasticity parameters will not be adjusted.
@@ -598,8 +660,8 @@ def computeElasticPrincipalGraph(
     #' If None (the default), no penalization will be used.
     #' @param AdjustElasticMatrix.Initial a penalization function to adjust the elastic matrices of the initial configuration (e.g., AdjustByConstant).
     #' If None (the default), no penalization will be used.
-    #' @param Lambda.Initial 
-    #' @param Mu.Initial 
+    #' @param Lambda.Initial
+    #' @param Mu.Initial
     #'
     #' @return a named list with a number of elements:
     #' \describe{
@@ -723,9 +785,42 @@ def computeElasticPrincipalGraph(
     if Mu_Initial is None:
         Mu_Initial = Mu
 
+    if FixNodesAtPoints != []:
+        nFixedNodes = len(FixNodesAtPoints)
+
+        # fixed datapoints
+        flat_FixNodesAtPoints = [
+            item for sublist in FixNodesAtPoints for item in sublist
+        ]
+        if len(set(flat_FixNodesAtPoints)) != len(flat_FixNodesAtPoints):
+            raise ValueError("FixNodesAtPoints lists contain duplicate points")
+
+        # init fixed nodes
+        FixedNodePositions = np.array(
+            [X[inds].mean(axis=0) for inds in FixNodesAtPoints]
+        )
+
+        # init edges at first indices (with closest NodePosition)
+        closest_node = np.zeros(nFixedNodes, dtype=int)
+        for i, fn in enumerate(FixedNodePositions):
+            closest_node[i] = np.argmin(
+                [np.linalg.norm(fn - n) for n in InitNodePositions]
+            )
+
+        if ElasticMatrix is not None:
+            InitEdges, _, _ = DecodeElasticMatrix(ElasticMatrix)
+        AddEdges = np.vstack((np.arange(nFixedNodes), closest_node + nFixedNodes)).T
+
+        # concatenate
+        InitNodePositions = np.concatenate((FixedNodePositions, InitNodePositions))
+        InitEdges = np.concatenate((AddEdges, InitEdges + nFixedNodes))
+        ElasticMatrix = MakeUniformElasticMatrix(
+            Edges=InitEdges, Lambda=Lambda_Initial, Mu=Mu_Initial
+        )
+
     if ElasticMatrix is None:
-        InitElasticMatrix = Encode2ElasticMatrix(
-            Edges=InitEdges, Lambdas=Lambda_Initial, Mus=Mu_Initial
+        InitElasticMatrix = MakeUniformElasticMatrix(
+            Edges=InitEdges, Lambda=Lambda_Initial, Mu=Mu_Initial
         )
     else:
         if verbose:
@@ -781,6 +876,7 @@ def computeElasticPrincipalGraph(
         verbose=verbose,
         AvoidSolitary=AvoidSolitary,
         EmbPointProb=EmbPointProb,
+        PointWeights=PointWeights,
         AdjustElasticMatrix=AdjustElasticMatrix,
         AdjustElasticMatrix_Initial=AdjustElasticMatrix_Initial,
         DisplayWarnings=DisplayWarnings,
@@ -788,11 +884,22 @@ def computeElasticPrincipalGraph(
         MinParOp=MinParOp,
         StoreGraphEvolution=StoreGraphEvolution,
         GPU=GPU,
+        FixNodesAtPoints=FixNodesAtPoints,
+        pseudotime=pseudotime,
+        pseudotimeLambda=pseudotimeLambda,
+        label=label,
+        labelLambda=labelLambda,
+        MaxNumberOfGraphCandidatesDict=MaxNumberOfGraphCandidatesDict,
     )
 
-    NodePositions = ElData["NodePositions"]
-    AllNodePositions = ElData["AllNodePositions"]
     Edges = DecodeElasticMatrix(ElData["ElasticMatrix"])
+    NodePositions = ElData["NodePositions"]
+    if "AllNodePositions" not in ElData.keys():
+        AllNodePositions = {}
+        AllMergedNodePositions = {}
+    else:
+        AllNodePositions = ElData["AllNodePositions"]
+        AllMergedNodePositions = ElData["AllMergedNodePositions"]
 
     # if drawEnergy and ElData['ReportTable'] is not None:
     #    print('MSDEnergyPlot not yet implemented')
@@ -804,8 +911,12 @@ def computeElasticPrincipalGraph(
 
     if Do_PCA:
         NodePositions = NodePositions.dot(vglobal[:, ReduceDimension].T)
-        for k, nodep in AllNodePositions.items():
+        for (k, nodep), (_, allnodep) in zip(
+            AllNodePositions.items(), AllMergedNodePositions.items()
+        ):
             AllNodePositions[k] = nodep.dot(vglobal[:, ReduceDimension].T)
+            if AllMergedNodePositions[k] is not None:
+                AllMergedNodePositions[k] = allnodep.dot(vglobal[:, ReduceDimension].T)
 
     EndTimer = time.time() - t
     if verbose:
@@ -828,6 +939,8 @@ def computeElasticPrincipalGraph(
         times=ElData["times"],
         AllNodePositions=AllNodePositions,
         AllElasticMatrices=ElData["AllElasticMatrices"],
+        AllMergedElasticMatrices=ElData["AllMergedElasticMatrices"],
+        AllMergedNodePositions=AllMergedNodePositions,
     )
 
     # if drawPCAView:
@@ -835,7 +948,11 @@ def computeElasticPrincipalGraph(
 
     if Do_PCA or CenterData:
         FinalPG["NodePositions"] = NodePositions + DataCenters
-        for k, nodep in FinalPG["AllNodePositions"].items():
+        for (k, nodep), (_, allnodep) in zip(
+            FinalPG["AllNodePositions"].items(),
+            FinalPG["AllMergedNodePositions"].items(),
+        ):
             FinalPG["AllNodePositions"][k] = nodep + DataCenters
-
+            if FinalPG["AllMergedNodePositions"][k] is not None:
+                FinalPG["AllMergedNodePositions"][k] = allnodep + DataCenters
     return FinalPG

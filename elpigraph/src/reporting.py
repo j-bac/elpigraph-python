@@ -2,8 +2,9 @@ import numpy as np
 from .core import DecodeElasticMatrix, PartitionData
 from .distutils import ComputePrimitiveGraphElasticEnergy
 
+
 def getPrimitiveGraphStructureBarCode(ElasticMatrix):
-    #Mus = ElasticMatrix.diagonal()
+    # Mus = ElasticMatrix.diagonal()
     Lambda = ElasticMatrix.copy()
     np.fill_diagonal(Lambda, 0)
     indL = Lambda > 0
@@ -11,17 +12,17 @@ def getPrimitiveGraphStructureBarCode(ElasticMatrix):
     Mcon = np.max(Connectivities)
 
     counts = np.bincount(Connectivities)[1:]
-    code = '||'+str(ElasticMatrix.shape[0])
+    code = "||" + str(ElasticMatrix.shape[0])
 
     if Mcon <= 2:
-        code = '0'+code
+        code = "0" + code
     else:
-        code = '|'.join([str(c) for c in counts[2:][::-1]])+code
+        code = "|".join([str(c) for c in counts[2:][::-1]]) + code
     return code
-                         
 
-def project_point_onto_graph(X, NodePositions, Edges, Partition = None):
-    '''                           
+
+def project_point_onto_graph(X, NodePositions, Edges, Partition=None):
+    """
     #' Project data points on the precipal graph
     #'
     #' @param X numerical matrix containg points on the rows and dimensions on the columns
@@ -51,49 +52,66 @@ def project_point_onto_graph(X, NodePositions, Edges, Partition = None):
     #' @export
     #'
     #' @examples
-    '''
+    """
     if Partition is None:
-        Partition = PartitionData(X, NodePositions, MaxBlockSize, SquaredX=np.sum(X**2,axis=1,keepdims=1))[0]
+        Partition = PartitionData(
+            X,
+            NodePositions,
+            MaxBlockSize=10000,
+            SquaredX=np.sum(X ** 2, axis=1, keepdims=1),
+        )[0]
 
     X_projected = np.zeros(X.shape)
-    ProjectionValues = np.array([np.inf]*len(X))
-    Distances_squared = np.array([np.inf]*len(X))
-    EdgeID = np.array([np.nan]*len(X))
-    EdgeLen = np.array([np.inf]*len(Edges))
+    ProjectionValues = np.array([np.inf] * len(X))
+    Distances_squared = np.array([np.inf] * len(X))
+    EdgeID = np.array([np.nan] * len(X))
+    EdgeLen = np.array([np.inf] * len(Edges))
 
     for i in range(len(Edges)):
-        Idxs = np.where(np.isin(Partition, Edges[i,:]))[0]
+        Idxs = np.where(np.isin(Partition, Edges[i, :]))[0]
 
-        PrjStruct = project_point_onto_edge(X = X[Idxs,:], NodePositions = NodePositions[Edges[i,],:], Edge = np.array([0,1]))
+        PrjStruct = project_point_onto_edge(
+            X=X[Idxs, :],
+            NodePositions=NodePositions[
+                Edges[
+                    i,
+                ],
+                :,
+            ],
+            Edge=np.array([0, 1]),
+        )
 
-        if len(Idxs)> 0:
-            ToFill = PrjStruct['Distance_Squared'] < Distances_squared[Idxs]
-            X_projected[Idxs[ToFill],] = PrjStruct['X_Projected'][ToFill,]
+        if len(Idxs) > 0:
+            ToFill = PrjStruct["Distance_Squared"] < Distances_squared[Idxs]
+            X_projected[Idxs[ToFill],] = PrjStruct["X_Projected"][
+                ToFill,
+            ]
             try:
-                ProjectionValues[Idxs[ToFill]] = PrjStruct['Projection_Value'][ToFill]
+                ProjectionValues[Idxs[ToFill]] = PrjStruct["Projection_Value"][ToFill]
             except:
                 ### only one index and proj value
-                ProjectionValues[Idxs[ToFill]] = np.array([PrjStruct['Projection_Value']])[ToFill]
+                ProjectionValues[Idxs[ToFill]] = np.array(
+                    [PrjStruct["Projection_Value"]]
+                )[ToFill]
 
-            Distances_squared[Idxs[ToFill]] = PrjStruct['Distance_Squared'][ToFill]
+            Distances_squared[Idxs[ToFill]] = PrjStruct["Distance_Squared"][ToFill]
             EdgeID[Idxs[ToFill]] = i
 
+        EdgeLen[i] = np.sqrt(PrjStruct["EdgeLen_Squared"])
 
-        EdgeLen[i] = np.sqrt(PrjStruct['EdgeLen_Squared'])
+    return dict(
+        X_projected=X_projected,
+        MSEP=np.mean(Distances_squared),
+        ProjectionValues=ProjectionValues,
+        EdgeID=EdgeID,
+        EdgeLen=EdgeLen,
+        NodePositions=NodePositions,
+        Edges=Edges,
+    )
 
 
-    return(dict(X_projected = X_projected,
-              MSEP = np.mean(Distances_squared),
-              ProjectionValues = ProjectionValues,
-              EdgeID = EdgeID,
-              EdgeLen = EdgeLen,
-              NodePositions = NodePositions,
-              Edges = Edges))
-
-
-                         
-def project_point_onto_edge(X, NodePositions, Edge, ExtProj = False):
-    '''
+def project_point_onto_edge(X, NodePositions, Edge, ExtProj=False):
+    """
     #' Title
     #'
     #' @param X
@@ -104,43 +122,50 @@ def project_point_onto_edge(X, NodePositions, Edge, ExtProj = False):
     #' @export
     #'
     #' @examples
-    '''
-    
-    vec =(NodePositions[Edge[1],:] - NodePositions[Edge[0],:])[:,None]
-    u = ((X.T - NodePositions[Edge[0]][:,None]).T @ vec) / (vec.T @ vec)
+    """
+
+    vec = (NodePositions[Edge[1], :] - NodePositions[Edge[0], :])[:, None]
+    u = ((X.T - NodePositions[Edge[0]][:, None]).T @ vec) / (vec.T @ vec)
     u[~np.isfinite(u)] = 0
     u = u.squeeze()
     X_Projected = X.copy()
     X_Projected[:] = np.nan
 
-    if np.any(u<0):
-        X_Projected[u<0,:] = np.repeat(NodePositions[Edge[0],:][None], np.sum(u<0),axis=0)
+    if np.any(u < 0):
+        X_Projected[u < 0, :] = np.repeat(
+            NodePositions[Edge[0], :][None], np.sum(u < 0), axis=0
+        )
 
-
-    if np.any(u>1):
-        X_Projected[u>1,:] = np.repeat(NodePositions[Edge[1],:][None], np.sum(u>1),axis=0)
-
+    if np.any(u > 1):
+        X_Projected[u > 1, :] = np.repeat(
+            NodePositions[Edge[1], :][None], np.sum(u > 1), axis=0
+        )
 
     if ExtProj:
-        OnEdge = np.array([True]* len(u))
+        OnEdge = np.array([True] * len(u))
     else:
-        OnEdge = (u>=0) & (u<=1)
-
+        OnEdge = (u >= 0) & (u <= 1)
 
     if np.any(OnEdge):
-        UExp = np.reshape(np.repeat(u[OnEdge],len(vec)),(len(vec),int(np.sum(OnEdge))),order='F')
-        X_Projected[OnEdge,:] = (UExp*vec + NodePositions[Edge[0]][:,None]).T     
+        UExp = np.reshape(
+            np.repeat(u[OnEdge], len(vec)), (len(vec), int(np.sum(OnEdge))), order="F"
+        )
+        X_Projected[OnEdge, :] = (UExp * vec + NodePositions[Edge[0]][:, None]).T
 
-    distance_squared = np.sum((X_Projected - X) * (X_Projected - X),axis=1)
+    distance_squared = np.sum((X_Projected - X) * (X_Projected - X), axis=1)
 
-    return dict(X_Projected = X_Projected, Projection_Value = u,
-              Distance_Squared = distance_squared,
-              EdgeLen_Squared = np.sum(vec**2))
+    return dict(
+        X_Projected=X_Projected,
+        Projection_Value=u,
+        Distance_Squared=distance_squared,
+        EdgeLen_Squared=np.sum(vec ** 2),
+    )
 
 
-
-def ReportOnPrimitiveGraphEmbedment(X, NodePositions, ElasticMatrix, PartData=None, ComputeMSEP = False):
-    ''' 
+def ReportOnPrimitiveGraphEmbedment(
+    X, NodePositions, ElasticMatrix, PartData=None, ComputeMSEP=False, PointWeights=None
+):
+    """
     # %   This function computes various measurements concerning a primitive
     # %   graph embedment
     # %
@@ -168,7 +193,11 @@ def ReportOnPrimitiveGraphEmbedment(X, NodePositions, ElasticMatrix, PartData=No
     # %           URN is UR * nodes
     # %           URN2 is UR * nodes^2
     # %           URSD is standard deviation of UR
-    '''
+    """
+
+    if PointWeights is None:
+        PointWeights = np.ones((len(X), 1))
+
     Mus = ElasticMatrix.diagonal()
     Lambda = ElasticMatrix.copy()
     np.fill_diagonal(Lambda, 0)
@@ -178,30 +207,33 @@ def ReportOnPrimitiveGraphEmbedment(X, NodePositions, ElasticMatrix, PartData=No
     counts = np.bincount(Connectivities)[1:]
     DecodedMat = DecodeElasticMatrix(ElasticMatrix)
 
-    TotalVariance = np.sum(np.var(X,axis=0,ddof=1))
+    TotalVariance = np.sum(np.var(X, axis=0, ddof=1))
     BARCODE = getPrimitiveGraphStructureBarCode(ElasticMatrix)
 
     if PartData is None:
-        PartData = PartitionData(X = X, 
-                                 NodePositions = NodePositions,
-                                 MaxBlockSize = 1000000,
-                                 SquaredX= np.sum(X**2,axis=1,keepdims=1))
+        PartData = PartitionData(
+            X=X,
+            NodePositions=NodePositions,
+            MaxBlockSize=1000000,
+            SquaredX=np.sum(X ** 2, axis=1, keepdims=1),
+        )
 
-
-    Energies = ComputePrimitiveGraphElasticEnergy(NodePositions = NodePositions,
-                                                  ElasticMatrix = ElasticMatrix,
-                                                  dists = PartData[1])
+    Energies = ComputePrimitiveGraphElasticEnergy(
+        NodePositions=NodePositions,
+        ElasticMatrix=ElasticMatrix,
+        dists=PartData[1],
+        PointWeights=PointWeights,
+    )
 
     NNODES = len(NodePositions)
     NEDGES = len(DecodedMat[0])
 
-
-    if len(counts)>1:
+    if len(counts) > 1:
         NRIBS = counts[1]
     else:
         NRIBS = 0
 
-    if len(counts)>2:
+    if len(counts) > 2:
         NSTARS = counts[2]
     else:
         NSTARS = 0
@@ -209,22 +241,37 @@ def ReportOnPrimitiveGraphEmbedment(X, NodePositions, ElasticMatrix, PartData=No
     NRAYS = 0
     NRAYS2 = 0
 
-
     if ComputeMSEP:
-        NodeProj = project_point_onto_graph(X, NodePositions = NodePositions,
-                                        Edges = DecodedMat[0], Partition = PartData[0])
-        MSEP = NodeProj['MSEP']
-        FVEP = (TotalVariance-MSEP)/TotalVariance
+        NodeProj = project_point_onto_graph(
+            X, NodePositions=NodePositions, Edges=DecodedMat[0], Partition=PartData[0]
+        )
+        MSEP = NodeProj["MSEP"]
+        FVEP = (TotalVariance - MSEP) / TotalVariance
     else:
         MSEP = np.nan
         FVEP = np.nan
 
-    FVE = (TotalVariance-Energies[1])/TotalVariance
-    URN = Energies[-1]*NNODES
-    URN2 = Energies[-1]*NNODES*NNODES
+    FVE = (TotalVariance - Energies[1]) / TotalVariance
+    URN = Energies[-1] * NNODES
+    URN2 = Energies[-1] * NNODES * NNODES
     URSD = 0
 
-    return dict(BARCODE = BARCODE, ENERGY = Energies[0], NNODES = NNODES, NEDGES = NEDGES,
-           NRIBS = NRIBS, NSTARS = NSTARS, NRAYS = NRAYS, NRAYS2 = NRAYS2,
-           MSE = Energies[1], MSEP = MSEP, FVE = FVE, FVEP = FVEP, UE = Energies[2], UR = Energies[-1],
-           URN = URN, URN2 = URN2, URSD = URSD)
+    return dict(
+        BARCODE=BARCODE,
+        ENERGY=Energies[0],
+        NNODES=NNODES,
+        NEDGES=NEDGES,
+        NRIBS=NRIBS,
+        NSTARS=NSTARS,
+        NRAYS=NRAYS,
+        NRAYS2=NRAYS2,
+        MSE=Energies[1],
+        MSEP=MSEP,
+        FVE=FVE,
+        FVEP=FVEP,
+        UE=Energies[2],
+        UR=Energies[-1],
+        URN=URN,
+        URN2=URN2,
+        URSD=URSD,
+    )
