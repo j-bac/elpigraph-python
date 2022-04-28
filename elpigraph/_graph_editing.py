@@ -237,7 +237,6 @@ def addLoops(
     weights=None,
     plot=False,
     verbose=False,
-    key="epg",
 ):
     """
     This function tries to add extra paths to the graph
@@ -673,7 +672,7 @@ def addLoops(
     if (new_edges == []) or (sum(valid) == 0):
         if verbose:
             print("No valid loops found")
-        return (None, None, None, None, None)
+        return (None, None, None, None, None, None, None, None)
 
     for i, loop_edges in enumerate(new_edges):
         if i == 0:
@@ -719,4 +718,13 @@ def addLoops(
                     merged_nodep, merged_edges
                 )
 
-    return new_edges, new_nodep, new_leaves, merged_nodep, merged_edges
+    return (
+        new_edges,
+        new_nodep,
+        new_leaves,
+        new_part,
+        new_energy,
+        new_inner_fraction,
+        merged_nodep,
+        merged_edges,
+    )
