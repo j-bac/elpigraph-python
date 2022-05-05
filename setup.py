@@ -20,7 +20,7 @@ with open(path.join(here, "README.md"), encoding="utf-8") as f:
 
 setup(
     name="elpigraph-python",  # Required
-    version="0.2.0",  # Required
+    version="0.2.1",  # Required
     description="",  # Optional
     long_description=long_description,  # Optional
     long_description_content_type="text/markdown",  # Optional (see note above)
@@ -38,7 +38,10 @@ setup(
     ],
     keywords="machine_learning graphs dimension_reduction single_cell",  # Optional
     packages=["elpigraph.src", "elpigraph"],
-    package_dir={"elpigraph": "elpigraph", "elpigraph.src": path_src,},
+    package_dir={
+        "elpigraph": "elpigraph",
+        "elpigraph.src": path_src,
+    },
     #     package_data={'': ['data/']},
     install_requires=[
         "numpy >=1.16.2",
