@@ -1,8 +1,4 @@
 [![Documentation Status](https://readthedocs.org/projects/elpigraph-python/badge/?version=latest)](https://elpigraph-python.readthedocs.io/en/latest/?badge=latest)
-[![Build Status](https://travis-ci.com/j-bac/elpigraph-python.svg?branch=master)](https://travis-ci.com/j-bac/elpigraph-python)
-[![Build status](https://ci.appveyor.com/api/projects/status/hvnmxujbjvthfxn4/branch/master?svg=true)](https://ci.appveyor.com/project/j-bac/elpigraph-python/branch/master)
-[![CircleCI](https://circleci.com/gh/j-bac/elpigraph-python/tree/master.svg?style=shield)](https://circleci.com/gh/j-bac/elpigraph-python/tree/master)
-[![codecov](https://codecov.io/gh/j-bac/elpigraph-python/branch/master/graph/badge.svg)](https://codecov.io/gh/j-bac/elpigraph-python)
 [![GitHub license](https://img.shields.io/github/license/j-bac/elpigraph-python)](https://github.com/j-bac/elpigraph-python/blob/master/LICENSE)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![DOI:10.3390/e22030296](https://img.shields.io/badge/DOI-10.3390%2Fe22030296-blue)](https://doi.org/10.3390/e22030296)
