@@ -3,15 +3,11 @@ import elpigraph
 import numpy as np
 import numba as nb
 import matplotlib.pyplot as plt
-import scanpy as sc
 import itertools
 
 from sklearn.decomposition import PCA
 
-try:
-    from scipy.spatial.qhull import _Qhull
-except:
-    from scipy.spatial.qhull._qhull import _Qhull
+from scipy.spatial.qhull import ConvexHull
 from shapely.geometry import Point, Polygon, MultiLineString, LineString
 from shapely.geometry.multipolygon import MultiPolygon
 from sklearn.neighbors import NearestNeighbors
@@ -215,17 +211,21 @@ def find_all_cycles(G, source=None, cycle_length_limit=None):
     return [list(i) for i in output_cycles]
 
 
+#def in_hull(points, queries):
+#    hull = _Qhull(
+#        b"i",
+#        points,
+#        options=b"",
+#        furthest_site=False,
+#        incremental=False,
+#        interior_point=None,
+#    )
+#    equations = hull.get_simplex_facet_array()[2].T
+#    return np.all(queries @ equations[:-1] < -equations[-1], axis=1)
+
 def in_hull(points, queries):
-    hull = _Qhull(
-        b"i",
-        points,
-        options=b"",
-        furthest_site=False,
-        incremental=False,
-        interior_point=None,
-    )
-    equations = hull.get_simplex_facet_array()[2].T
-    return np.all(queries @ equations[:-1] < -equations[-1], axis=1)
+    equations = ConvexHull(points).equations.T
+    return np.all(queries @ equations[:-1] < - equations[-1], axis=1)
 
 
 def addLoops(

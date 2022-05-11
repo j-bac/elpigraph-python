@@ -6,3 +6,4 @@ scipy >=1.2.0
 python_igraph >=0.7.1
 networkx >=2.0
 matplotlib
+shapely

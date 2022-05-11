@@ -27,6 +27,7 @@ requirements:
     - python-igraph >=0.7.1
     - networkx >=2.0
     - matplotlib-base
+    - shapely
 
 test:
   imports:
