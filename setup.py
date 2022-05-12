@@ -9,18 +9,25 @@ from distutils import util
 from os import path
 from io import open
 
+
 here = path.abspath(path.dirname(__file__))
 path_src = util.convert_path("elpigraph/src")
 # Get the long description from the README file
 with open(path.join(here, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
+# Get version
+ver_path = util.convert_path("elpigraph/_version.py")
+main_ns = {}
+with open(ver_path) as ver_file:
+    exec(ver_file.read(), main_ns)
+VERSION = main_ns["__version__"]
 # Arguments marked as "Required" below must be included for upload to PyPI.
 # Fields marked as "Optional" may be commented out.
 
 setup(
     name="elpigraph-python",  # Required
-    version="0.2.2",  # Required
+    version=VERSION,  # Required
     description="",  # Optional
     long_description=long_description,  # Optional
     long_description_content_type="text/markdown",  # Optional (see note above)
@@ -52,6 +59,7 @@ setup(
         "python_igraph >=0.7.1",
         "networkx >=2.0",
         "matplotlib",
+        "shapely",
     ],
     project_urls={  # Optional
         "Bug Reports": "https://github.com/j-bac/elpigraph-python/issues",
