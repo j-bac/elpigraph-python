@@ -1,9 +1,10 @@
+{% set data = load_setup_py_data() %}
 {% set name = "elpigraph-python" %}
-{% set version = "0.2.1" %}
 
 package:
   name: "{{ name|lower }}"
-  version: "{{ version }}"
+  version: {{ data.get('version') }}
+
 
 source:
   url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
