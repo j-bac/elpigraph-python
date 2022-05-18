@@ -1,8 +1,12 @@
-formats:
-  - none
-requirements_file: requirements.txt
+version: 2
+
 python:
-  pip_install: true
-  extra_requirements:
-    - tests
-    - docs
+  version: 3.7
+  install:
+    - requirements: doc/requirements.txt
+    - requirements: requirements.txt
+    - method: pip
+      path: .
+      extra_requirements:
+        - doc
+  system_packages: true
