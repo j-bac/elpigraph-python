@@ -1,11 +1,11 @@
-from skdim import __version__
+from elpigraph import __version__
 from distutils.version import LooseVersion
 import sphinx
 import sys
 import os
 import sphinx_rtd_theme
 
-sys.path.append("../skdim/")
+sys.path.append("../elpigraph/")
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
