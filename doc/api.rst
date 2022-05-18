@@ -14,7 +14,7 @@ Principal graphs
    :toctree: .
 
    computeElasticPrincipalCurve
-   computeElasticPrincipalCIrcle
+   computeElasticPrincipalCircle
    computeElasticPrincipalTree
 
 Plotting

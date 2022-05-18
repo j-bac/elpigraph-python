@@ -530,7 +530,7 @@ def computeElasticPrincipalCurve(
 ):
 
     """
-    #' Construct a princial elastic curve
+    #' Construct a princpal elastic curve
     #'
     #' This function is a wrapper to the computeElasticPrincipalGraph function that constructs the appropriate initial graph and grammars
     #' when constructing a curve

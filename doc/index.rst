@@ -1,19 +1,11 @@
-|Travis|_ |Appveyor|_ |Codecov|_ |CircleCI|_ |Documentation|_ |LanguageGrade|_ |License|_
+|Documentation|_ |License|_ |DOI10.3390/e2203029|_
 
-.. |Travis| image:: https://travis-ci.com/j-bac/elpigraph-python.svg?branch=master
-.. _Travis: https://travis-ci.com/j-bac/elpigraph-python
-.. |Appveyor| image:: https://ci.appveyor.com/api/projects/status/tvumlfad69g6ap3u/branch/master?svg=true
-.. _Appveyor: https://ci.appveyor.com/project/j-bac/elpigraph-python/branch/master
-.. |Codecov| image:: https://codecov.io/gh/j-bac/elpigraph-python/badge.svg?branch=master&service=github
-.. _Codecov: https://codecov.io/gh/j-bac/elpigraph-python/
-.. |CircleCI| image:: https://circleci.com/gh/j-bac/elpigraph-python/tree/master.svg?style=shield
-.. _CircleCI: https://circleci.com/gh/j-bac/elpigraph-python/tree/master
 .. |Documentation| image:: https://readthedocs.org/projects/elpigraph-python/badge/?version=latest
 .. _Documentation: https://elpigraph-python.readthedocs.io
-.. |LanguageGrade| image:: https://img.shields.io/lgtm/grade/python/g/j-bac/elpigraph-python.svg?logo=lgtm&logoWidth=18
-.. _LanguageGrade: https://lgtm.com/projects/g/j-bac/elpigraph-python/context:python
 .. |License| image:: https://img.shields.io/github/license/j-bac/elpigraph-python.svg
 .. _License: https://github.com/j-bac/elpigraph-python/blob/master/LICENSE
+.. |DOI10.3390/e2203029| image:: https://img.shields.io/badge/DOI-10.3390%2Fe22030296-blue
+..  _DOI10.3390/e2203029: https://doi.org/10.3390/e22030296
 
 elpigraph-python - Intrinsic dimension estimation in Python
 ===========================================================
