@@ -28,19 +28,8 @@ Albergante, L.  et al . Robust and Scalable Learning of Complex Intrinsic Datase
 Requirements
 ============
 
-This code was tested with Python 3.7.1, and requires the following packages:
-- pandas
-- scipy
-- numba
-- numpy
-- python-igraph
-- scikit-learn
-
-In addition, to enable gpu support:
-- cupy
-https://docs-cupy.chainer.org/en/stable/install.html#
-
-The requirements.txt file provides the versions this package has been tested with
+Requirements are listed in requirements.txt. In addition, to enable gpu support cupy is needed:
+https://docs-cupy.chainer.org/en/stable/install.html
 
 Installation
 ====================
@@ -52,5 +41,5 @@ pip install .
 or
 
 ```bash
-pip install git+https://github.com/j-bac/elpigraph-python.git
+pip install elpigraph-python
 ```
