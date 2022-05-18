@@ -8,7 +8,7 @@ def computeElasticPrincipalCircle(
     X,
     NumNodes,
     NumEdges=float("inf"),
-    InitNodes=2,
+    InitNodes=3,
     Lambda=0.01,
     Mu=0.1,
     GrammarOptimization=False,
@@ -164,12 +164,15 @@ def computeElasticPrincipalCircle(
         Configuration = "Circle"
 
     else:
-        print("WARNING : ICOver is currently ignored when constructing a circle")
+        print(
+            "WARNING : ICOver is currently ignored when constructing a circle"
+        )
         Configuration = "Circle"
 
     if InitNodes < 3:
         print(
-            "WARNING: The initial number of nodes must be at least 3. This will be fixed"
+            "WARNING: The initial number of nodes must be at least 3. This"
+            " will be fixed"
         )
         InitNodes = 3
 
@@ -238,7 +241,7 @@ def computeElasticPrincipalTree(
     X,
     NumNodes,
     NumEdges=float("inf"),
-    InitNodes=2,
+    InitNodes=3,
     Lambda=0.01,
     Mu=0.1,
     GrammarOptimization=False,
@@ -269,7 +272,7 @@ def computeElasticPrincipalTree(
     ProbPoint=1,
     Mode=1,
     FinalEnergy="Penalized",
-    alpha=0.01,
+    alpha=0,
     beta=0,
     # gamma = 0,
     # FastSolve = False,
@@ -463,7 +466,7 @@ def computeElasticPrincipalCurve(
     X,
     NumNodes,
     NumEdges=float("inf"),
-    InitNodes=2,
+    InitNodes=3,
     Lambda=0.01,
     Mu=0.1,
     GrammarOptimization=False,
@@ -687,7 +690,7 @@ def fineTuneBR(
     X,
     NumNodes,
     NumEdges=float("inf"),
-    InitNodes=2,
+    InitNodes=3,
     Lambda=0.01,
     Mu=0.1,
     GrammarOptimization=False,
@@ -923,7 +926,7 @@ def GrowLeaves(
     X,
     NumNodes,
     NumEdges=float("inf"),
-    InitNodes=2,
+    InitNodes=3,
     Lambda=0.01,
     Mu=0.1,
     MaxSteps=100,
@@ -1190,7 +1193,9 @@ def generateInitialConfiguration(
             print("Creating a chain in the 1st PC with", Nodes, "nodes")
         mv = X.mean(axis=0)
         data_centered = X - mv
-        PC1, explainedVarianceRatio, U, S, Vt = TruncPCA(data_centered, n_components=1)
+        PC1, explainedVarianceRatio, U, S, Vt = TruncPCA(
+            data_centered, n_components=1
+        )
         # Vt = np.abs(Vt)
         mn = np.mean(PC1)
         st = np.std(PC1, ddof=1)
@@ -1205,7 +1210,8 @@ def generateInitialConfiguration(
         # Chain of nodes along the first principal component direction
         if verbose:
             print(
-                "Creating a circle in the plane induced by the 1st and 2nd PCs with",
+                "Creating a circle in the plane induced by the 1st and 2nd PCs"
+                " with",
                 Nodes,
                 "nodes",
             )
@@ -1229,10 +1235,12 @@ def generateInitialConfiguration(
             )
 
         Nodes_X = (
-            np.cos(np.linspace(0, 2 * np.pi, Nodes + 1)) * np.std(PCAdata[:, 0], ddof=1)
+            np.cos(np.linspace(0, 2 * np.pi, Nodes + 1))
+            * np.std(PCAdata[:, 0], ddof=1)
         )[:, None]
         Nodes_Y = (
-            np.sin(np.linspace(0, 2 * np.pi, Nodes + 1)) * np.std(PCAdata[:, 1], ddof=1)
+            np.sin(np.linspace(0, 2 * np.pi, Nodes + 1))
+            * np.std(PCAdata[:, 1], ddof=1)
         )[:, None]
 
         NodePositions = (
@@ -1250,7 +1258,9 @@ def generateInitialConfiguration(
         # Starting from Random Points in the data
         if verbose:
             print(
-                "Creating a line between two random points of the data. The points will have at most a distance DensityRadius if the parameter is specified"
+                "Creating a line between two random points of the data. The"
+                " points will have at most a distance DensityRadius if the"
+                " parameter is specified"
             )
 
         ID1 = np.random.choice(len(X))
@@ -1282,7 +1292,10 @@ def generateInitialConfiguration(
         # Starting from Random Points in the data
         if verbose:
             print(
-                "Creating a line between a point randomly chosen uniformily in the space of points and one of its neighbours. The points will have at most a distance DensityRadius if the parameter is specified"
+                "Creating a line between a point randomly chosen uniformily in"
+                " the space of points and one of its neighbours. The points"
+                " will have at most a distance DensityRadius if the parameter"
+                " is specified"
             )
         from sklearn.cluster import KMeans
 
@@ -1316,7 +1329,8 @@ def generateInitialConfiguration(
 
         if DensityRadius is None:
             raise ValueError(
-                "DensityRadius needs to be specified for density-dependent initialization!"
+                "DensityRadius needs to be specified for density-dependent"
+                " initialization!"
             )
 
         # Starting from Random Points in the data
@@ -1336,7 +1350,11 @@ def generateInitialConfiguration(
 
         if len(tX) > MaxPoints:
             if verbose:
-                print("Too many points, a subset of", MaxPoints, "will be sampled")
+                print(
+                    "Too many points, a subset of",
+                    MaxPoints,
+                    "will be sampled",
+                )
 
             SampledIdxs = np.random.choice(len(tX), size=MaxPoints)
 
@@ -1352,7 +1370,8 @@ def generateInitialConfiguration(
 
             if max(PointsInNei) < 2:
                 raise ValueError(
-                    "DensityRadius too small (Not enough points found in the neighborhood)"
+                    "DensityRadius too small (Not enough points found in the"
+                    " neighborhood)"
                 )
 
             IdMax = np.argmax(PointsInNei)
@@ -1383,7 +1402,8 @@ def generateInitialConfiguration(
 
             if max(PointsInNei) < 2:
                 raise ValueError(
-                    "DensityRadius too small (Not enough points found in the neighborhood)"
+                    "DensityRadius too small (Not enough points found in the"
+                    " neighborhood)"
                 )
 
             IdMax = np.argmax(PointsInNei)
@@ -1409,13 +1429,15 @@ def generateInitialConfiguration(
 
         if DensityRadius is None:
             raise ValueError(
-                "DensityRadius need to be specified for density-dependent inizialization!"
+                "DensityRadius need to be specified for density-dependent"
+                " inizialization!"
             )
 
         # Starting from Random Points in the data
         if verbose:
             print(
-                "Creating a line a part of the data, chosen probabilistically by its density. DensityRadius needs to be specified!"
+                "Creating a line a part of the data, chosen probabilistically"
+                " by its density. DensityRadius needs to be specified!"
             )
 
         if PCADensity:
@@ -1431,7 +1453,11 @@ def generateInitialConfiguration(
 
         if len(tX) > MaxPoints:
             if verbose:
-                print("Too many points, a subset of", MaxPoints, "will be sampled")
+                print(
+                    "Too many points, a subset of",
+                    MaxPoints,
+                    "will be sampled",
+                )
 
             SampledIdxs = np.random.choice(len(tX), size=MaxPoints)
 
@@ -1447,11 +1473,14 @@ def generateInitialConfiguration(
 
             if max(PointsInNei) < 2:
                 raise ValueError(
-                    "DensityRadius too small (Not enough points found in the neighborhood))!!"
+                    "DensityRadius too small (Not enough points found in the"
+                    " neighborhood))!!"
                 )
 
             PointsInNei[PointsInNei == 1] = 0
-            IdMax = np.random.choice(len(PointsInNei), p=PointsInNei / sum(PointsInNei))
+            IdMax = np.random.choice(
+                len(PointsInNei), p=PointsInNei / sum(PointsInNei)
+            )
 
             NodePositions = X[
                 np.random.choice(
@@ -1477,11 +1506,14 @@ def generateInitialConfiguration(
 
             if max(PointsInNei) < 2:
                 raise ValueError(
-                    "DensityRadius too small (Not enough points found in the neighborhood))!!"
+                    "DensityRadius too small (Not enough points found in the"
+                    " neighborhood))!!"
                 )
 
             PointsInNei[PointsInNei == 1] = 0
-            IdMax = np.random.choice(len(PointsInNei), p=PointsInNei / sum(PointsInNei))
+            IdMax = np.random.choice(
+                len(PointsInNei), p=PointsInNei / sum(PointsInNei)
+            )
 
             NodePositions = X[
                 np.random.choice(

@@ -1,0 +1,12 @@
+setuptools
+setuptools_scm
+typing_extensions
+importlib_metadata
+sphinx_rtd_theme==0.5.0rc1
+sphinx_autodoc_typehints<=1.6
+ipykernel
+nbsphinx>=0.7
+numpy<=1.20
+numpydoc
+pandoc
+sphinx==1.8.5

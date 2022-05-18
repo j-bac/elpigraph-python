@@ -1,47 +1,11 @@
-# -*- coding: utf-8 -*-
-#
-# BSD 3-Clause License
-#
-# Copyright (c) 2020, Jonathan Bac
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#
-# 1. Redistributions of source code must retain the above copyright notice, this
-#    list of conditions and the following disclaimer.
-#
-# 2. Redistributions in binary form must reproduce the above copyright notice,
-#    this list of conditions and the following disclaimer in the documentation
-#    and/or other materials provided with the distribution.
-#
-# 3. Neither the name of the copyright holder nor the names of its
-#    contributors may be used to endorse or promote products derived from
-#    this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-from elpigraph import __version__
+from skdim import __version__
 from distutils.version import LooseVersion
 import sphinx
 import sys
 import os
-
-import sphinx_gallery
 import sphinx_rtd_theme
 
-
-sys.path.append("../elpigraph/")
-sys.path.insert(0, os.path.abspath("../"))
+sys.path.append("../skdim/")
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -57,20 +21,23 @@ sys.path.insert(0, os.path.abspath("../"))
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    "nbsphinx",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.doctest",
     "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
+    "sphinx.ext.mathjax",
     "numpydoc",
-    "sphinx_gallery.gen_gallery",
 ]
 
-extensions.append("autoapi.extension")
+napoleon_google_docstring = False
+napoleon_numpy_docstring = True
+napoleon_include_init_with_doc = False
+napoleon_use_rtype = False
+napoleon_custom_sections = [("Params", "Parameters")]
 
-autoapi_type = "python"
-autoapi_dirs = ["../elpigraph/", "../elpigraph/src"]
 # this is needed for some reason...
 # see https://github.com/numpy/numpydoc/issues/69
 numpydoc_show_class_members = False
@@ -96,19 +63,14 @@ source_suffix = ".rst"
 # source_encoding = 'utf-8-sig'
 
 # Generate the plots for the gallery
-plot_gallery = True
+# plot_gallery = True
 
 # The master toctree document.
 master_doc = "index"
 
-# General information about the project.
-project = u"elpigraph-python"
-copyright = u"2020, Jonathan Bac"
+project = "elpigraph-python"
+copyright = "2020, Jonathan Bac"
 
-# The version info for the project you're documenting, acts as replacement for
-# |version| and |release|, also used in various other places throughout the
-# built documents.
-#
 # The short X.Y version.
 version = __version__
 # The full version, including alpha/beta/rc tags.
@@ -147,7 +109,7 @@ exclude_patterns = ["_build", "_templates"]
 pygments_style = "sphinx"
 
 # Custom style
-html_style = "css/project-template.css"
+# html_style = "css/project-template.css"
 
 # A list of ignored prefixes for module index sorting.
 # modindex_common_prefix = []
@@ -238,18 +200,18 @@ html_static_path = ["_static"]
 # html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = "elpigraph-pythondoc"
+htmlhelp_basename = "elpigraph-doc"
 
 
 # -- Options for LaTeX output ---------------------------------------------
 
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
-    # 'papersize': 'letterpaper',
+    "papersize": "letterpaper",
     # The font size ('10pt', '11pt' or '12pt').
-    # 'pointsize': '10pt',
+    "pointsize": "10pt",
     # Additional stuff for the LaTeX preamble.
-    # 'preamble': '',
+    "preamble": "",
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
@@ -259,8 +221,8 @@ latex_documents = [
     (
         "index",
         "elpigraph-python.tex",
-        u"elpigraph-python Documentation",
-        u"Jonathan Bac",
+        "elpigraph Documentation",
+        "Jonathan Bac",
         "manual",
     ),
 ]
@@ -290,15 +252,15 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    (
-        "index",
-        "elpigraph-python",
-        u"elpigraph-python Documentation",
-        [u"Jonathan Bac"],
-        1,
-    )
-]
+# man_pages = [
+#    (
+#        "index",
+#        "elpigraph-python",
+#        u"elpigraph-python Documentation",
+#        [u"Jonathan Bac"],
+#        1,
+#    )
+# ]
 
 # If true, show URL addresses after external links.
 # man_show_urls = False
@@ -309,17 +271,17 @@ man_pages = [
 # Grouping the document tree into Texinfo files. List of tuples
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
-texinfo_documents = [
-    (
-        "index",
-        "elpigraph-python",
-        u"elpigraph-python Documentation",
-        u"Jonathan Bac",
-        "elpigraph-python",
-        "One line description of project.",
-        "Miscellaneous",
-    ),
-]
+# texinfo_documents = [
+#    (
+#        "index",
+#        "elpigraph-python",
+#        u"elpigraph-python Documentation",
+#        u"Jonathan Bac",
+#        "elpigraph-python",
+#        "One line description of project.",
+#        "Miscellaneous",
+#    ),
+# ]
 
 # Documents to append as an appendix to all manuals.
 # texinfo_appendices = []
@@ -337,7 +299,10 @@ texinfo_documents = [
 # Example configuration for intersphinx: refer to the Python standard library.
 # intersphinx configuration
 intersphinx_mapping = {
-    "python": ("https://docs.python.org/{.major}".format(sys.version_info), None),
+    "python": (
+        "https://docs.python.org/{.major}".format(sys.version_info),
+        None,
+    ),
     "numpy": ("https://docs.scipy.org/doc/numpy/", None),
     "scipy": ("https://docs.scipy.org/doc/scipy/reference", None),
     "matplotlib": ("https://matplotlib.org/", None),
@@ -345,14 +310,258 @@ intersphinx_mapping = {
 }
 
 # sphinx-gallery configuration
-sphinx_gallery_conf = {
-    "doc_module": "elpigraph-python",
-    "backreferences_dir": os.path.join("generated"),
-    "reference_url": {"elpigraph-python": None},
-}
+# sphinx_gallery_conf = {
+#    'doc_module': 'skdim',
+#    'backreferences_dir': os.path.join('generated'),
+#    'reference_url': {
+#        'skdim': None}
+# }
 
 
 def setup(app):
     # a copy button to copy snippet of code from the documentation
-    app.add_javascript("js/copybutton.js")
+    app.add_stylesheet("css/custom.css")
 
+
+# -- Options for other output ------------------------------------------
+import inspect
+from pathlib import Path
+from typing import Optional, Union, Mapping
+import logging
+from sphinx.application import Sphinx
+from sphinx.ext import autosummary
+
+logger = logging.getLogger(__name__)
+author = "Jonathan Bac"
+title = "elpigraph-python"
+title_doc = f"{project} documentation"
+
+latex_documents = [(master_doc, f"{project}.tex", title_doc, author, "manual")]
+man_pages = [(master_doc, project, title_doc, [author], 1)]
+texinfo_documents = [
+    (master_doc, project, title_doc, author, project, title, "Miscellaneous")
+]
+
+
+# -- generate_options override ------------------------------------------
+
+
+def process_generate_options(app: Sphinx):
+    genfiles = app.config.autosummary_generate
+
+    if genfiles and not hasattr(genfiles, "__len__"):
+        env = app.builder.env
+        genfiles = [
+            env.doc2path(x, base=None)
+            for x in env.found_docs
+            if Path(env.doc2path(x)).is_file()
+        ]
+    if not genfiles:
+        return
+
+    from sphinx.ext.autosummary.generate import generate_autosummary_docs
+
+    ext = app.config.source_suffix
+    genfiles = [
+        genfile + (not genfile.endswith(tuple(ext)) and ext[0] or "")
+        for genfile in genfiles
+    ]
+
+    suffix = autosummary.get_rst_suffix(app)
+    if suffix is None:
+        return
+
+    generate_autosummary_docs(
+        genfiles,
+        builder=app.builder,
+        warn=logger.warning,
+        info=logger.info,
+        suffix=suffix,
+        base_path=app.srcdir,
+        imported_members=True,
+        app=app,
+    )
+
+
+autosummary.process_generate_options = process_generate_options
+
+
+# -- GitHub URLs for class and method pages ------------------------------------------
+
+
+def get_obj_module(qualname):
+    """Get a module/class/attribute and its original module by qualname"""
+    modname = qualname
+    classname = None
+    attrname = None
+    while modname not in sys.modules:
+        attrname = classname
+        modname, classname = modname.rsplit(".", 1)
+
+    # retrieve object and find original module name
+    if classname:
+        cls = getattr(sys.modules[modname], classname)
+        modname = cls.__module__
+        obj = getattr(cls, attrname) if attrname else cls
+    else:
+        obj = None
+
+    return obj, sys.modules[modname]
+
+
+def get_linenos(obj):
+    """Get an object’s line numbers"""
+    try:
+        lines, start = inspect.getsourcelines(obj)
+    except TypeError:
+        return None, None
+    else:
+        return start, start + len(lines) - 1
+
+
+# set project_dir: project/docs/source/conf.py/../../.. → project/
+project_dir = Path(__file__).parent.parent.parent
+github_url_scvelo = "https://github.com/j-bac/elpigraph-python/tree/master"
+from pathlib import PurePosixPath
+
+
+def modurl(qualname):
+    """Get the full GitHub URL for some object’s qualname."""
+    obj, module = get_obj_module(qualname)
+    github_url = github_url_scvelo
+    # try:
+    path = PurePosixPath(
+        Path(module.__file__).resolve().relative_to(project_dir)
+    )
+    # except ValueError:
+    # trying to document something from another package
+    # github_url = (
+    #    if "read" in qualname
+    # )
+    # path = "/".join(module.__file__.split("/")[-2:])
+    start, end = get_linenos(obj)
+    fragment = f"#L{start}-L{end}" if start and end else ""
+    return f"{github_url}/{path}{fragment}"
+
+
+def api_image(qualname: str) -> Optional[str]:
+    path = Path(__file__).parent / f"{qualname}.png"
+    print(path, path.is_file())
+    return (
+        f".. image:: {path.name}\n   :width: 200\n   :align: right"
+        if path.is_file()
+        else ""
+    )
+
+
+# modify the default filters
+from jinja2.defaults import DEFAULT_FILTERS
+
+DEFAULT_FILTERS.update(modurl=modurl, api_image=api_image)
+
+# -- Override some classnames in autodoc --------------------------------------------
+
+import sphinx_autodoc_typehints
+
+qualname_overrides = {
+    "anndata.base.AnnData": "anndata.AnnData",
+}
+
+fa_orig = sphinx_autodoc_typehints.format_annotation
+
+
+def format_annotation(annotation):
+    if getattr(annotation, "__origin__", None) is Union or hasattr(
+        annotation, "__union_params__"
+    ):
+        params = getattr(annotation, "__union_params__", None) or getattr(
+            annotation, "__args__", None
+        )
+        return ", ".join(map(format_annotation, params))
+    if getattr(annotation, "__origin__", None) is Mapping:
+        return ":class:`~typing.Mapping`"
+    if inspect.isclass(annotation):
+        full_name = f"{annotation.__module__}.{annotation.__qualname__}"
+        override = qualname_overrides.get(full_name)
+        if override is not None:
+            return f":py:class:`~{qualname_overrides[full_name]}`"
+    return fa_orig(annotation)
+
+
+sphinx_autodoc_typehints.format_annotation = format_annotation
+
+
+# -- Prettier Param docs --------------------------------------------
+
+from typing import Dict, List, Tuple
+from docutils import nodes
+from sphinx import addnodes
+from sphinx.domains.python import PyTypedField, PyObject
+from sphinx.environment import BuildEnvironment
+
+
+class PrettyTypedField(PyTypedField):
+    list_type = nodes.definition_list
+
+    def make_field(
+        self,
+        types: Dict[str, List[nodes.Node]],
+        domain: str,
+        items: Tuple[str, List[nodes.inline]],
+        env: BuildEnvironment = None,
+    ) -> nodes.field:
+        def makerefs(rolename, name, node):
+            return self.make_xrefs(rolename, domain, name, node, env=env)
+
+        def handle_item(
+            fieldarg: str, content: List[nodes.inline]
+        ) -> nodes.definition_list_item:
+            head = nodes.term()
+            head += makerefs(self.rolename, fieldarg, addnodes.literal_strong)
+            fieldtype = types.pop(fieldarg, None)
+            if fieldtype is not None:
+                head += nodes.Text(" : ")
+                if len(fieldtype) == 1 and isinstance(
+                    fieldtype[0], nodes.Text
+                ):
+                    (text_node,) = fieldtype  # type: nodes.Text
+                    head += makerefs(
+                        self.typerolename,
+                        text_node.astext(),
+                        addnodes.literal_emphasis,
+                    )
+                else:
+                    head += fieldtype
+
+            body_content = nodes.paragraph("", "", *content)
+            body = nodes.definition("", body_content)
+
+            return nodes.definition_list_item("", head, body)
+
+        fieldname = nodes.field_name("", self.label)
+        if len(items) == 1 and self.can_collapse:
+            fieldarg, content = items[0]
+            bodynode = handle_item(fieldarg, content)
+        else:
+            bodynode = self.list_type()
+            for fieldarg, content in items:
+                bodynode += handle_item(fieldarg, content)
+        fieldbody = nodes.field_body("", bodynode)
+        return nodes.field("", fieldname, fieldbody)
+
+
+# replace matching field types with ours
+PyObject.doc_field_types = [
+    PrettyTypedField(
+        ft.name,
+        names=ft.names,
+        typenames=ft.typenames,
+        label=ft.label,
+        rolename=ft.rolename,
+        typerolename=ft.typerolename,
+        can_collapse=ft.can_collapse,
+    )
+    if isinstance(ft, PyTypedField)
+    else ft
+    for ft in PyObject.doc_field_types
+]
