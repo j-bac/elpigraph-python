@@ -1,12 +1,11 @@
 [![Documentation Status](https://readthedocs.org/projects/elpigraph-python/badge/?version=latest)](https://elpigraph-python.readthedocs.io/en/latest/?badge=latest)
 [![GitHub license](https://img.shields.io/github/license/j-bac/elpigraph-python)](https://github.com/j-bac/elpigraph-python/blob/master/LICENSE)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![DOI:10.3390/e22030296](https://img.shields.io/badge/DOI-10.3390%2Fe22030296-blue)](https://doi.org/10.3390/e22030296)
 
 Description
 ===========
 
-This package provides a Python implementation of the ElPiGraph algorithm with cpu and gpu support. A
+This package provides a Python implementation of the ElPiGraph algorithm with cpu and gpu support. Usage is explained in the [documentation](https://elpigraph-python.readthedocs.io/en/latest/) and a
 self-contained description of the algorithm is available
 [here](https://github.com/auranic/Elastic-principal-graphs/blob/master/ElPiGraph_Methods.pdf)
 or in the [paper](https://www.mdpi.com/1099-4300/22/3/296)
