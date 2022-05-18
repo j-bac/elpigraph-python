@@ -18,13 +18,6 @@ Zinovyev](https://github.com/auranic/) and [Evgeny
 Mirkes](https://github.com/Mirkes)) is also
 [available](https://github.com/auranic/Elastic-principal-graphs)
 
-Citation
-========
-
-When using this package, please cite our [paper](https://www.mdpi.com/1099-4300/22/3/296):
-
-Albergante, L.  et al . Robust and Scalable Learning of Complex Intrinsic Dataset Geometry via ElPiGraph (2020)
-
 Requirements
 ============
 
@@ -43,3 +36,9 @@ or
 ```bash
 pip install elpigraph-python
 ```
+
+Citation
+========
+
+When using this package, please cite our [paper](https://www.mdpi.com/1099-4300/22/3/296):
+Albergante, L.  et al . Robust and Scalable Learning of Complex Intrinsic Dataset Geometry via ElPiGraph (2020)
