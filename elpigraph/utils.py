@@ -1,9 +1,161 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+import networkx as nx
 import scipy
 import networkx as nx
+from .src.core import PartitionData
+from .src.reporting import project_point_onto_graph
 from sklearn.neighbors import NearestNeighbors, KernelDensity
+
+
+def getProjection(X, PG):
+    """Compute graph projection from principal graph dict
+    (result stored in PG dict under 'projection' key)
+    """
+
+    G = nx.Graph()
+    G.add_edges_from(PG["Edges"][0].tolist(), weight=1)
+    mat_conn = nx.to_scipy_sparse_matrix(
+        G, nodelist=np.arange(len(PG["NodePositions"])), weight="weight"
+    )
+
+    # partition points
+    node_id, node_dist = PartitionData(
+        X=X,
+        NodePositions=PG["NodePositions"],
+        MaxBlockSize=len(PG["NodePositions"]) ** 4,
+        SquaredX=np.sum(X ** 2, axis=1, keepdims=1),
+    )
+    # project points onto edges
+    dict_proj = project_point_onto_graph(
+        X=X,
+        NodePositions=PG["NodePositions"],
+        Edges=PG["Edges"][0],
+        Partition=node_id,
+    )
+
+    PG["projection"] = {}
+    PG["projection"]["node_id"] = node_id.flatten()
+    PG["projection"]["node_dist"] = node_dist
+    PG["projection"]["edge_id"] = dict_proj["EdgeID"].astype(int)
+    PG["projection"]["edge_loc"] = dict_proj["ProjectionValues"]
+    PG["projection"]["X_projected"] = dict_proj["X_projected"]
+    PG["projection"]["conn"] = mat_conn
+    PG["projection"]["edge_len"] = dict_proj["EdgeLen"]
+    PG["projection"]["MSEP"] = dict_proj["MSEP"]
+
+
+def getPseudotime(
+    X, PG, source, target=None, nodes_to_include=None, project=True
+):
+    """Compute pseudotime given
+    source: int
+        source node
+    target: int
+        optional target node
+    nodes_to_include: list
+        optional nodes to include in the path
+        (useful for complex topologies with loops,
+        where multiple paths are possible between 2 nodes)
+    project: bool
+        if False, will save computation time by using the projection already stored in PG dict (computed using elpigraph.utils.getProjection)
+    """
+    if project is True:
+        getProjection(X, PG)
+    elif project is False and not ("projection" in PG.keys()):
+        raise ValueError(
+            "key 'projection not found in PG. To use a precomputed projection"
+            " run elpigraph.utils.getProjection"
+        )
+
+    epg_edge = PG["Edges"][0]
+    epg_edge_len = PG["projection"]["edge_len"]
+    G = nx.Graph()
+    edges_weighted = list(zip(epg_edge[:, 0], epg_edge[:, 1], epg_edge_len))
+    G.add_weighted_edges_from(edges_weighted, weight="len")
+    if target is not None:
+        if nodes_to_include is None:
+            # nodes on the shortest path
+            nodes_sp = nx.shortest_path(
+                G, source=source, target=target, weight="len"
+            )
+        else:
+            assert isinstance(
+                nodes_to_include, list
+            ), "`nodes_to_include` must be list"
+            # lists of simple paths, in order from shortest to longest
+            list_paths = list(
+                nx.shortest_simple_paths(
+                    G, source=source, target=target, weight="len"
+                )
+            )
+            flag_exist = False
+            for p in list_paths:
+                if set(nodes_to_include).issubset(p):
+                    nodes_sp = p
+                    flag_exist = True
+                    break
+            if not flag_exist:
+                return f"no path that passes {nodes_to_include} exists"
+    else:
+        nodes_sp = [source] + [v for u, v in nx.bfs_edges(G, source)]
+    G_sp = G.subgraph(nodes_sp).copy()
+    index_nodes = {
+        x: nodes_sp.index(x) if x in nodes_sp else G.number_of_nodes()
+        for x in G.nodes
+    }
+
+    if target is None:
+        dict_dist_to_source = nx.shortest_path_length(
+            G_sp, source=source, weight="len"
+        )
+    else:
+        dict_dist_to_source = dict(
+            zip(
+                nodes_sp,
+                np.cumsum(
+                    np.array(
+                        [0.0]
+                        + [
+                            G.get_edge_data(nodes_sp[i], nodes_sp[i + 1])[
+                                "len"
+                            ]
+                            for i in range(len(nodes_sp) - 1)
+                        ]
+                    )
+                ),
+            )
+        )
+
+    cells = np.isin(PG["projection"]["node_id"], nodes_sp)
+    id_edges_cell = PG["projection"]["edge_id"][cells].tolist()
+    edges_cell = PG["Edges"][0][id_edges_cell, :]
+    len_edges_cell = PG["projection"]["edge_len"][id_edges_cell]
+
+    # proportion on the edge
+    prop_edge = np.clip(PG["projection"]["edge_loc"][cells], a_min=0, a_max=1)
+
+    dist_to_source = []
+    for i in np.arange(edges_cell.shape[0]):
+        if index_nodes[edges_cell[i, 0]] > index_nodes[edges_cell[i, 1]]:
+            dist_to_source.append(dict_dist_to_source[edges_cell[i, 1]])
+            prop_edge[i] = 1 - prop_edge[i]
+        else:
+            dist_to_source.append(dict_dist_to_source[edges_cell[i, 0]])
+    dist_to_source = np.array(dist_to_source)
+    dist_on_edge = len_edges_cell * prop_edge
+    dist = dist_to_source + dist_on_edge
+
+    PG["pseudotime"] = np.repeat(np.nan, len(X))
+    PG["pseudotime"][cells] = dist
+    PG["pseudotime_params"] = {
+        "source": source,
+        "target": target,
+        "nodes_to_include": nodes_to_include,
+    }
+
+
+#### supervised knn
 
 
 def _longform_knn_to_sparse(dis, idx):
@@ -12,7 +164,9 @@ def _longform_knn_to_sparse(dis, idx):
     return scipy.sparse.csr_matrix((dis.flat, (row_ind.flat, col_ind.flat)))
 
 
-def getWeights(X, bandwidth=1, griddelta=100, exponent=1, method="sklearn", **kwargs):
+def getWeights(
+    X, bandwidth=1, griddelta=100, exponent=1, method="sklearn", **kwargs
+):
     """Get point weights as the inverse density of data
     X: np.array, (n_sample x n_dims)
     bandwidth: sklearn KernelDensity bandwidth if method == 'sklearn'
@@ -20,7 +174,9 @@ def getWeights(X, bandwidth=1, griddelta=100, exponent=1, method="sklearn", **kw
     exponent: density values are raised to the power of exponent
     """
     if method == "sklearn":
-        kde = KernelDensity(kernel="gaussian", bandwidth=bandwidth, **kwargs).fit(X)
+        kde = KernelDensity(
+            kernel="gaussian", bandwidth=bandwidth, **kwargs
+        ).fit(X)
         scores = kde.score_samples(X)
         scores = np.exp(scores)[:, None]
 
@@ -111,13 +267,17 @@ def ordinal_neighbors_stagewise_longform(
             )[0][ind]
 
     _sort = np.argsort(knn_distances, axis=1)
-    knn_distances = knn_distances[np.arange(len(knn_distances))[:, None], _sort]
+    knn_distances = knn_distances[
+        np.arange(len(knn_distances))[:, None], _sort
+    ]
     knn_idx = knn_idx[np.arange(len(knn_distances))[:, None], _sort]
 
     return knn_distances, knn_idx
 
 
-def ordinal_neighbors_longform(X, stages_labels, stages=None, k=15, m="cosine"):
+def ordinal_neighbors_longform(
+    X, stages_labels, stages=None, k=15, m="cosine"
+):
     """Supervised (ordinal) nearest-neighbor search.
     Stages is an ordered list of stages labels (low to high). If None, taken as np.unique(stages_labels)"""
     if stages is None:
@@ -204,9 +364,9 @@ def supervised_knn(
         merged_dists[i][n_natural:] = knn_distances[i][
             np.isin(
                 knn_idx[i],
-                np.setdiff1d(knn_idx[i], idx[i][:n_natural], assume_unique=True)[
-                    : n_neighbors - n_natural
-                ],
+                np.setdiff1d(
+                    knn_idx[i], idx[i][:n_natural], assume_unique=True
+                )[: n_neighbors - n_natural],
             )
         ]
 
@@ -227,7 +387,8 @@ def geodesic_pseudotime(X, k, root, g=None):
         g = nx.convert_matrix.from_scipy_sparse_matrix(g)
     if len(list(nx.connected_components(g))) > 1:
         raise ValueError(
-            f"detected more than 1 components with k={k} neighbors. Please increase k"
+            f"detected more than 1 components with k={k} neighbors. Please"
+            " increase k"
         )
     lengths = nx.single_source_dijkstra_path_length(g, root)
     pseudotime = np.array(pd.Series(lengths).sort_index())

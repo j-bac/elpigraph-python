@@ -1,12 +1,13 @@
+from mimetypes import MimeTypes
 import networkx as nx
 import elpigraph
 import numpy as np
 import numba as nb
 import matplotlib.pyplot as plt
 import itertools
-
+import pandas as pd
 from sklearn.decomposition import PCA
-
+from copy import deepcopy
 from scipy.spatial.qhull import ConvexHull
 from shapely.geometry import Point, Polygon, MultiLineString, LineString
 from shapely.geometry.multipolygon import MultiPolygon
@@ -211,7 +212,7 @@ def find_all_cycles(G, source=None, cycle_length_limit=None):
     return [list(i) for i in output_cycles]
 
 
-#def in_hull(points, queries):
+# def in_hull(points, queries):
 #    hull = _Qhull(
 #        b"i",
 #        points,
@@ -223,15 +224,15 @@ def find_all_cycles(G, source=None, cycle_length_limit=None):
 #    equations = hull.get_simplex_facet_array()[2].T
 #    return np.all(queries @ equations[:-1] < -equations[-1], axis=1)
 
+
 def in_hull(points, queries):
     equations = ConvexHull(points).equations.T
-    return np.all(queries @ equations[:-1] < - equations[-1], axis=1)
+    return np.all(queries @ equations[:-1] < -equations[-1], axis=1)
 
 
-def addLoops(
+def findPaths(
     X,
-    init_nodes_pos,
-    init_edges,
+    PG,
     min_path_len=None,
     nnodes=None,
     max_inner_fraction=0.1,
@@ -242,8 +243,10 @@ def addLoops(
     radius=None,
     allow_same_branch=True,
     fit_loops=True,
-    Lambda=0.02,
-    Mu=0.1,
+    Lambda=None,
+    Mu=None,
+    cycle_Lambda=None,
+    cycle_Mu=None,
     weights=None,
     plot=False,
     verbose=False,
@@ -279,6 +282,11 @@ def addLoops(
     use_partition: bool or list, default=False
     """
 
+    _PG = deepcopy(PG)
+    if "projection" in _PG.keys():
+        del _PG["projection"]
+    init_nodes_pos, init_edges = _PG["NodePositions"], _PG["Edges"][0]
+
     # --- Init parameters, variables
     epg = nx.Graph(init_edges.tolist())
 
@@ -297,6 +305,15 @@ def addLoops(
             axis=1,
         )
     )
+
+    if Mu is None:
+        Mu = _PG["Mu"]
+    if Lambda is None:
+        Lambda = _PG["Lambda"]
+    if cycle_Mu is None:
+        cycle_Mu = Mu / 10
+    if cycle_Lambda is None:
+        cycle_Lambda = Lambda / 10
     if radius is None:
         radius = np.mean(edge_lengths) * len(init_nodes_pos) / 10
     if min_path_len is None:
@@ -315,9 +332,8 @@ def addLoops(
     if verbose:
         print(
             f"Using default parameters: max_n_points={max_n_points},"
-            f" radius={radius:.2f},"
-            f" min_node_n_points={min_node_n_points},min_path_len={min_path_len},"
-            f" nnodes={nnodes}"
+            f" radius={radius:.2f}, min_node_n_points={min_node_n_points},"
+            f" min_path_len={min_path_len}, nnodes={nnodes}"
         )
 
     # --- Get candidate nodes to connect
@@ -418,13 +434,19 @@ def addLoops(
             _merged_edges = np.concatenate((init_edges, _edges))
             _merged_nodep = np.concatenate((init_nodes_pos, nodep[2:]))
 
-            cycle_edges = find_all_cycles(nx.Graph(_merged_edges.tolist()))[0]
+            cycle_nodes = find_all_cycles(nx.Graph(_merged_edges.tolist()))[0]
 
-            Mus = np.repeat(Mu, len(_merged_nodep))
-            Mus[cycle_edges] = Mu / 10000
-            ElasticMatrix = elpigraph.src.core.Encode2ElasticMatrix(
-                _merged_edges, Lambdas=Lambda, Mus=Mus
+            ElasticMatrix = (
+                elpigraph.src.core.MakeUniformElasticMatrix_with_cycle(
+                    _merged_edges,
+                    Lambda=Lambda,
+                    Mu=Mu,
+                    cycle_Lambda=cycle_Lambda,
+                    cycle_Mu=cycle_Mu,
+                    cycle_nodes=cycle_nodes,
+                )
             )
+
             (
                 _merged_nodep,
                 _,
@@ -444,7 +466,6 @@ def addLoops(
             ### candidate validity tests ###
             valid = True
             # --- curve validity test
-
             # if (max_empty_curve_fraction is not None) and valid: # if X_fit projected to curve has long gaps
             #    infer_pseudotime(_adata,source=0)
             #    sorted_X_proj=_adata.obsm['X_epg_proj'][_adata.obs['epg_pseudotime'].argsort()]
@@ -456,12 +477,12 @@ def addLoops(
             # --- cycle validity test
             if valid:
                 G = nx.Graph(_merged_edges.tolist())
-                cycle_edges = find_all_cycles(G)[0]
-                cycle_nodep = np.array([_merged_nodep[e] for e in cycle_edges])
+                cycle_nodes = find_all_cycles(G)[0]
+                cycle_nodep = np.array([_merged_nodep[e] for e in cycle_nodes])
                 cent_part, cent_dists = elpigraph.src.core.PartitionData(
                     X, _merged_nodep, 10 ** 6, SquaredX=SquaredX
                 )
-                cycle_points = np.isin(cent_part.flat, cycle_edges)
+                cycle_points = np.isin(cent_part.flat, cycle_nodes)
 
                 if X.shape[1] > 2:
                     pca = PCA(n_components=2, svd_solver="arpack").fit(
@@ -512,9 +533,9 @@ def addLoops(
                     w = 1 - w / w.max()
                     w[idx_close] = 1
 
-                    # cycle_edges_array = np.append(np.array(list(zip(range(len(cycle_2d)-1),
+                    # cycle_nodes_array = np.append(np.array(list(zip(range(len(cycle_2d)-1),
                     #                                  range(1,len(cycle_2d))))),[[len(cycle_2d)-1,0]],axis=0)
-                    # w, idx_close = get_weights_lineproj(X_inside,cycle_2d,cycle_edges_array,cycle_centroid[0],threshold=.2)
+                    # w, idx_close = get_weights_lineproj(X_inside,cycle_2d,cycle_nodes_array,cycle_centroid[0],threshold=.2)
 
                     inner_fraction = np.sum(w) / np.sum(cycle_points)
 
@@ -590,7 +611,7 @@ def addLoops(
                 merged_edges.append(_merged_edges)
                 merged_nodep.append(_merged_nodep)
                 merged_part.append(
-                    np.where(np.isin(_merged_part.flat, cycle_edges))[0]
+                    np.where(np.isin(_merged_part.flat, cycle_nodes))[0]
                 )
                 loop_edges.append(edges)
                 loop_nodep.append(nodep[2:])
@@ -624,14 +645,14 @@ def addLoops(
 
                     # ----- cycle test
                     G = nx.Graph(_merged_edges.tolist())
-                    cycle_edges = find_all_cycles(G)[0]
+                    cycle_nodes = find_all_cycles(G)[0]
                     cycle_nodep = np.array(
-                        [_merged_nodep[e] for e in cycle_edges]
+                        [_merged_nodep[e] for e in cycle_nodes]
                     )
                     cent_part, cent_dists = elpigraph.src.core.PartitionData(
                         X, _merged_nodep, 10 ** 6, SquaredX=SquaredX
                     )
-                    cycle_points = np.isin(cent_part.flat, cycle_edges)
+                    cycle_points = np.isin(cent_part.flat, cycle_nodes)
 
                     if X.shape[1] > 2:
                         pca = PCA(n_components=2, svd_solver="arpack").fit(
@@ -730,9 +751,8 @@ def addLoops(
 
     ### form graph with all valid loops found ###
     if (new_edges == []) or (sum(valid) == 0):
-        if verbose:
-            print("No valid loops found")
-        return (None, None, None, None, None, None, None, None)
+        print("Found no valid path to add")
+        return None
 
     for i, loop_edges in enumerate(new_edges):
         if i == 0:
@@ -753,14 +773,19 @@ def addLoops(
 
     ### optionally refit the entire graph ###
     if fit_loops:
-        cycle_edges = np.concatenate(
+        cycle_nodes = np.concatenate(
             find_all_cycles(nx.Graph(merged_edges.tolist()))
         )
-        Mus = np.repeat(Mu, len(merged_nodep))
-        Mus[cycle_edges] = Mu / 10000
-        ElasticMatrix = elpigraph.src.core.Encode2ElasticMatrix(
-            merged_edges, Lambdas=Lambda, Mus=Mus
+
+        ElasticMatrix = elpigraph.src.core.MakeUniformElasticMatrix_with_cycle(
+            merged_edges,
+            Lambda=Lambda,
+            Mu=Mu,
+            cycle_Lambda=cycle_Lambda,
+            cycle_Mu=cycle_Mu,
+            cycle_nodes=cycle_nodes,
         )
+
         (
             merged_nodep,
             _,
@@ -788,13 +813,248 @@ def addLoops(
                     merged_nodep, merged_edges
                 )
 
-    return (
-        new_edges,
-        new_nodep,
-        new_leaves,
-        new_part,
-        new_energy,
-        new_inner_fraction,
-        merged_nodep,
-        merged_edges,
+    _PG["Edges"] = [merged_edges]
+    _PG["NodePositions"] = merged_nodep
+    _PG["Lambda"] = Lambda
+    _PG["Mu"] = Mu
+    _PG["cycle_Lambda"] = cycle_Lambda
+    _PG["cycle_Mu"] = cycle_Mu
+    _PG["addLoopsdict"] = dict(
+        new_edges=new_edges,
+        new_nodep=new_nodep,
+        new_leaves=new_leaves,
+        new_part=new_part,
+        new_energy=new_energy,
+        new_inner_fraction=new_inner_fraction,
     )
+
+    if verbose:
+        l = [
+            _PG["addLoopsdict"]["new_inner_fraction"],
+            _PG["addLoopsdict"]["new_energy"],
+            [len(n) for n in _PG["addLoopsdict"]["new_part"]],
+        ]
+        df = pd.concat(
+            [pd.DataFrame(_PG["addLoopsdict"]["new_leaves"])]
+            + [pd.Series(i) for i in l],
+            axis=1,
+        )
+        df.columns = [
+            "source node",
+            "target node",
+            "inner fraction",
+            "MSE",
+            "n° of points in path",
+        ]
+        df.index = ["" for i in df.index]
+        print("Suggested paths:")
+        print(df.round(4))
+    return _PG
+
+
+def addPath(
+    X,
+    PG,
+    source,
+    target,
+    n_nodes=None,
+    weights=None,
+    refit_graph=False,
+    Mu=None,
+    Lambda=None,
+    cycle_Mu=None,
+    cycle_Lambda=None,
+):
+
+    _PG = deepcopy(PG)
+    if "projection" in _PG.keys():
+        del _PG["projection"]
+    init_nodes_pos, init_edges = _PG["NodePositions"], _PG["Edges"][0]
+
+    # --- Init parameters, variables
+    if Mu is None:
+        Mu = _PG["Mu"]
+    if Lambda is None:
+        Lambda = _PG["Lambda"]
+    if cycle_Mu is None:
+        cycle_Mu = Mu / 10
+    if cycle_Lambda is None:
+        cycle_Lambda = Lambda / 10
+    if n_nodes is None:
+        n_nodes = min(16, max(6, len(init_nodes_pos) / 20))
+
+    SquaredX = np.sum(X ** 2, axis=1, keepdims=1)
+    part, part_dist = elpigraph.src.core.PartitionData(
+        X, init_nodes_pos, 10 ** 6, SquaredX=SquaredX
+    )
+    clus = (part == source) | (part == target)
+    X_fit = np.vstack(
+        (init_nodes_pos[source], init_nodes_pos[target], X[clus.flat])
+    )
+
+    # --- fit path
+    PG_path = elpigraph.computeElasticPrincipalCurve(
+        X_fit,
+        NumNodes=n_nodes,
+        Lambda=Lambda,
+        Mu=Mu,
+        FixNodesAtPoints=[[0], [1]],
+    )[0]
+
+    # --- get nodep, edges, create new graph with added loop
+    nodep, edges = PG_path["NodePositions"], PG_path["Edges"][0]
+
+    _edges = edges.copy()
+    _edges[(edges != 0) & (edges != 1)] += init_edges.max() - 1
+    _edges[edges == 0] = source
+    _edges[edges == 1] = target
+    _merged_edges = np.concatenate((init_edges, _edges))
+    _merged_nodep = np.concatenate((init_nodes_pos, nodep[2:]))
+
+    if refit_graph:
+        cycle_nodes = elpigraph._graph_editing.find_all_cycles(
+            nx.Graph(_merged_edges.tolist())
+        )[0]
+
+        ElasticMatrix = elpigraph.src.core.MakeUniformElasticMatrix_with_cycle(
+            _merged_edges,
+            Lambda=Lambda,
+            Mu=Mu,
+            cycle_Lambda=cycle_Lambda,
+            cycle_Mu=cycle_Mu,
+            cycle_nodes=cycle_nodes,
+        )
+
+        (
+            _merged_nodep,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+        ) = elpigraph.src.core.PrimitiveElasticGraphEmbedment(
+            X,
+            _merged_nodep,
+            ElasticMatrix,
+            PointWeights=weights,
+            FixNodesAtPoints=[],
+        )
+
+    # check intersection
+    if _merged_nodep.shape[1] == 2:
+        intersect = not (
+            MultiLineString(
+                [LineString(_merged_nodep[e]) for e in _merged_edges]
+            ).is_simple
+        )
+        if intersect:
+            raise ValueError("The created path would intersect existing graph")
+
+    _PG["NodePositions"] = _merged_nodep
+    _PG["Edges"] = [_merged_edges]
+    _PG["Lambda"] = Lambda
+    _PG["Mu"] = Mu
+    _PG["cycle_Lambda"] = cycle_Lambda
+    _PG["cycle_Mu"] = cycle_Mu
+    return _PG
+
+
+def delPath(
+    X,
+    PG,
+    source,
+    target,
+    nodes_to_include=None,
+    weights=None,
+    refit_graph=False,
+    Mu=None,
+    Lambda=None,
+    cycle_Mu=None,
+    cycle_Lambda=None,
+):
+    _PG = deepcopy(PG)
+    if "projection" in _PG.keys():
+        del _PG["projection"]
+    # --- Init parameters, variables
+    if Mu is None:
+        Mu = _PG["Mu"]
+    if Lambda is None:
+        Lambda = _PG["Lambda"]
+    if cycle_Mu is None:
+        cycle_Mu = Mu / 10
+    if cycle_Lambda is None:
+        cycle_Lambda = Lambda / 10
+
+    # --- get path to remove
+    epg_edge = _PG["Edges"][0]
+    epg_edge_len = _PG["projection"]["edge_len"]
+    G = nx.Graph()
+    G.add_nodes_from(range(_PG["Nodepositions"].shape[0]))
+    edges_weighted = list(zip(epg_edge[:, 0], epg_edge[:, 1], epg_edge_len))
+    G.add_weighted_edges_from(edges_weighted, weight="len")
+
+    if nodes_to_include is None:
+        # nodes on the shortest path
+        nodes_sp = nx.shortest_path(
+            G, source=source, target=target, weight="len"
+        )
+    else:
+        assert isinstance(
+            nodes_to_include, list
+        ), "`nodes_to_include` must be list"
+        # lists of simple paths, in order from shortest to longest
+        list_paths = list(
+            nx.shortest_simple_paths(
+                G, source=source, target=target, weight="len"
+            )
+        )
+        flag_exist = False
+        for p in list_paths:
+            if set(nodes_to_include).issubset(p):
+                nodes_sp = p
+                flag_exist = True
+                break
+        if not flag_exist:
+            print(f"no path that passes {nodes_to_include} exists")
+
+    G.remove_edges_from(np.vstack((nodes_sp[:-1], nodes_sp[1:])).T)
+    isolates = list(nx.isolates(G))
+    G.remove_nodes_from(isolates)
+    Gdel = nx.relabel_nodes(G, dict(zip(G.nodes, np.arange(len(G.nodes)))))
+
+    _PG["Edges"] = [np.array(Gdel.edges)]
+    _PG["NodePositions"] = _PG["NodePositions"][
+        ~np.isin(range(len(_PG["NodePositions"])), isolates)
+    ]
+
+    # --- get nodep, edges, create new graph with added loop
+    if refit_graph:
+        nodep, edges = _PG["NodePositions"], _PG["Edges"][0]
+
+        cycle_nodes = elpigraph._graph_editing.find_all_cycles(
+            nx.Graph(edges.tolist())
+        )[0]
+
+        ElasticMatrix = elpigraph.src.core.MakeUniformElasticMatrix_with_cycle(
+            edges,
+            Lambda=Lambda,
+            Mu=Mu,
+            cycle_Lambda=cycle_Lambda,
+            cycle_Mu=cycle_Mu,
+            cycle_nodes=cycle_nodes,
+        )
+
+        (
+            newnodep,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+        ) = elpigraph.src.core.PrimitiveElasticGraphEmbedment(
+            X, nodep, ElasticMatrix, PointWeights=weights, FixNodesAtPoints=[]
+        )
+        _PG["NodePositions"] = newnodep
+        return _PG

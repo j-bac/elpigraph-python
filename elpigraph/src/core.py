@@ -308,6 +308,18 @@ def MakeUniformElasticMatrix(Edges, Lambda, Mu):
     ElasticMatrix = ElasticMatrix + np.diag(Mus.ravel())
     return ElasticMatrix
 
+def MakeUniformElasticMatrix_with_cycle(Edges,Lambda,Mu,cycle_Lambda,cycle_Mu,cycle_nodes):
+    
+    ElasticMatrix = MakeUniformElasticMatrix(
+        Edges, Lambda=Lambda, Mu=Mu
+    )
+    for ei, ej in Edges:
+        if ei in cycle_nodes or ej in cycle_nodes:
+            ElasticMatrix[ei, ej] = ElasticMatrix[
+                ej, ei
+            ] = cycle_Lambda
+    ElasticMatrix[cycle_nodes, cycle_nodes] = cycle_Mu
+    return ElasticMatrix
 
 def Encode2ElasticMatrix(Edges, Lambdas, Mus):
     """

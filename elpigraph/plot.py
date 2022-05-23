@@ -34,19 +34,19 @@ from .src.reporting import project_point_onto_graph, project_point_onto_edge
 
 def find_branches(graph, verbose=0):
     """
-  #' Computes "branches" of the graph, i.e. paths from branch vertex (or terminal vertex)  to branch vertex (or terminal vertex)
-  #' Can process disconnected graphs. Stand-alone point - is "branch".
-  #' Circle is exceptional case - each circle (can be several connected components) is "branch"
-  #'
-  #' @param g - graph (igraph) 
-  #' @param verbose - details output
-  #' 
-  #' @examples
-  #' import igraph
-  #' g = igraph.Graph.Lattice([3,3], circular = False ) 
-  #' dict_output = find_branches(g, verbose = 1000)
-  #' print( dict_output['branches'] )
-  """
+    #' Computes "branches" of the graph, i.e. paths from branch vertex (or terminal vertex)  to branch vertex (or terminal vertex)
+    #' Can process disconnected graphs. Stand-alone point - is "branch".
+    #' Circle is exceptional case - each circle (can be several connected components) is "branch"
+    #'
+    #' @param g - graph (igraph)
+    #' @param verbose - details output
+    #'
+    #' @examples
+    #' import igraph
+    #' g = igraph.Graph.Lattice([3,3], circular = False )
+    #' dict_output = find_branches(g, verbose = 1000)
+    #' print( dict_output['branches'] )
+    """
     # verbose = np.inf
     #
     g = graph
@@ -71,9 +71,9 @@ def find_branches(graph, verbose=0):
 
         def find_start_vertex(g, processed_vertices):
             """
-      #' Find starting vertex for branches-search algorithm. 
-      #' It should be either branching vertex (i.e. degree >2) or terminal vertex (i.e. degree 0 or 1), in special case when unprocessed part of graph is union of circles - processed outside function
-      """
+            #' Find starting vertex for branches-search algorithm.
+            #' It should be either branching vertex (i.e. degree >2) or terminal vertex (i.e. degree 0 or 1), in special case when unprocessed part of graph is union of circles - processed outside function
+            """
             n_vertices = n_vertices_input_graph  #  = g.count()#
             if n_vertices == len(processed_vertices):
                 return -1, -1  # All vertices proccessed
@@ -116,7 +116,9 @@ def find_branches(graph, verbose=0):
         ############################################################################################################################################
         # Core function implementing "Breath First Search" like algorithm
         # with some updates in storage, since we need to arrange edges into "branches"
-        def find_branches_core(current_vertex, previous_vertex, current_branch):
+        def find_branches_core(
+            current_vertex, previous_vertex, current_branch
+        ):
             core_call_count[0] = core_call_count[0] + 1
             if verbose >= 1000:
                 print(
@@ -165,10 +167,15 @@ def find_branches(graph, verbose=0):
                 if (
                     next_vertex in processed_vertices
                 ):  # Cannot happen for trees, but may happen if graph has a loop
-                    if set([current_vertex, next_vertex]) not in processed_edges:
+                    if (
+                        set([current_vertex, next_vertex])
+                        not in processed_edges
+                    ):
                         current_branch.append(next_vertex)
                         found_branches.append(current_branch.copy())
-                        processed_edges.append(set([current_vertex, next_vertex]))
+                        processed_edges.append(
+                            set([current_vertex, next_vertex])
+                        )
                         return
                     else:
                         return
@@ -190,9 +197,16 @@ def find_branches(graph, verbose=0):
                     if (
                         next_vertex in processed_vertices
                     ):  # Cannot happen for trees, but may happen if graph has a loop
-                        if set([current_vertex, next_vertex]) not in processed_edges:
-                            processed_edges.append(set([current_vertex, next_vertex]))
-                            found_branches.append([current_vertex, next_vertex])
+                        if (
+                            set([current_vertex, next_vertex])
+                            not in processed_edges
+                        ):
+                            processed_edges.append(
+                                set([current_vertex, next_vertex])
+                            )
+                            found_branches.append(
+                                [current_vertex, next_vertex]
+                            )
                         continue
                     current_branch = [current_vertex]
                     processed_edges.append(set([current_vertex, next_vertex]))
@@ -215,42 +229,51 @@ def find_branches(graph, verbose=0):
         processed_vertices.add(current_vertex)
         core_call_count = [0]
         find_branches_core(
-            current_vertex=current_vertex, previous_vertex=None, current_branch=[]
+            current_vertex=current_vertex,
+            previous_vertex=None,
+            current_branch=[],
         )
 
         ############################################################################################################################################
         # Output of results for connected component
         if verbose >= 10:
-            print("Connected component ", count_connected_components, " processed ")
+            print(
+                "Connected component ",
+                count_connected_components,
+                " processed ",
+            )
             print("Final found_branches", found_branches)
             print("N Final found_branches", len(found_branches))
 
 
 def branch_labler(X, graph, nodes_positions, verbose=0):
     """
-  #' Labels points of the dataset X by "nearest"-"branches" of graph.
-  #' 
-  #'
-  #' @examples
-  # X = np.array( [[0.1,0.1], [0.1,0.2], [1,2],[3,4],[5,0]] )
-  # nodes_positions = np.array( [ [0,0], [1,0], [0,1], [1,1] ]  ) 
-  # import igraph
-  # g = igraph.Graph(); g.add_vertices(  4  )
-  # g.add_edges([[0,1],[0,2],[0,3]])
-  # vec_labels_by_branches = branch_labler( X , g, nodes_positions )
-  """
+    #' Labels points of the dataset X by "nearest"-"branches" of graph.
+    #'
+    #'
+    #' @examples
+    # X = np.array( [[0.1,0.1], [0.1,0.2], [1,2],[3,4],[5,0]] )
+    # nodes_positions = np.array( [ [0,0], [1,0], [0,1], [1,1] ]  )
+    # import igraph
+    # g = igraph.Graph(); g.add_vertices(  4  )
+    # g.add_edges([[0,1],[0,2],[0,3]])
+    # vec_labels_by_branches = branch_labler( X , g, nodes_positions )
+    """
     #####################################################################################
     # Calculate branches and clustering by vertices of graph
     dict_output = find_branches(graph, verbose=verbose)
     if verbose >= 100:
-        print("Function find_branches results branches:", dict_output["branches"])
+        print(
+            "Function find_branches results branches:", dict_output["branches"]
+        )
     vec_labels_by_vertices, dists, all_dists = PartitionData(
         X, nodes_positions, 1e6, np.sum(X ** 2, axis=1, keepdims=1)
     )  # np.array([[1,2,3,4], [1,2,3,4], [1,2,3,4], [10,20,30,40]]), [[1,2,3,4], [10,20,30,40]], 10**6)#,SquaredX)
     vec_labels_by_vertices = vec_labels_by_vertices.ravel()
     if verbose >= 100:
         print(
-            "Function partition_data returns: vec_labels_by_vertices.shape, dists.shape, all_dists.shape",
+            "Function partition_data returns: vec_labels_by_vertices.shape,"
+            " dists.shape, all_dists.shape",
             vec_labels_by_vertices.shape,
             dists.shape,
             all_dists.shape,
@@ -311,13 +334,13 @@ def branch_labler(X, graph, nodes_positions, verbose=0):
             branch_vertex, vec_labels_by_vertices, all_dists
         ):
             """
-      #' For the branch_vertex re-labels points of dataset which were labeled by it to label by "correct branch".
-      #' "Correct branch" label is a branch 'censored'-nearest to given point. 
-      #' Where 'censored'-nearest means the minimal distance between the point  and all points of the branch except the given branch_vertex
-      #'
-      #' Function changes vec_labels_by_branches defined above
-      #' Uses vec_labels_by_vertices defined above - vector of same length as dataset, which contains labels by vertices 
-      """
+            #' For the branch_vertex re-labels points of dataset which were labeled by it to label by "correct branch".
+            #' "Correct branch" label is a branch 'censored'-nearest to given point.
+            #' Where 'censored'-nearest means the minimal distance between the point  and all points of the branch except the given branch_vertex
+            #'
+            #' Function changes vec_labels_by_branches defined above
+            #' Uses vec_labels_by_vertices defined above - vector of same length as dataset, which contains labels by vertices
+            """
 
             mask = (
                 vec_labels_by_vertices.ravel() == branch_vertex
@@ -340,16 +363,25 @@ def branch_labler(X, graph, nodes_positions, verbose=0):
                 ]
                 # For all points of dataset[mask] calculate minimal distances to given branch (with exclusion of branch_point), i.e. mininal difference for
                 if verbose >= 1000:
-                    print("mask.shape, all_dists.shape", mask.shape, all_dists.shape)
+                    print(
+                        "mask.shape, all_dists.shape",
+                        mask.shape,
+                        all_dists.shape,
+                    )
                 dist2branches[:, i] = np.min(
-                    all_dists[mask, :][:, branch_vertices_wo_given_branch_vertex], 1
+                    all_dists[mask, :][
+                        :, branch_vertices_wo_given_branch_vertex
+                    ],
+                    1,
                 ).ravel()
 
             vec_labels_by_branches[mask] = np.array(list_branch_ids)[
                 np.argmin(dist2branches, 1)
             ]
 
-        labels_for_one_branch_vertex(branch_vertex, vec_labels_by_vertices, all_dists)
+        labels_for_one_branch_vertex(
+            branch_vertex, vec_labels_by_vertices, all_dists
+        )
 
         if verbose >= 10:
             print("Output: vec_labels_by_branches", vec_labels_by_branches)
@@ -405,11 +437,15 @@ def fill_gaps_in_number_sequence(x):
     return x
 
 
-def moving_weighted_average(x, y, step_size=0.1, steps_per_bin=1, weights=None):
+def moving_weighted_average(
+    x, y, step_size=0.1, steps_per_bin=1, weights=None
+):
     # This ensures that all samples are within a bin
     number_of_bins = int(np.ceil(np.ptp(x) / step_size))
     bins = np.linspace(
-        np.min(x), np.min(x) + step_size * number_of_bins, num=number_of_bins + 1
+        np.min(x),
+        np.min(x) + step_size * number_of_bins,
+        num=number_of_bins + 1,
     )
     bins -= (bins[-1] - np.max(x)) / 2
     bin_centers = bins[:-steps_per_bin] + step_size * steps_per_bin / 2
@@ -467,7 +503,8 @@ def visualize_eltree_with_data(
 
     nodep = PG["NodePositions"]
     nodep_original = (
-        np.matmul(nodep, principal_component_vectors[:, 0 : X.shape[1]].T) + mean_vector
+        np.matmul(nodep, principal_component_vectors[:, 0 : X.shape[1]].T)
+        + mean_vector
     )
     adjmat = PG["ElasticMatrix"]
     edges = PG["Edges"][0]
@@ -516,7 +553,9 @@ def visualize_eltree_with_data(
         ]
         color2_unique, color2_count = np.unique(color2, return_counts=True)
         inds = sorted(
-            range(len(color2_count)), key=lambda k: color2_count[k], reverse=True
+            range(len(color2_count)),
+            key=lambda k: color2_count[k],
+            reverse=True,
         )
         newc = []
         for i, c in enumerate(color2):
@@ -676,7 +715,10 @@ def visualize_eltree_with_data(
 
     # Associate edge width to a feature
     edge_vals = [1] * len(edges)
-    if not Feature_Edge_Width == "" and not Visualize_Edge_Width_AsNodeCoordinates:
+    if (
+        not Feature_Edge_Width == ""
+        and not Visualize_Edge_Width_AsNodeCoordinates
+    ):
         k = variable_names.index(Feature_Edge_Width)
         for j in range(len(edges)):
             vals = X_original[np.where(edgeid == j)[0], k]
@@ -690,7 +732,10 @@ def visualize_eltree_with_data(
                 inds = [
                     ei
                     for ei, ed in enumerate(edges)
-                    if ed[0] == e[0] or ed[1] == e[0] or ed[0] == e[1] or ed[1] == e[1]
+                    if ed[0] == e[0]
+                    or ed[1] == e[0]
+                    or ed[0] == e[1]
+                    or ed[1] == e[1]
                 ]
                 inds.remove(j)
                 evals = np.array(edge_vals)[inds]
@@ -722,7 +767,8 @@ def visualize_eltree_with_data(
             x_coo,
             y_coo,
             c="k",
-            linewidth=Min_Edge_Width + (Max_Edge_Width - Min_Edge_Width) * edge_vals[j],
+            linewidth=Min_Edge_Width
+            + (Max_Edge_Width - Min_Edge_Width) * edge_vals[j],
             alpha=Transparency_Alpha,
         )
         if showEdgeNumbers:
@@ -741,7 +787,11 @@ def visualize_eltree_with_data(
             xbm = np.mean(x[ind])
             ybm = np.mean(y[ind])
             plt.text(
-                xbm, ybm, int(val), FontSize=20, bbox=dict(facecolor="grey", alpha=0.5)
+                xbm,
+                ybm,
+                int(val),
+                FontSize=20,
+                bbox=dict(facecolor="grey", alpha=0.5),
             )
 
     if showNodeNumbers:
@@ -774,48 +824,6 @@ def partition_data_by_tree_branches(X, PG):
     g.add_edges(edges)
     vec_labels_by_branches = branch_labler(X, g, nodes_positions)
     return vec_labels_by_branches
-
-
-def prune_the_tree(PG):
-    # remove short 'orphan' edges not forming a continuous branch
-    old_tree = PG.copy()
-    edges = PG["Edges"][0]
-    nodes_positions = PG["NodePositions"]
-
-    g = igraph.Graph()
-    g.add_vertices(len(nodes_positions))
-    labels = []
-    for i in range(0, len(nodes_positions)):
-        labels.append(i)
-    g.vs["label"] = labels
-    g.add_edges(edges)
-
-    degs = g.degree()
-    list_to_remove = []
-    for e in g.get_edgelist():
-        if degs[e[0]] == 1 and degs[e[1]] > 2:
-            list_to_remove.append(e[0])
-        if degs[e[1]] == 1 and degs[e[0]] > 2:
-            list_to_remove.append(e[1])
-    list_to_remove = list(set(list_to_remove))
-    g.delete_vertices(list_to_remove)
-
-    edge_array = np.zeros((len(g.get_edgelist()), 2), "int32")
-    for i, e in enumerate(g.get_edgelist()):
-        edge_array[i, 0] = e[0]
-        edge_array[i, 1] = e[1]
-
-    print(
-        "Removed",
-        len(list_to_remove),
-        "vertices and",
-        len(old_tree["Edges"][0]) - len(edge_array),
-        "edges",
-    )
-
-    PG["Edges"] = (edge_array, PG["Edges"][1])
-    vs_subset = g.vs["label"]
-    PG["NodePositions"] = nodes_positions[vs_subset, :]
 
 
 def random_sign():
@@ -851,7 +859,9 @@ def pseudo_time_trajectory(traj, ProjStruct):
     partition = ProjStruct["Partition"]
     traj_points = np.zeros(0, "int32")
     for p in traj:
-        traj_points = np.concatenate((traj_points, np.where(partition == p)[0]))
+        traj_points = np.concatenate(
+            (traj_points, np.where(partition == p)[0])
+        )
     # print(len(traj_points))
     pst = np.zeros(len(traj_points))
     for i, p in enumerate(traj_points):
@@ -859,31 +869,44 @@ def pseudo_time_trajectory(traj, ProjStruct):
     return pst, traj_points
 
 
-def extract_trajectories(tree, root_node, verbose=False):
-    edges = tree["Edges"][0]
-    nodes_positions = tree["NodePositions"]
+def extract_trajectories(tree,root_node,verbose=False):
+    """
+	Extracting trajectories from ElPiGraph result object tree,
+        starting from a root_node.
+        Extracting trajectories is a required step for quantifying pseudotime 
+        after.
+        Example:
+            all_trajectories,all_trajectories_edges = extract_trajectories(tree,root_node)
+            print(len(all_trajectories),' trajectories found.')
+            ProjStruct = project_on_tree(X,tree)
+            PseudoTimeTraj = quantify_pseudotime(all_trajectories,all_trajectories_edges,ProjStruct)
+    """
+    edges = tree['Edges'][0]
+    nodes_positions = tree['NodePositions']
     g = igraph.Graph()
     g.add_vertices(len(nodes_positions))
     g.add_edges(edges)
     degs = g.degree()
-    leaf_nodes = [i for i, d in enumerate(degs) if d == 1]
+    leaf_nodes = [i for i,d in enumerate(degs) if d==1]
     if verbose:
-        print(len(leaf_nodes), "trajectories found")
-    all_trajectories = []
+        print(len(leaf_nodes),'trajectories found')
+    all_trajectories_vertices = []
+    all_trajectories_edges = []
     for lf in leaf_nodes:
-        path_vertices = g.get_shortest_paths(root_node, to=lf, output="vpath")
-        all_trajectories.append(path_vertices[0])
-        path_edges = g.get_shortest_paths(root_node, to=lf, output="epath")
+        path_vertices=g.get_shortest_paths(root_node,to=lf,output='vpath')
+        all_trajectories_vertices.append(path_vertices[0])
+        path_edges=g.get_shortest_paths(root_node,to=lf,output='epath')
+        all_trajectories_edges.append(path_edges[0])
         if verbose:
-            print("Vertices:", path_vertices)
-            print("Edges:", path_edges)
+            print('Vertices:',path_vertices)
+            print('Edges:',path_edges)
         ped = []
         for ei in path_edges[0]:
-            ped.append((g.get_edgelist()[ei][0], g.get_edgelist()[ei][1]))
+            ped.append((g.get_edgelist()[ei][0],g.get_edgelist()[ei][1]))
         if verbose:
-            print("Edges:", ped)
+            print('Edges:',ped)
         # compute pseudotime along each path
-    return all_trajectories
+    return all_trajectories_vertices, all_trajectories_edges
 
 
 def correlation_of_variable_with_trajectories(
@@ -1006,7 +1029,9 @@ def regress_variable_on_pseudotime(
             pred = regressor.predict(unif_pst)
             if var_type == "BINARY" or var_type == "CATEGORICAL":
                 prob = regressor.predict_proba(unif_pst)
-                plt.plot(unif_pst, prob[:, 1], "g-", linewidth=2, label="proba")
+                plt.plot(
+                    unif_pst, prob[:, 1], "g-", linewidth=2, label="proba"
+                )
             if var_type == "CONTINUOUS" or var_type == "ORDINAL":
                 plt.plot(unif_pst, pred, "g-", linewidth=2, label="predicted")
             bincenters, wav = moving_weighted_average(
@@ -1178,7 +1203,9 @@ def add_pie_charts_tree(ax, tree, partition, values, color_seq, scale=1):
     add_pie_charts(ax, idx, partition, values, color_seq, scale=scale)
 
 
-def add_pie_charts(ax, node_positions2d, partition, values, color_seq, scale=1):
+def add_pie_charts(
+    ax, node_positions2d, partition, values, color_seq, scale=1
+):
     df = pd.DataFrame({"CLASS": values})
     vals_unique_df = df.CLASS.value_counts()
     vals_unique = vals_unique_df.index.to_list()
@@ -1229,7 +1256,15 @@ def draw_pie(ax, ratios, colors, X=0, Y=0, size=1000):
 
 
 def PlotPG(
-    X, PG, X_color="r", Node_color="k", Do_PCA=True, DimToPlot=[0, 1],
+    X,
+    PG,
+    X_color="r",
+    Node_color="k",
+    Do_PCA=True,
+    DimToPlot=[0, 1],
+    show_node=True,
+    show_text=True,
+    ax=None,
 ):
 
     if Do_PCA:
@@ -1246,22 +1281,47 @@ def PlotPG(
         BaseData = X
         DataVarPerc = np.var(X, axis=0) / np.sum(np.var(X, axis=0))
 
-    f, ax = plt.subplots(1, 1)
+    if ax is None:
+        ax = plt.subplot()
 
     # scatter data
     ax.scatter(
-        BaseData[:, DimToPlot[0]], BaseData[:, DimToPlot[1]], c=X_color, alpha=0.15
+        BaseData[:, DimToPlot[0]],
+        BaseData[:, DimToPlot[1]],
+        c=X_color,
+        alpha=0.15,
     )
 
     # scatter nodes
-    ax.scatter(nodesp[:, DimToPlot[0]], nodesp[:, DimToPlot[1]], c=Node_color, s=24)
+    if show_node:
+        ax.scatter(
+            nodesp[:, DimToPlot[0]],
+            nodesp[:, DimToPlot[1]],
+            c=Node_color,
+            s=20,
+        )
+
+    if show_text:
+        for i in np.arange(nodesp.shape[0]):
+            ax.text(
+                nodesp[i, DimToPlot[0]],
+                nodesp[i, DimToPlot[1]],
+                i,
+                color="black",
+                ha="left",
+                va="bottom",
+            )
 
     Edges = PG["Edges"][0].T
 
     # plot edges
     for j in range(Edges.shape[1]):
-        x_coo = np.concatenate((nodesp[Edges[0, j], [0]], nodesp[Edges[1, j], [0]]))
-        y_coo = np.concatenate((nodesp[Edges[0, j], [1]], nodesp[Edges[1, j], [1]]))
+        x_coo = np.concatenate(
+            (nodesp[Edges[0, j], [0]], nodesp[Edges[1, j], [0]])
+        )
+        y_coo = np.concatenate(
+            (nodesp[Edges[0, j], [1]], nodesp[Edges[1, j], [1]])
+        )
         ax.plot(x_coo, y_coo, c="black", linewidth=1, alpha=0.6)
 
     if Do_PCA:
@@ -1272,7 +1332,9 @@ def PlotPG(
         )
     ax.set_xlabel(f"PG % var: {TarPGVarPerc[DimToPlot[0]]:.2f}")
     ax.set_ylabel(f"PG % var: {TarPGVarPerc[DimToPlot[1]]:.2f}")
-    plt.show()
+
+    if ax is None:
+        plt.show()
 
 
 # def old_PlotPG(
