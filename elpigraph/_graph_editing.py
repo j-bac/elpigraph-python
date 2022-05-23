@@ -253,7 +253,8 @@ def findPaths(
 ):
     """
     This function tries to add extra paths to the graph
-    by computing a series of principal curves connecting two nodes and retaining plausible ones using heuristic parameters
+    by computing a series of principal curves connecting two nodes
+    and retaining plausible ones using heuristic parameters
 
     min_path_len: int, default=None
         Minimum distance along the graph (in number of nodes) that separates the two nodes to connect with a principal curve
@@ -865,6 +866,10 @@ def addPath(
     cycle_Mu=None,
     cycle_Lambda=None,
 ):
+    """
+    Add path (principal curve) between two nodes in the principal graph
+
+    """
 
     _PG = deepcopy(PG)
     if "projection" in _PG.keys():
@@ -973,6 +978,10 @@ def delPath(
     cycle_Mu=None,
     cycle_Lambda=None,
 ):
+    """
+    Delete path between two nodes in the principal graph
+
+    """
     _PG = deepcopy(PG)
     if "projection" in _PG.keys():
         del _PG["projection"]

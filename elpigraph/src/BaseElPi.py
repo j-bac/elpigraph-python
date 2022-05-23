@@ -90,77 +90,79 @@ def ElPrincGraph(
     },
 ):
     """
-    #' Core function to construct a principal elastic graph
-    #'
-    #' The core function that takes the n m-dimensional points and construct a principal elastic graph using the
-    #' grammars provided.
-    #'
-    #' @param X numerical 2D matrix, the n-by-m matrix with the position of n m-dimensional points
-    #' @param NumNodes integer, the number of nodes of the principal graph
-    #' @param Lambda real, the lambda parameter used the compute the elastic energy
-    #' @param Mu real, the lambda parameter used the compute the elastic energy
-    #' @param CompileReport boolean, should a step-by-step report with various information on the
-    #' contruction of the principal graph be compiled?
-    #' @param ShowTimer boolean, should the time to construct the graph be computed and reported for each step?
-    #' @param ComputeMSEP boolean, should MSEP be computed when building the report?
-    #' @param GrowGrammars list of strings, the grammar to be used in the growth step
-    #' @param ShrinkGrammars list of strings, the grammar to be used in the shrink step
-    #' @param GrammarOrder vector of strings, the order of application of the grammars. Can be any combination of "Grow" and "Shrink"
-    #' @param NodesPositions numerical 2D matrix, the k-by-m matrix with k m-dimensional positions of the nodes
-    #' in the initial step
-    #' @param ElasticMatrix numerical 2D matrix, the k-by-k elastic matrix
-    #' @param n.cores either an integer (indicating the number of cores to used for the creation of a cluster) or
-    #' cluster structure returned, e.g., by makeCluster. If a cluster structure is used, all the nodes must contains X
-    #' (this is done using clusterExport)
-    #' @param MinParOP integer, the minimum number of operations to use parallel computation
-    #' @param MaxNumberOfIterations integer, maximum number of steps to embed the nodes in the data
-    #' @param eps real, minimal relative change in the position of the nodes to stop embedment
-    #' @param TrimmingRadius real, maximal distance of point from a node to affect its embedment
-    #' @param NumEdges integer, the maximum nulber of edges
-    #' @param Mode integer, the energy computation mode
-    #' @param FastSolve boolean, should FastSolve be used when fitting the points to the data?
-    #' @param ClusType string, the type of cluster to use. It can gbe either "Sock" or "Fork".
-    #' Currently fork clustering only works in Linux
-    #' @param AvoidSolitary boolean, should configurations with "solitary nodes", i.e., nodes without associted points be discarded?
-    #' @param FinalEnergy string indicating the final elastic emergy associated with the configuration. Currently it can be "Base" or "Penalized"
-    #' @param alpha positive numeric, the value of the alpha parameter of the penalized elastic energy
-    #' @param beta positive numeric, the value of the beta parameter of the penalized elastic energy
-    #' @param EmbPointProb numeric between 0 and 1. If less than 1 point will be sampled at each iteration.
-    #' EmbPointProb indicates the probability of using each points. This is an *experimental* feature, which may
-    #' helps speeding up the computation if a large number of points is present.
-    #' @param MaxFailedOperations integer, the maximum allowed number of consecutive failed grammar operations,
-    #' i.e. appplication of the single grammar operations, that did not produce any valid configuration
-    #' @param MaxSteps integer, the maximum allowed number of steps of the algorithm. Each step is composed by the application of
-    #' all the specified grammar operations
-    #' @param GrammarOptimization boolean, should the grammar be used to optimize the graph? If True a number MaxSteps of operations will be applied.
-    #' @param AdjustElasticMatrix a penalization function to adjust the elastic matrices after a configuration has been chosen (e.g., AdjustByConstant).
-    #' If None (the default), no penalization will be used.
-    #' @param AdjustVect boolean vector keeping track of the nodes for which the elasticity parameters have been adjusted.
-    #' When True for a node its elasticity parameters will not be adjusted.
-    #' @param gamma
-    #' @param verbose
-    #' @param AdjustElasticMatrix.Initial a penalization function to adjust the elastic matrices of the initial configuration (e.g., AdjustByConstant).
-    #' If None (the default), no penalization will be used.
-    #'
-    #' @return a named list with a number of elements:
-    #' \describe{
-    #'   \item{NodePositions}{A numeric matrix containing the positions of the nodes}
-    #'   \item{ElasticMatrix}{The elastic matrix of the graph}
-    #'   \item{ReportTable}{The report table for the graph construction}
-    #'   \item{FinalReport}{The report table associated with the final graph configuration}
-    #'   \item{Lambda}{The lambda parameter used during the graph construction}
-    #'   \item{Mu}{The mu parameter used during the graph construction}
-    #'   \item{FastSolve}{was FastSolve being used?}
-    #' }
-    #'
-    #' @export
-    #'
-    #' @examples
-    #'
-    #' This is a low level function. See  \code{\link{computeElasticPrincipalCircle}},
-    #' \code{\link{computeElasticPrincipalCurve}}, or \code{\link{computeElasticPrincipalTree}}
-    #'
-    #'
+    Core function to construct a principal elastic graph
+
+    The core function that takes the n m-dimensional points and construct a principal elastic graph using the
+    grammars provided.
+
+    X numerical 2D matrix, the n-by-m matrix with the position of n m-dimensional points
+    NumNodes integer, the number of nodes of the principal graph
+    Lambda real, the lambda parameter used the compute the elastic energy
+    Mu real, the lambda parameter used the compute the elastic energy
+    CompileReport boolean, should a step-by-step report with various information on the
+    contruction of the principal graph be compiled?
+    ShowTimer boolean, should the time to construct the graph be computed and reported for each step?
+    ComputeMSEP boolean, should MSEP be computed when building the report?
+    GrowGrammars list of strings, the grammar to be used in the growth step
+    ShrinkGrammars list of strings, the grammar to be used in the shrink step
+    GrammarOrder vector of strings, the order of application of the grammars. Can be any combination of "Grow" and "Shrink"
+    NodesPositions numerical 2D matrix, the k-by-m matrix with k m-dimensional positions of the nodes
+    in the initial step
+    ElasticMatrix numerical 2D matrix, the k-by-k elastic matrix
+    n.cores either an integer (indicating the number of cores to used for the creation of a cluster) or
+    cluster structure returned, e.g., by makeCluster. If a cluster structure is used, all the nodes must contains X
+    (this is done using clusterExport)
+    MinParOP integer, the minimum number of operations to use parallel computation
+    MaxNumberOfIterations integer, maximum number of steps to embed the nodes in the data
+    eps real, minimal relative change in the position of the nodes to stop embedment
+    TrimmingRadius real, maximal distance of point from a node to affect its embedment
+    NumEdges integer, the maximum nulber of edges
+    Mode integer, the energy computation mode
+    FastSolve boolean, should FastSolve be used when fitting the points to the data?
+    ClusType string, the type of cluster to use. It can gbe either "Sock" or "Fork".
+    Currently fork clustering only works in Linux
+    AvoidSolitary boolean, should configurations with "solitary nodes", i.e., nodes without associted points be discarded?
+    FinalEnergy string indicating the final elastic emergy associated with the configuration. Currently it can be "Base" or "Penalized"
+    alpha positive numeric, the value of the alpha parameter of the penalized elastic energy
+    beta positive numeric, the value of the beta parameter of the penalized elastic energy
+    EmbPointProb numeric between 0 and 1. If less than 1 point will be sampled at each iteration.
+    EmbPointProb indicates the probability of using each points. This is an *experimental* feature, which may
+    helps speeding up the computation if a large number of points is present.
+    MaxFailedOperations integer, the maximum allowed number of consecutive failed grammar operations,
+    i.e. appplication of the single grammar operations, that did not produce any valid configuration
+    MaxSteps integer, the maximum allowed number of steps of the algorithm. Each step is composed by the application of
+    all the specified grammar operations
+    GrammarOptimization boolean, should the grammar be used to optimize the graph? If True a number MaxSteps of operations will be applied.
+    AdjustElasticMatrix a penalization function to adjust the elastic matrices after a configuration has been chosen (e.g., AdjustByConstant).
+    If None (the default), no penalization will be used.
+    AdjustVect boolean vector keeping track of the nodes for which the elasticity parameters have been adjusted.
+    When True for a node its elasticity parameters will not be adjusted.
+    gamma
+    verbose
+    AdjustElasticMatrix.Initial a penalization function to adjust the elastic matrices of the initial configuration (e.g., AdjustByConstant).
+    If None (the default), no penalization will be used.
+
+    Return
+    -------
+    a named list with a number of elements:
+    \describe{
+      \item{NodePositions}{A numeric matrix containing the positions of the nodes}
+      \item{ElasticMatrix}{The elastic matrix of the graph}
+      \item{ReportTable}{The report table for the graph construction}
+      \item{FinalReport}{The report table associated with the final graph configuration}
+      \item{Lambda}{The lambda parameter used during the graph construction}
+      \item{Mu}{The mu parameter used during the graph construction}
+      \item{FastSolve}{was FastSolve being used?}
+    }
+
+
+
+    @examples
+
+    This is a low level function. See  \code{\link{computeElasticPrincipalCircle}},
+    \code{\link{computeElasticPrincipalCurve}}, or \code{\link{computeElasticPrincipalTree}}
+
+
     """
 
     if PointWeights is None:
@@ -170,7 +172,8 @@ def ElPrincGraph(
         print("Using grammar optimization")
         if np.isinf(MaxSteps):
             print(
-                "When setting GrammarOptimization to TRUE, MaxSteps must be finite. Using MaxSteps = 1"
+                "When setting GrammarOptimization to TRUE, MaxSteps must be"
+                " finite. Using MaxSteps = 1"
             )
             MaxSteps = 1
 
@@ -183,7 +186,8 @@ def ElPrincGraph(
     if "RemoveNode" in MaxNumberOfGraphCandidatesDict:
         if np.isfinite(MaxNumberOfGraphCandidatesDict["RemoveNode"]):
             raise ValueError(
-                "MaxNumberOfGraphCandidates limitation not yet available for RemoveNode. Keep it to infinity"
+                "MaxNumberOfGraphCandidates limitation not yet available for"
+                " RemoveNode. Keep it to infinity"
             )
 
     if isinstance(ElasticMatrix, np.ndarray):
@@ -265,7 +269,9 @@ def ElPrincGraph(
 
     # now we grow the graph up to NumNodes
 
-    if (UpdatedPG["NodePositions"].shape[0] >= NumNodes) and not (GrammarOptimization):
+    if (UpdatedPG["NodePositions"].shape[0] >= NumNodes) and not (
+        GrammarOptimization
+    ):
         FinalReport = ReportOnPrimitiveGraphEmbedment(
             X=X,
             NodePositions=UpdatedPG["NodePositions"],
@@ -301,10 +307,13 @@ def ElPrincGraph(
     AllNodePositions = {}
     AllElasticMatrices = {}
 
-    while (UpdatedPG["NodePositions"].shape[0] < NumNodes) or GrammarOptimization:
+    while (
+        UpdatedPG["NodePositions"].shape[0] < NumNodes
+    ) or GrammarOptimization:
         nEdges = len(np.triu(UpdatedPG["ElasticMatrix"], 1).nonzero()[0])
         if (
-            ((UpdatedPG["NodePositions"].shape[0]) >= NumNodes) or (nEdges >= NumEdges)
+            ((UpdatedPG["NodePositions"].shape[0]) >= NumNodes)
+            or (nEdges >= NumEdges)
         ) and not GrammarOptimization:
             break
 
@@ -365,7 +374,9 @@ def ElPrincGraph(
                             inds = np.where(
                                 np.sum(
                                     UpdatedPG["ElasticMatrix"]
-                                    - np.diag(np.diag(UpdatedPG["ElasticMatrix"]))
+                                    - np.diag(
+                                        np.diag(UpdatedPG["ElasticMatrix"])
+                                    )
                                     > 0,
                                     axis=0,
                                 )
@@ -475,15 +486,15 @@ def ElPrincGraph(
             AllNodePositions[UpdatedPG["NodePositions"].shape[0]] = UpdatedPG[
                 "NodePositions"
             ]
-            AllElasticMatrices[UpdatedPG["NodePositions"].shape[0]] = UpdatedPG[
-                "ElasticMatrix"
-            ]
-            AllMergedElasticMatrices[UpdatedPG["NodePositions"].shape[0]] = UpdatedPG[
-                "StoreMergedElasticMatrix"
-            ]
-            AllMergedNodePositions[UpdatedPG["NodePositions"].shape[0]] = UpdatedPG[
-                "StoreMergedNodePositions"
-            ]
+            AllElasticMatrices[
+                UpdatedPG["NodePositions"].shape[0]
+            ] = UpdatedPG["ElasticMatrix"]
+            AllMergedElasticMatrices[
+                UpdatedPG["NodePositions"].shape[0]
+            ] = UpdatedPG["StoreMergedElasticMatrix"]
+            AllMergedNodePositions[
+                UpdatedPG["NodePositions"].shape[0]
+            ] = UpdatedPG["StoreMergedNodePositions"]
 
     if not verbose:
         if not CompileReport:
@@ -615,75 +626,77 @@ def computeElasticPrincipalGraph(
 ):
 
     """
-    #' Regularize data and construct a principal elastic graph
-    #'
-    #' This allow to perform basic data regularization before constructing a principla elastic graph.
-    #'
-    #'
-    #' @param Data numerical 2D matrix, the n-by-m matrix with the position of n m-dimensional points
-    #' @param NumNodes integer, the number of nodes of the principal graph
-    #' @param Lambda real, the lambda parameter used the compute the elastic energy
-    #' @param Mu real, the lambda parameter used the compute the elastic energy
-    #' @param Do_PCA boolean, should data and initial node positions be PCA trnasformed?
-    #' @param CenterData boolean, should data and initial node positions be centered?
-    #' @param ComputeMSEP boolean, should MSEP be computed when building the report?
-    #' @param ReduceDimension integer vector, vector of principal components to retain when performing
-    #' dimensionality reduction. If None all the components will be used
-    #' @param InitNodePositions numerical 2D matrix, the k-by-m matrix with k m-dimensional positions of the nodes
-    #' in the initial step
-    #' @param InitEdges numerical 2D matrix, the e-by-2 matrix with e end-points of the edges connecting the nodes
-    #' @param ElasticMatrix numerical 2D matrix, the e-by-e matrix containing the elasticity parameters of the edges
-    #' @param MaxNumberOfIterations integer, maximum number of steps to embed the nodes in the data
-    #' @param eps real, minimal relative change in the position of the nodes to stop embedment
-    #' @param TrimmingRadius real, maximal distance of point from a node to affect its embedment
-    #' @param verbose boolean, should debugging information be reported?
-    #' @param ShowTimer boolean, should the time to construct the graph be computed and reported for each step?
-    #' @param n_cores either an integer (indicating the number of cores to used for the creation of a cluster) or
-    #' cluster structure returned, e.g., by makeCluster. If a cluster structure is used, all the nodes must contains X
-    #' (this is done using clusterExport)
-    #' @param MinParOp integer, the minimum number of operations to use parallel computation
-    #' @param GrowGrammars list of strings, the grammar to be used in the growth step
-    #' @param ShrinkGrammars list of strings, the grammar to be used in the shrink step
-    #' @param NumEdges integer, the maximum nulber of edges
-    #' @param Mode integer, the energy computation mode
-    #' @param AvoidSolitary boolean, should configurations with "solitary nodes", i.e., nodes without associated points be discarded?
-    #' @param EmbPointProb numeric between 0 and 1. If less than 1 point will be sampled at each iteration.
-    #' EmbPointProb indicates the probability of using each points. This is an *experimental* feature, which may
-    #' helps speeding up the computation if a large number of points is present.
-    #' @param FinalEnergy string indicating the final elastic emergy associated with the configuration. Currently it can be "Base" or "Penalized"
-    #' @param alpha positive numeric, the value of the alpha parameter of the penalized elastic energy
-    #' @param beta positive numeric, the value of the beta parameter of the penalized elastic energy
-    #' @param ... optional parameter that will be passed to the AdjustHOS function
-    #' @param AdjustVect boolean vector keeping track of the nodes for which the elasticity parameters have been adjusted.
-    #' When True for a node its elasticity parameters will not be adjusted.
-    #' @param AdjustElasticMatrix a penalization function to adjust the elastic matrices after a configuration has been chosen (e.g., AdjustByConstant).
-    #' If None (the default), no penalization will be used.
-    #' @param AdjustElasticMatrix.Initial a penalization function to adjust the elastic matrices of the initial configuration (e.g., AdjustByConstant).
-    #' If None (the default), no penalization will be used.
-    #' @param Lambda.Initial
-    #' @param Mu.Initial
-    #'
-    #' @return a named list with a number of elements:
-    #' \describe{
-    #'   \item{NodePositions}{A numeric matrix containing the positions of the nodes}
-    #'   \item{Edges}{A numeric matrix containing the pairs of nodes connected by edges}
-    #'   \item{ElasticMatrix}{The elastic matrix of the graph}
-    #'   \item{ReportTable}{The report table for the graph construction}
-    #'   \item{FinalReport}{The report table associated with the final graph configuration}
-    #'   \item{Lambda}{The lambda parameter used during the graph construction}
-    #'   \item{Mu}{The mu parameter used during the graph construction}
-    #'   \item{FastSolve}{was FastSolve being used?}
-    #' }
-    #'
-    #' @export
-    #'
-    #' @examples
-    #'
-    #' This is a low level function. See  \code{\link{computeElasticPrincipalCircle}},
-    #' \code{\link{computeElasticPrincipalCurve}}, or \code{\link{computeElasticPrincipalTree}}
-    #' for examples
-    #'
-    #'
+    Regularize data and construct a principal elastic graph
+
+    This allow to perform basic data regularization before constructing a principla elastic graph.
+
+
+    Data numerical 2D matrix, the n-by-m matrix with the position of n m-dimensional points
+    NumNodes integer, the number of nodes of the principal graph
+    Lambda real, the lambda parameter used the compute the elastic energy
+    Mu real, the lambda parameter used the compute the elastic energy
+    Do_PCA boolean, should data and initial node positions be PCA trnasformed?
+    CenterData boolean, should data and initial node positions be centered?
+    ComputeMSEP boolean, should MSEP be computed when building the report?
+    ReduceDimension integer vector, vector of principal components to retain when performing
+    dimensionality reduction. If None all the components will be used
+    InitNodePositions numerical 2D matrix, the k-by-m matrix with k m-dimensional positions of the nodes
+    in the initial step
+    InitEdges numerical 2D matrix, the e-by-2 matrix with e end-points of the edges connecting the nodes
+    ElasticMatrix numerical 2D matrix, the e-by-e matrix containing the elasticity parameters of the edges
+    MaxNumberOfIterations integer, maximum number of steps to embed the nodes in the data
+    eps real, minimal relative change in the position of the nodes to stop embedment
+    TrimmingRadius real, maximal distance of point from a node to affect its embedment
+    verbose boolean, should debugging information be reported?
+    ShowTimer boolean, should the time to construct the graph be computed and reported for each step?
+    n_cores either an integer (indicating the number of cores to used for the creation of a cluster) or
+    cluster structure returned, e.g., by makeCluster. If a cluster structure is used, all the nodes must contains X
+    (this is done using clusterExport)
+    MinParOp integer, the minimum number of operations to use parallel computation
+    GrowGrammars list of strings, the grammar to be used in the growth step
+    ShrinkGrammars list of strings, the grammar to be used in the shrink step
+    NumEdges integer, the maximum nulber of edges
+    Mode integer, the energy computation mode
+    AvoidSolitary boolean, should configurations with "solitary nodes", i.e., nodes without associated points be discarded?
+    EmbPointProb numeric between 0 and 1. If less than 1 point will be sampled at each iteration.
+    EmbPointProb indicates the probability of using each points. This is an *experimental* feature, which may
+    helps speeding up the computation if a large number of points is present.
+    FinalEnergy string indicating the final elastic emergy associated with the configuration. Currently it can be "Base" or "Penalized"
+    alpha positive numeric, the value of the alpha parameter of the penalized elastic energy
+    beta positive numeric, the value of the beta parameter of the penalized elastic energy
+    ... optional parameter that will be passed to the AdjustHOS function
+    AdjustVect boolean vector keeping track of the nodes for which the elasticity parameters have been adjusted.
+    When True for a node its elasticity parameters will not be adjusted.
+    AdjustElasticMatrix a penalization function to adjust the elastic matrices after a configuration has been chosen (e.g., AdjustByConstant).
+    If None (the default), no penalization will be used.
+    AdjustElasticMatrix.Initial a penalization function to adjust the elastic matrices of the initial configuration (e.g., AdjustByConstant).
+    If None (the default), no penalization will be used.
+    Lambda.Initial
+    Mu.Initial
+
+    Return
+    -------
+    a named list with a number of elements:
+    \describe{
+      \item{NodePositions}{A numeric matrix containing the positions of the nodes}
+      \item{Edges}{A numeric matrix containing the pairs of nodes connected by edges}
+      \item{ElasticMatrix}{The elastic matrix of the graph}
+      \item{ReportTable}{The report table for the graph construction}
+      \item{FinalReport}{The report table associated with the final graph configuration}
+      \item{Lambda}{The lambda parameter used during the graph construction}
+      \item{Mu}{The mu parameter used during the graph construction}
+      \item{FastSolve}{was FastSolve being used?}
+    }
+
+
+
+    @examples
+
+    This is a low level function. See  \code{\link{computeElasticPrincipalCircle}},
+    \code{\link{computeElasticPrincipalCurve}}, or \code{\link{computeElasticPrincipalTree}}
+    for examples
+
+
     """
     ST = datetime.datetime.today().strftime("%Y-%m-%d-%H:%M:%S")
     t = time.time()
@@ -693,7 +706,10 @@ def computeElasticPrincipalGraph(
 
     elif not Do_PCA:
         if verbose:
-            print("Cannot reduce dimensionality witout doing PCA (parameter Do_PCA)")
+            print(
+                "Cannot reduce dimensionality witout doing PCA (parameter"
+                " Do_PCA)"
+            )
             print("Dimensionality reduction will be ignored")
         ReduceDimension = np.array(range(np.min(Data.shape)))
 
@@ -710,13 +726,15 @@ def computeElasticPrincipalGraph(
             if ReduceDimension < 1:
                 if verbose:
                     print(
-                        "Dimensionality reduction via ratio of explained variance (full PCA will be computed)"
+                        "Dimensionality reduction via ratio of explained"
+                        " variance (full PCA will be computed)"
                     )
                 vglobal, PCAData, explainedVariances = PCA(Data)
                 ReduceDimension = range(
                     np.min(
                         np.where(
-                            np.cumsum(explainedVariances) / explainedVariances.sum()
+                            np.cumsum(explainedVariances)
+                            / explainedVariances.sum()
                             >= ReduceDimension
                         )
                     )
@@ -730,13 +748,16 @@ def computeElasticPrincipalGraph(
 
                 InitNodePositions = InitNodePositions.dot(vglobal)
             else:
-                raise ValueError("if ReduceDimension is a single value it must be < 1")
+                raise ValueError(
+                    "if ReduceDimension is a single value it must be < 1"
+                )
 
         else:
             if max(ReduceDimension + 1) > min(Data.shape):
                 if verbose:
                     print(
-                        "Selected dimensions are outside of the available range. ReduceDimension will be updated"
+                        "Selected dimensions are outside of the available"
+                        " range. ReduceDimension will be updated"
                     )
                 ReduceDimension = [
                     i for i in ReduceDimension if i in range(min(Data.shape))
@@ -762,7 +783,9 @@ def computeElasticPrincipalGraph(
                     Data = Data - DataCenters
                     InitNodePositions = InitNodePositions - DataCenters
                 PCAData, explainedVariances, U, S, Vt = TruncPCA(
-                    Data, algorithm="randomized", n_components=max(ReduceDimension + 1)
+                    Data,
+                    algorithm="randomized",
+                    n_components=max(ReduceDimension + 1),
                 )
                 ExpVariance = np.sum(np.var(Data, axis=0))
                 perc = np.sum(explainedVariances) / ExpVariance * 100
@@ -771,7 +794,10 @@ def computeElasticPrincipalGraph(
                 InitNodePositions = InitNodePositions.dot(vglobal)
         if verbose:
             print(len(ReduceDimension), "dimensions are being used")
-            print(np.round(perc, 2), "% of the original variance has been retained")
+            print(
+                np.round(perc, 2),
+                "% of the original variance has been retained",
+            )
 
         X = PCAData[:, ReduceDimension]
         InitNodePositions = InitNodePositions[:, ReduceDimension]
@@ -809,10 +835,14 @@ def computeElasticPrincipalGraph(
 
         if ElasticMatrix is not None:
             InitEdges, _, _ = DecodeElasticMatrix(ElasticMatrix)
-        AddEdges = np.vstack((np.arange(nFixedNodes), closest_node + nFixedNodes)).T
+        AddEdges = np.vstack(
+            (np.arange(nFixedNodes), closest_node + nFixedNodes)
+        ).T
 
         # concatenate
-        InitNodePositions = np.concatenate((FixedNodePositions, InitNodePositions))
+        InitNodePositions = np.concatenate(
+            (FixedNodePositions, InitNodePositions)
+        )
         InitEdges = np.concatenate((AddEdges, InitEdges + nFixedNodes))
         ElasticMatrix = MakeUniformElasticMatrix(
             Edges=InitEdges, Lambda=Lambda_Initial, Mu=Mu_Initial
@@ -825,7 +855,8 @@ def computeElasticPrincipalGraph(
     else:
         if verbose:
             print(
-                "The elastic matrix is being used. Edge configuration will be ignored"
+                "The elastic matrix is being used. Edge configuration will be"
+                " ignored"
             )
         InitElasticMatrix = ElasticMatrix
 
@@ -834,7 +865,8 @@ def computeElasticPrincipalGraph(
         or InitElasticMatrix.shape[1] != InitNodePositions.shape[0]
     ):
         raise ValueError(
-            "Elastic matrix incompatible with the node number. Impossible to proceed."
+            "Elastic matrix incompatible with the node number. Impossible to"
+            " proceed."
         )
 
     # Computing the graph
@@ -916,7 +948,9 @@ def computeElasticPrincipalGraph(
         ):
             AllNodePositions[k] = nodep.dot(vglobal[:, ReduceDimension].T)
             if AllMergedNodePositions[k] is not None:
-                AllMergedNodePositions[k] = allnodep.dot(vglobal[:, ReduceDimension].T)
+                AllMergedNodePositions[k] = allnodep.dot(
+                    vglobal[:, ReduceDimension].T
+                )
 
     EndTimer = time.time() - t
     if verbose:

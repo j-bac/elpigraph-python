@@ -8,14 +8,16 @@ import copy
 
 def ConstructGraph(PrintGraph):
     """
-    #' Generate an igraph object from an ElPiGraph structure
-    #'
-    #' @param PrintGraph A principal graph object
-    #'
-    #' @return An igraph network
-    #' @export
-    #'
-    #' @examples
+    Generate an igraph object from an ElPiGraph structure
+
+    PrintGraph A principal graph object
+
+    Return
+    -------
+    An igraph network
+
+
+    @examples
     """
 
     Net = igraph.Graph(n=np.max(PrintGraph["Edges"][0]) + 1, directed=False)
@@ -30,38 +32,40 @@ def ConstructGraph(PrintGraph):
 
 def GetSubGraph(Net, Structure, Nodes=None, Circular=True, KeepEnds=True):
     """
-    #' Extract a subgraph with a given topology from a graph
-    #'
-    #' @param Net an igraph network object
-    #' @param Structure a string specifying the structure to return. The following options are
-    #' available:
-    #' \itemize{
-    #'  \item 'circle', all the circles of a given length (specified by Nodes) present in the data.
-    #'  If Nodes is unspecified the algorithm will look for the largest circle avaialble.
-    #'  \item 'branches', all the linear path connecting the branching points
-    #'  \item 'branches&bpoints', all the linear path connecting the branching points and all of
-    #'  the branching points
-    #'  \item 'branching', all the subtree associted with a branching point (i.e., a tree encompassing
-    #' the branching points and the closests branching points and end points)
-    #' \item 'end2end', all linear paths connecting end points (or leaf)
-    #' }
-    #' @param Circular a boolean indicating whether the circle should contain the initial points at the
-    #' beginning and at the end
-    #' @param Nodes the number of nodes (for cycle detection)
-    #' @param KeepEnds boolean, should the end points (overlapping between structures) be included when
-    #' Structure = 'branches' or 'branching'
-    #'
-    #' @description
-    #'
-    #' Note that all subgraph are returned only once. So, for example, if A and B are two end leaves of a tree
-    #' and 'end2end' is being used, only the path for A to B or the path from Bt o A will be returned.
-    #'
-    #' @return a list of nodes defining the structures under consideration
-    #' @export
-    #'
-    #'
-    #'
-    #' @examples
+    Extract a subgraph with a given topology from a graph
+
+    Net an igraph network object
+    Structure a string specifying the structure to return. The following options are
+    available:
+    \itemize{
+     \item 'circle', all the circles of a given length (specified by Nodes) present in the data.
+     If Nodes is unspecified the algorithm will look for the largest circle avaialble.
+     \item 'branches', all the linear path connecting the branching points
+     \item 'branches&bpoints', all the linear path connecting the branching points and all of
+     the branching points
+     \item 'branching', all the subtree associted with a branching point (i.e., a tree encompassing
+    the branching points and the closests branching points and end points)
+    \item 'end2end', all linear paths connecting end points (or leaf)
+    }
+    Circular a boolean indicating whether the circle should contain the initial points at the
+    beginning and at the end
+    Nodes the number of nodes (for cycle detection)
+    KeepEnds boolean, should the end points (overlapping between structures) be included when
+    Structure = 'branches' or 'branching'
+
+    @description
+
+    Note that all subgraph are returned only once. So, for example, if A and B are two end leaves of a tree
+    and 'end2end' is being used, only the path for A to B or the path from Bt o A will be returned.
+
+    Return
+    -------
+    a list of nodes defining the structures under consideration
+
+
+
+
+    @examples
     """
     if Structure == "auto":
         print("Structure autodetection is not implemented yet")
@@ -99,7 +103,9 @@ def GetSubGraph(Net, Structure, Nodes=None, Circular=True, KeepEnds=True):
 
     if Structure == "branches":
 
-        if np.any(np.array(Net.degree()) > 2) & np.any(np.array(Net.degree()) == 1):
+        if np.any(np.array(Net.degree()) > 2) & np.any(
+            np.array(Net.degree()) == 1
+        ):
 
             # Obtain the branching/end point
             BrPoints = np.where(np.array(Net.degree()) > 2)[0]
@@ -113,13 +119,20 @@ def GetSubGraph(Net, Structure, Nodes=None, Circular=True, KeepEnds=True):
             for i in range(len(SelEp) - 1):
                 AllPaths.extend(
                     Net.get_shortest_paths(
-                        SelEp[i], to=SelEp[range(i + 1, len(SelEp))], output="vpath"
+                        SelEp[i],
+                        to=SelEp[range(i + 1, len(SelEp))],
+                        output="vpath",
                     )
                 )
 
             Valid = np.where(
                 np.array(
-                    list(map(lambda x: np.sum(np.array(Net.degree(x)) != 2), AllPaths))
+                    list(
+                        map(
+                            lambda x: np.sum(np.array(Net.degree(x)) != 2),
+                            AllPaths,
+                        )
+                    )
                 )
                 == 2
             )[0]
@@ -127,7 +140,9 @@ def GetSubGraph(Net, Structure, Nodes=None, Circular=True, KeepEnds=True):
             AllPaths = [AllPaths[i] for i in Valid]
 
             if not KeepEnds:
-                AllPaths = list(map(lambda x: set(x).difference(BrPoints), AllPaths))
+                AllPaths = list(
+                    map(lambda x: set(x).difference(BrPoints), AllPaths)
+                )
 
             names_AllPaths = ["Branch" + str(i) for i in range(len(AllPaths))]
 
@@ -136,7 +151,9 @@ def GetSubGraph(Net, Structure, Nodes=None, Circular=True, KeepEnds=True):
 
             if len(StillToCapture) > 0:
                 print(
-                    "Unassigned nodes detected. This is due to the presence of loops. Additional branching assignement will be performed."
+                    "Unassigned nodes detected. This is due to the presence of"
+                    " loops. Additional branching assignement will be"
+                    " performed."
                     + "WARNING : case not verified, compare with R version"
                 )
 
@@ -153,7 +170,8 @@ def GetSubGraph(Net, Structure, Nodes=None, Circular=True, KeepEnds=True):
                 for i in range(len(StillToCapture)):
                     tNet = Net.delete_vertices(EndPoint_1[i])
                     PointDists = tNet.shortest_paths(
-                        StillToCapture[i], to=set(SelEp).intersection(tNet.vs["name"])
+                        StillToCapture[i],
+                        to=set(SelEp).intersection(tNet.vs["name"]),
                     )
 
                     EndPoint_2[i] = PointDists[np.argmin(PointDists)]
@@ -170,7 +188,9 @@ def GetSubGraph(Net, Structure, Nodes=None, Circular=True, KeepEnds=True):
                     tNet = Net.induced_subgraph(
                         set(
                             StillToCapture[
-                                np.all(np.isin(EndPoints, NewBrEP[:, i]), axis=0)
+                                np.all(
+                                    np.isin(EndPoints, NewBrEP[:, i]), axis=0
+                                )
                             ]
                         ).union(NewBrEP[:, i])
                     )
@@ -182,7 +202,9 @@ def GetSubGraph(Net, Structure, Nodes=None, Circular=True, KeepEnds=True):
 
                     # plot(tNet)
 
-                    PotentialEnds = set(NewBrEP[:, i]).intersection(tNet.vs["name"])
+                    PotentialEnds = set(NewBrEP[:, i]).intersection(
+                        tNet.vs["name"]
+                    )
 
                     if len(PotentialEnds) == 1:
                         # it's a simple loop
@@ -227,20 +249,26 @@ def GetSubGraph(Net, Structure, Nodes=None, Circular=True, KeepEnds=True):
 
                             if len(AllLoops) == 0:
                                 raise ValueError(
-                                    "Unsupported structure. Contact the package maintainer"
+                                    "Unsupported structure. Contact the"
+                                    " package maintainer"
                                 )
 
                             # select one with the branching point at the beginning
-                            Sel = np.where(np.isin(AllLoops, PotentialEnds))[0][0]
+                            Sel = np.where(np.isin(AllLoops, PotentialEnds))[
+                                0
+                            ][0]
 
                             if Sel == np.array([]):
                                 raise ValueError(
-                                    "Unsupported structure. Contact the package maintainer"
+                                    "Unsupported structure. Contact the"
+                                    " package maintainer"
                                 )
 
                             # Add a new branch
                             AllPaths.append(AllLoops[Sel])
-                            names_AllPaths.append("Branch_" + str(len(AllPaths)))
+                            names_AllPaths.append(
+                                "Branch_" + str(len(AllPaths))
+                            )
 
             AllPaths = [i for i in AllPaths if len(i) > 0]
 
@@ -251,7 +279,9 @@ def GetSubGraph(Net, Structure, Nodes=None, Circular=True, KeepEnds=True):
 
     if Structure == "branches&bpoints":
 
-        if np.any(np.array(Net.degree()) > 2) & np.any(np.array(Net.degree()) == 1):
+        if np.any(np.array(Net.degree()) > 2) & np.any(
+            np.array(Net.degree()) == 1
+        ):
 
             # Obtain the branching/end point
             BrPoints = np.where(np.array(Net.degree()) > 2)[0]
@@ -275,7 +305,9 @@ def GetSubGraph(Net, Structure, Nodes=None, Circular=True, KeepEnds=True):
                     ):
                         Allbr.append(Path)
 
-            Allbr = list(map(lambda x: list(set(x).difference(BrPoints)), Allbr))
+            Allbr = list(
+                map(lambda x: list(set(x).difference(BrPoints)), Allbr)
+            )
 
             BaseNameVect = ["Branch" + str(i) for i in range(len(Allbr))]
 
@@ -350,22 +382,24 @@ def GetSubGraph(Net, Structure, Nodes=None, Circular=True, KeepEnds=True):
 
 def GetBranches(Net, StartingPoints=None):
     """
-    #' Return a dict summarizing the branching structure
-    #'
-    #' @param Net an igraph network
-    #' @param StartingPoint the starting points
-    #'
-    #' @return a data frame with three columns:
-    #' \itemize{
-    #'  \item VName contains the vertx names
-    #'  \item Branch contains the id of the branch (numbering start from the branch
-    #' containing the starting point) or 0 if a branching point
-    #'  \item BrPoints the branchhing point id, or 0 if not a branching point
-    #' }
-    #'
-    #' @export
-    #'
-    #' @examples
+    Return a dict summarizing the branching structure
+
+    Net an igraph network
+    StartingPoint the starting points
+
+    Return
+    -------
+    a data frame with three columns:
+    \itemize{
+     \item VName contains the vertx names
+     \item Branch contains the id of the branch (numbering start from the branch
+    containing the starting point) or 0 if a branching point
+     \item BrPoints the branchhing point id, or 0 if not a branching point
+    }
+
+
+
+    @examples
     """
     # Net = ConstructGraph(ReturnList[0])
     StartingPoint = None
@@ -421,4 +455,3 @@ def GetBranches(Net, StartingPoints=None):
         NewEdges = set()
 
     return dict(VName=Vertices, Branch=Branches, BrPoints=DiffPoints)
-

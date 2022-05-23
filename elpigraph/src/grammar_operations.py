@@ -284,24 +284,24 @@ def AddNode2Node(
     PointWeights=None,
 ):
     """
-    #' Adds a node to each graph node
-    #'
-    #' This grammar operation adds a node to each graph node. The position of the node
-    #' is chosen as a linear extrapolation for a leaf node (in this case the elasticity of
-    #' a newborn star is chosed as in BisectEdge operation), or as the data point giving
-    #' the minimum local MSE for a star (without any optimization).
-    #'
-    #' @param X
-    #' @param NodePositions
-    #' @param ElasticMatrix
-    #' @return
-    #' @export
-    #'
-    #' @details
-    #'
-    #'
-    #'
-    #' @examples
+    Adds a node to each graph node
+
+    This grammar operation adds a node to each graph node. The position of the node
+    is chosen as a linear extrapolation for a leaf node (in this case the elasticity of
+    a newborn star is chosed as in BisectEdge operation), or as the data point giving
+    the minimum local MSE for a star (without any optimization).
+
+    X
+    NodePositions
+    ElasticMatrix
+    @return
+
+
+    @details
+
+
+
+    @examples
     """
     nNodes = NodePositions.shape[0]
     Mus = ElasticMatrix.diagonal()
@@ -561,41 +561,41 @@ def ApplyOptimalGraphGrammarOperation(
 
     """
     # Multiple grammar application --------------------------------------------
-    #' Application of the grammar operation. This in an internal function that should not be used in by the end-user
-    #'
-    #' @param X numerical 2D matrix, the n-by-m matrix with the position of n m-dimensional points
-    #' @param NodePositions numerical 2D matrix, the k-by-m matrix with the position of k m-dimensional points
-    #' @param ElasticMatrix numerical 2D matrix, the k-by-k elastic matrix
-    #' @param operationtypes string vector containing the operation to use
-    #' @param SquaredX rowSums(X^2), if NULL it will be computed
-    #' @param verbose boolean. Should addition information be displayed
-    #' @param n.cores integer. How many cores to use. If EnvCl is not NULL, that cliuster setup will be used,
-    #' otherwise a SOCK cluster willbe used
-    #' @param EnvCl a cluster structure returned, e.g., by makeCluster.
-    #' If a cluster structure is used, all the nodes must be able to access all the variable needed by PrimitiveElasticGraphEmbedment
-    #' @param MaxNumberOfIterations is an integer number indicating the maximum number of iterations for the EM algorithm
-    #' @param TrimmingRadius is a real value indicating the trimming radius, a parameter required for robust principal graphs
-    #' (see https://github.com/auranic/Elastic-principal-graphs/wiki/Robust-principal-graphs)
-    #' @param eps a real number indicating the minimal relative change in the nodenpositions
-    #' to be considered the graph embedded (convergence criteria)
-    #' @param Mode integer, the energy mode. It can be 1 (difference is computed using the position of the nodes) and
-    #' 2 (difference is computed using the changes in elestic energy of the configuraztions)
-    #' @param FinalEnergy string indicating the final elastic emergy associated with the configuration. Currently it can be "Base" or "Penalized"
-    #' @param alpha positive numeric, the value of the alpha parameter of the penalized elastic energy
-    #' @param beta positive numeric, the value of the beta parameter of the penalized elastic energy
-    #' @param gamma
-    #' @param FastSolve boolean, should FastSolve be used when fitting the points to the data?
-    #' @param AvoidSolitary boolean, should configurations with "solitary nodes", i.e., nodes without associted points be discarded?
-    #' @param EmbPointProb numeric between 0 and 1. If less than 1 point will be sampled at each iteration. Prob indicate the probability of
-    #' using each points. This is an *experimental* feature, which may helps speeding up the computation if a large number of points is present.
-    #' @param AdjustVect
-    #' @param AdjustElasticMatrix
-    #' @param ...
-    #' @param MinParOp integer, the minimum number of operations to use parallel computation
-    #'
-    #' @return
-    #'
-    #' @examples
+    Application of the grammar operation. This in an internal function that should not be used in by the end-user
+
+    X numerical 2D matrix, the n-by-m matrix with the position of n m-dimensional points
+    NodePositions numerical 2D matrix, the k-by-m matrix with the position of k m-dimensional points
+    ElasticMatrix numerical 2D matrix, the k-by-k elastic matrix
+    operationtypes string vector containing the operation to use
+    SquaredX rowSums(X^2), if NULL it will be computed
+    verbose boolean. Should addition information be displayed
+    n.cores integer. How many cores to use. If EnvCl is not NULL, that cliuster setup will be used,
+    otherwise a SOCK cluster willbe used
+    EnvCl a cluster structure returned, e.g., by makeCluster.
+    If a cluster structure is used, all the nodes must be able to access all the variable needed by PrimitiveElasticGraphEmbedment
+    MaxNumberOfIterations is an integer number indicating the maximum number of iterations for the EM algorithm
+    TrimmingRadius is a real value indicating the trimming radius, a parameter required for robust principal graphs
+    (see https://github.com/auranic/Elastic-principal-graphs/wiki/Robust-principal-graphs)
+    eps a real number indicating the minimal relative change in the nodenpositions
+    to be considered the graph embedded (convergence criteria)
+    Mode integer, the energy mode. It can be 1 (difference is computed using the position of the nodes) and
+    2 (difference is computed using the changes in elestic energy of the configuraztions)
+    FinalEnergy string indicating the final elastic emergy associated with the configuration. Currently it can be "Base" or "Penalized"
+    alpha positive numeric, the value of the alpha parameter of the penalized elastic energy
+    beta positive numeric, the value of the beta parameter of the penalized elastic energy
+    gamma
+    FastSolve boolean, should FastSolve be used when fitting the points to the data?
+    AvoidSolitary boolean, should configurations with "solitary nodes", i.e., nodes without associted points be discarded?
+    EmbPointProb numeric between 0 and 1. If less than 1 point will be sampled at each iteration. Prob indicate the probability of
+    using each points. This is an *experimental* feature, which may helps speeding up the computation if a large number of points is present.
+    AdjustVect
+    AdjustElasticMatrix
+    ...
+    MinParOp integer, the minimum number of operations to use parallel computation
+
+    @return
+
+    @examples
     """
 
     NodePositionsArrayAll = []
@@ -1009,41 +1009,41 @@ def ApplyOptimalGraphGrammarOperation_v2(
 
     """
     # Multiple grammar application --------------------------------------------
-    #' Application of the grammar operation. This in an internal function that should not be used in by the end-user
-    #'
-    #' @param X numerical 2D matrix, the n-by-m matrix with the position of n m-dimensional points
-    #' @param NodePositions numerical 2D matrix, the k-by-m matrix with the position of k m-dimensional points
-    #' @param ElasticMatrix numerical 2D matrix, the k-by-k elastic matrix
-    #' @param operationtypes string vector containing the operation to use
-    #' @param SquaredX rowSums(X^2), if NULL it will be computed
-    #' @param verbose boolean. Should addition information be displayed
-    #' @param n.cores integer. How many cores to use. If EnvCl is not NULL, that cliuster setup will be used,
-    #' otherwise a SOCK cluster willbe used
-    #' @param EnvCl a cluster structure returned, e.g., by makeCluster.
-    #' If a cluster structure is used, all the nodes must be able to access all the variable needed by PrimitiveElasticGraphEmbedment
-    #' @param MaxNumberOfIterations is an integer number indicating the maximum number of iterations for the EM algorithm
-    #' @param TrimmingRadius is a real value indicating the trimming radius, a parameter required for robust principal graphs
-    #' (see https://github.com/auranic/Elastic-principal-graphs/wiki/Robust-principal-graphs)
-    #' @param eps a real number indicating the minimal relative change in the nodenpositions
-    #' to be considered the graph embedded (convergence criteria)
-    #' @param Mode integer, the energy mode. It can be 1 (difference is computed using the position of the nodes) and
-    #' 2 (difference is computed using the changes in elestic energy of the configuraztions)
-    #' @param FinalEnergy string indicating the final elastic emergy associated with the configuration. Currently it can be "Base" or "Penalized"
-    #' @param alpha positive numeric, the value of the alpha parameter of the penalized elastic energy
-    #' @param beta positive numeric, the value of the beta parameter of the penalized elastic energy
-    #' @param gamma
-    #' @param FastSolve boolean, should FastSolve be used when fitting the points to the data?
-    #' @param AvoidSolitary boolean, should configurations with "solitary nodes", i.e., nodes without associted points be discarded?
-    #' @param EmbPointProb numeric between 0 and 1. If less than 1 point will be sampled at each iteration. Prob indicate the probability of
-    #' using each points. This is an *experimental* feature, which may helps speeding up the computation if a large number of points is present.
-    #' @param AdjustVect
-    #' @param AdjustElasticMatrix
-    #' @param ...
-    #' @param MinParOp integer, the minimum number of operations to use parallel computation
-    #'
-    #' @return
-    #'
-    #' @examples
+    Application of the grammar operation. This in an internal function that should not be used in by the end-user
+
+    X numerical 2D matrix, the n-by-m matrix with the position of n m-dimensional points
+    NodePositions numerical 2D matrix, the k-by-m matrix with the position of k m-dimensional points
+    ElasticMatrix numerical 2D matrix, the k-by-k elastic matrix
+    operationtypes string vector containing the operation to use
+    SquaredX rowSums(X^2), if NULL it will be computed
+    verbose boolean. Should addition information be displayed
+    n.cores integer. How many cores to use. If EnvCl is not NULL, that cliuster setup will be used,
+    otherwise a SOCK cluster willbe used
+    EnvCl a cluster structure returned, e.g., by makeCluster.
+    If a cluster structure is used, all the nodes must be able to access all the variable needed by PrimitiveElasticGraphEmbedment
+    MaxNumberOfIterations is an integer number indicating the maximum number of iterations for the EM algorithm
+    TrimmingRadius is a real value indicating the trimming radius, a parameter required for robust principal graphs
+    (see https://github.com/auranic/Elastic-principal-graphs/wiki/Robust-principal-graphs)
+    eps a real number indicating the minimal relative change in the nodenpositions
+    to be considered the graph embedded (convergence criteria)
+    Mode integer, the energy mode. It can be 1 (difference is computed using the position of the nodes) and
+    2 (difference is computed using the changes in elestic energy of the configuraztions)
+    FinalEnergy string indicating the final elastic emergy associated with the configuration. Currently it can be "Base" or "Penalized"
+    alpha positive numeric, the value of the alpha parameter of the penalized elastic energy
+    beta positive numeric, the value of the beta parameter of the penalized elastic energy
+    gamma
+    FastSolve boolean, should FastSolve be used when fitting the points to the data?
+    AvoidSolitary boolean, should configurations with "solitary nodes", i.e., nodes without associted points be discarded?
+    EmbPointProb numeric between 0 and 1. If less than 1 point will be sampled at each iteration. Prob indicate the probability of
+    using each points. This is an *experimental* feature, which may helps speeding up the computation if a large number of points is present.
+    AdjustVect
+    AdjustElasticMatrix
+    ...
+    MinParOp integer, the minimum number of operations to use parallel computation
+
+    @return
+
+    @examples
     """
 
     NodePositionsArrayAll = []
@@ -1431,41 +1431,41 @@ def ApplyOptimalGraphGrammarOperation_v3(
 
     """
     # Multiple grammar application --------------------------------------------
-    #' Application of the grammar operation. This in an internal function that should not be used in by the end-user
-    #'
-    #' @param X numerical 2D matrix, the n-by-m matrix with the position of n m-dimensional points
-    #' @param NodePositions numerical 2D matrix, the k-by-m matrix with the position of k m-dimensional points
-    #' @param ElasticMatrix numerical 2D matrix, the k-by-k elastic matrix
-    #' @param operationtypes string vector containing the operation to use
-    #' @param SquaredX rowSums(X^2), if NULL it will be computed
-    #' @param verbose boolean. Should addition information be displayed
-    #' @param n.cores integer. How many cores to use. If EnvCl is not NULL, that cliuster setup will be used,
-    #' otherwise a SOCK cluster willbe used
-    #' @param EnvCl a cluster structure returned, e.g., by makeCluster.
-    #' If a cluster structure is used, all the nodes must be able to access all the variable needed by PrimitiveElasticGraphEmbedment
-    #' @param MaxNumberOfIterations is an integer number indicating the maximum number of iterations for the EM algorithm
-    #' @param TrimmingRadius is a real value indicating the trimming radius, a parameter required for robust principal graphs
-    #' (see https://github.com/auranic/Elastic-principal-graphs/wiki/Robust-principal-graphs)
-    #' @param eps a real number indicating the minimal relative change in the nodenpositions
-    #' to be considered the graph embedded (convergence criteria)
-    #' @param Mode integer, the energy mode. It can be 1 (difference is computed using the position of the nodes) and
-    #' 2 (difference is computed using the changes in elestic energy of the configuraztions)
-    #' @param FinalEnergy string indicating the final elastic emergy associated with the configuration. Currently it can be "Base" or "Penalized"
-    #' @param alpha positive numeric, the value of the alpha parameter of the penalized elastic energy
-    #' @param beta positive numeric, the value of the beta parameter of the penalized elastic energy
-    #' @param gamma
-    #' @param FastSolve boolean, should FastSolve be used when fitting the points to the data?
-    #' @param AvoidSolitary boolean, should configurations with "solitary nodes", i.e., nodes without associted points be discarded?
-    #' @param EmbPointProb numeric between 0 and 1. If less than 1 point will be sampled at each iteration. Prob indicate the probability of
-    #' using each points. This is an *experimental* feature, which may helps speeding up the computation if a large number of points is present.
-    #' @param AdjustVect
-    #' @param AdjustElasticMatrix
-    #' @param ...
-    #' @param MinParOp integer, the minimum number of operations to use parallel computation
-    #'
-    #' @return
-    #'
-    #' @examples
+    Application of the grammar operation. This in an internal function that should not be used in by the end-user
+
+    X numerical 2D matrix, the n-by-m matrix with the position of n m-dimensional points
+    NodePositions numerical 2D matrix, the k-by-m matrix with the position of k m-dimensional points
+    ElasticMatrix numerical 2D matrix, the k-by-k elastic matrix
+    operationtypes string vector containing the operation to use
+    SquaredX rowSums(X^2), if NULL it will be computed
+    verbose boolean. Should addition information be displayed
+    n.cores integer. How many cores to use. If EnvCl is not NULL, that cliuster setup will be used,
+    otherwise a SOCK cluster willbe used
+    EnvCl a cluster structure returned, e.g., by makeCluster.
+    If a cluster structure is used, all the nodes must be able to access all the variable needed by PrimitiveElasticGraphEmbedment
+    MaxNumberOfIterations is an integer number indicating the maximum number of iterations for the EM algorithm
+    TrimmingRadius is a real value indicating the trimming radius, a parameter required for robust principal graphs
+    (see https://github.com/auranic/Elastic-principal-graphs/wiki/Robust-principal-graphs)
+    eps a real number indicating the minimal relative change in the nodenpositions
+    to be considered the graph embedded (convergence criteria)
+    Mode integer, the energy mode. It can be 1 (difference is computed using the position of the nodes) and
+    2 (difference is computed using the changes in elestic energy of the configuraztions)
+    FinalEnergy string indicating the final elastic emergy associated with the configuration. Currently it can be "Base" or "Penalized"
+    alpha positive numeric, the value of the alpha parameter of the penalized elastic energy
+    beta positive numeric, the value of the beta parameter of the penalized elastic energy
+    gamma
+    FastSolve boolean, should FastSolve be used when fitting the points to the data?
+    AvoidSolitary boolean, should configurations with "solitary nodes", i.e., nodes without associted points be discarded?
+    EmbPointProb numeric between 0 and 1. If less than 1 point will be sampled at each iteration. Prob indicate the probability of
+    using each points. This is an *experimental* feature, which may helps speeding up the computation if a large number of points is present.
+    AdjustVect
+    AdjustElasticMatrix
+    ...
+    MinParOp integer, the minimum number of operations to use parallel computation
+
+    @return
+
+    @examples
     """
 
     NodePositionsArrayAll = []

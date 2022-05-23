@@ -83,7 +83,12 @@ def PartitionData_cp(
 
 
 def PartitionData(
-    X, NodePositions, MaxBlockSize, SquaredX, TrimmingRadius=float("inf"), precomp=False
+    X,
+    NodePositions,
+    MaxBlockSize,
+    SquaredX,
+    TrimmingRadius=float("inf"),
+    precomp=False,
 ):
     """
     # Partition the data by proximity to graph nodes
@@ -284,17 +289,19 @@ def PartitionDataBarycenter(
 def MakeUniformElasticMatrix(Edges, Lambda, Mu):
     """
     # Base function: Function to deal with elastic matrices --------------------------
-    #' Create a uniform elastic matrix from a set of edges
-    #'
-    #' @param Edges an e-by-2 matrix containing the index of the edges connecting the nodes
-    #' @param Lambda the lambda parameter. It can be a real value or a vector of lenght e
-    #' @param Mu the mu parameter. It can be a real value or a vector with a length equal to the number of nodes
-    #'
-    #' @return the elastic matrix
-    #'
-    #' @export
-    #'
-    #' @examples
+    Create a uniform elastic matrix from a set of edges
+
+    Edges an e-by-2 matrix containing the index of the edges connecting the nodes
+    Lambda the lambda parameter. It can be a real value or a vector of lenght e
+    Mu the mu parameter. It can be a real value or a vector with a length equal to the number of nodes
+
+    Return
+    -------
+    the elastic matrix
+
+
+
+    @examples
     """
     NumberOfNodes = Edges.max() + 1
     ElasticMatrix = np.zeros((NumberOfNodes, NumberOfNodes))
@@ -308,34 +315,36 @@ def MakeUniformElasticMatrix(Edges, Lambda, Mu):
     ElasticMatrix = ElasticMatrix + np.diag(Mus.ravel())
     return ElasticMatrix
 
-def MakeUniformElasticMatrix_with_cycle(Edges,Lambda,Mu,cycle_Lambda,cycle_Mu,cycle_nodes):
-    
-    ElasticMatrix = MakeUniformElasticMatrix(
-        Edges, Lambda=Lambda, Mu=Mu
-    )
+
+def MakeUniformElasticMatrix_with_cycle(
+    Edges, Lambda, Mu, cycle_Lambda, cycle_Mu, cycle_nodes
+):
+
+    ElasticMatrix = MakeUniformElasticMatrix(Edges, Lambda=Lambda, Mu=Mu)
     for ei, ej in Edges:
         if ei in cycle_nodes or ej in cycle_nodes:
-            ElasticMatrix[ei, ej] = ElasticMatrix[
-                ej, ei
-            ] = cycle_Lambda
+            ElasticMatrix[ei, ej] = ElasticMatrix[ej, ei] = cycle_Lambda
     ElasticMatrix[cycle_nodes, cycle_nodes] = cycle_Mu
     return ElasticMatrix
 
+
 def Encode2ElasticMatrix(Edges, Lambdas, Mus):
     """
-    #' Create an Elastic matrix from a set of edges
-    #'
-    #' @param Lambdas the lambda parameters. Either a single value (which will be used for all the edges),
-    #' or a vector containing the values for each edge
-    #' @param Mus the mu parameters. Either a single value (which will be used for all the nodes),
-    #' or a vector containing the values for each node
-    #' @param Edges an e-by-2 matrix containing the index of the edges connecting the nodes
-    #'
-    #' @return the elastic matrix
-    #'
-    #' @export
-    #'
-    #' @examples"""
+    Create an Elastic matrix from a set of edges
+
+    Lambdas the lambda parameters. Either a single value (which will be used for all the edges),
+    or a vector containing the values for each edge
+    Mus the mu parameters. Either a single value (which will be used for all the nodes),
+    or a vector containing the values for each node
+    Edges an e-by-2 matrix containing the index of the edges connecting the nodes
+
+    Return
+    -------
+    the elastic matrix
+
+
+
+    @examples"""
 
     NumberOfNodes = np.max(Edges) + 1
     NumberOfEdges = Edges.shape[0]
@@ -353,51 +362,6 @@ def Encode2ElasticMatrix(Edges, Lambdas, Mus):
         EM[Edges[i, 1], Edges[i, 0]] = Lambdas[i]
 
     return EM + np.diag(Mus)
-
-
-# def ComputeSpringLaplacianMatrix(ElasticMatrix):
-#     '''
-#     #' Compute the Laplacian matrix
-#     #'
-#     #' @param ElasticMatrix an e-by-e elastic matrix
-#     #'
-#     #' @return the Laplacian matrix
-#     #'
-#     #' @export
-#     #'
-#     #' @examples'''
-#     NumberOfNodes = ElasticMatrix.shape[0]
-#     # first, make the vector of mu coefficients
-#     Mu = ElasticMatrix.diagonal()
-#     # create the matrix with edge elasticity moduli at non-diagonal elements
-#     Lambda = ElasticMatrix - np.diag(Mu)
-#     # Diagonal matrix of edge elasticities
-#     LambdaSums = Lambda.sum(axis=0)
-#     # E matrix (contribution from edges) is simply weighted Laplacian
-#     E = np.diag(LambdaSums) - Lambda
-#     # matrix S (contribution from stars) is composed of Laplacian for
-#     # positive strings (star edges) with elasticities mu/k, where k is the
-#     # order of the star, and Laplacian for negative strings with
-#     # elasticities -mu/k^2. Negative springs connect all star leafs in a
-#     # clique.
-#     StarCenterIndices = np.nonzero(Mu > 0)[0]
-#     S = np.zeros((NumberOfNodes, NumberOfNodes))
-#     for i in range(np.size(StarCenterIndices)):
-#         Spart = np.zeros((NumberOfNodes, NumberOfNodes))
-#         # leaves indices
-#         leaves = Lambda.take(StarCenterIndices[i], axis=1) > 0
-#         # order of the star
-#         K = leaves.sum()
-#         Spart[StarCenterIndices[i], StarCenterIndices[i]] = (
-#                 Mu[StarCenterIndices[i]])
-#         Spart[StarCenterIndices[i], leaves] = -Mu[StarCenterIndices[i]]/K
-#         Spart[leaves, StarCenterIndices[i]] = -Mu[StarCenterIndices[i]]/K
-#         tmp = np.repeat(leaves[np.newaxis],
-#                         ElasticMatrix.shape[0], axis=0)
-#         tmp = np.logical_and(tmp, tmp.transpose())
-#         Spart[tmp] = Mu[StarCenterIndices[i]]/(K**2)
-#         S = S + Spart
-#     return E + S
 
 
 @nb.njit(cache=True)
@@ -428,7 +392,9 @@ def ComputeSpringLaplacianMatrix(ElasticMatrix):
         ind_leaves = (leaves).nonzero()[0]
         # order of the star
         K = leaves.sum()
-        Spart[StarCenterIndices[i], StarCenterIndices[i]] = Mu[StarCenterIndices[i]]
+        Spart[StarCenterIndices[i], StarCenterIndices[i]] = Mu[
+            StarCenterIndices[i]
+        ]
         for j in ind_leaves:
             Spart[StarCenterIndices[i], j] = -Mu[StarCenterIndices[i]] / K
             Spart[j, StarCenterIndices[i]] = -Mu[StarCenterIndices[i]] / K
@@ -445,15 +411,17 @@ def ComputeSpringLaplacianMatrix(ElasticMatrix):
 
 def DecodeElasticMatrix(ElasticMatrix):
     """
-    #' Converts ElasticMatrix into a set of edges and vectors of elasticities for edges and stars
-    #'
-    #' @param ElasticMatrix an e-by-e elastic matrix
-    #'
-    #' @return a list with three elements: a matrix with the edges (Edges), a vector of lambdas (Lambdas), and a vector of Mus (Mus)
-    #'
-    #' @export
-    #'
-    #' @examples
+    Converts ElasticMatrix into a set of edges and vectors of elasticities for edges and stars
+
+    ElasticMatrix an e-by-e elastic matrix
+
+    Return
+    -------
+    a list with three elements: a matrix with the edges (Edges), a vector of lambdas (Lambdas), and a vector of Mus (Mus)
+
+
+
+    @examples
     """
     Mus = ElasticMatrix.diagonal()
     Lambda = ElasticMatrix.copy()
@@ -489,17 +457,17 @@ def DecodeElasticMatrix2(ElasticMatrix):
 @nb.njit(cache=True)
 def ComputeRelativeChangeOfNodePositions(NodePositions, NewNodePositions):
     """
-    #' Estimates the relative difference between two node configurations
-    #'
-    #' @param NodePositions a k-by-m numeric matrix with the coordiantes of the nodes in the old configuration
-    #' @param NewNodePositions a k-by-m numeric matrix with the coordiantes of the nodes in the new configuration
-    #' @param Mode an integer indicating the modality used to compute the difference (currently only 1 is an accepted value)
-    #' @param X an n-by-m numeric matrix with the coordinates of the data points
-    #'
-    #' @return
-    #' @export
-    #'
-    #' @examples
+    Estimates the relative difference between two node configurations
+
+    NodePositions a k-by-m numeric matrix with the coordiantes of the nodes in the old configuration
+    NewNodePositions a k-by-m numeric matrix with the coordiantes of the nodes in the new configuration
+    Mode an integer indicating the modality used to compute the difference (currently only 1 is an accepted value)
+    X an n-by-m numeric matrix with the coordinates of the data points
+
+    @return
+
+
+    @examples
     """
     return (
         ((NodePositions - NewNodePositions) ** 2).sum(axis=1)
@@ -528,34 +496,34 @@ def PrimitiveElasticGraphBarycentricEmbedment(
 ):
 
     """
-    #' Function fitting a primitive elastic graph to the data
-    #'
-    #' @param X is n-by-m matrix containing the positions of the n points in the m-dimensional space
-    #' @param NodePositions is k-by-m matrix of positions of the graph nodes in the same space as X
-    #' @param ElasticMatrix is a k-by-k symmetric matrix describing the connectivity and the elastic
-    #' properties of the graph. Star elasticities (mu coefficients) are along the main diagonal
-    #' (non-zero entries only for star centers), and the edge elasticity moduli are at non-diagonal elements.
-    #' @param MaxNumberOfIterations is an integer number indicating the maximum number of iterations for the EM algorithm
-    #' @param TrimmingRadius is a real value indicating the trimming radius, a parameter required for robust principal graphs
-    #' (see https://github.com/auranic/Elastic-principal-graphs/wiki/Robust-principal-graphs)
-    #' @param eps a real number indicating the minimal relative change in the nodenpositions
-    #' to be considered the graph embedded (convergence criteria)
-    #' @param verbose is a boolean indicating whether diagnostig informations should be plotted
-    #' @param Mode integer, the energy mode. It can be 1 (difference is computed using the position of the nodes) and
-    #' 2 (difference is computed using the changes in elestic energy of the configuraztions)
-    #' @param SquaredX the sum (by node) of X squared. It not specified, it will be calculated by the fucntion
-    #' @param FastSolve boolean, shuold the Fastsolve of Armadillo by enabled?
-    #' @param DisplayWarnings boolean, should warning about convergence be displayed?
-    #' @param FinalEnergy string indicating the final elastic emergy associated with the configuration. Currently it can be "Base" or "Penalized"
-    #' @param alpha positive numeric, the value of the alpha parameter of the penalized elastic energy
-    #' @param beta positive numeric, the value of the beta parameter of the penalized elastic energy
-    #' @param prob numeric between 0 and 1. If less than 1 point will be sampled at each iteration. Prob indicate the probability of
-    #' using each points. This is an *experimental* feature, which may helps speeding up the computation if a large number of points is present.
-    #'
-    #' @return
-    #' @export
-    #'
-    #' @examples
+    Function fitting a primitive elastic graph to the data
+
+    X is n-by-m matrix containing the positions of the n points in the m-dimensional space
+    NodePositions is k-by-m matrix of positions of the graph nodes in the same space as X
+    ElasticMatrix is a k-by-k symmetric matrix describing the connectivity and the elastic
+    properties of the graph. Star elasticities (mu coefficients) are along the main diagonal
+    (non-zero entries only for star centers), and the edge elasticity moduli are at non-diagonal elements.
+    MaxNumberOfIterations is an integer number indicating the maximum number of iterations for the EM algorithm
+    TrimmingRadius is a real value indicating the trimming radius, a parameter required for robust principal graphs
+    (see https://github.com/auranic/Elastic-principal-graphs/wiki/Robust-principal-graphs)
+    eps a real number indicating the minimal relative change in the nodenpositions
+    to be considered the graph embedded (convergence criteria)
+    verbose is a boolean indicating whether diagnostig informations should be plotted
+    Mode integer, the energy mode. It can be 1 (difference is computed using the position of the nodes) and
+    2 (difference is computed using the changes in elestic energy of the configuraztions)
+    SquaredX the sum (by node) of X squared. It not specified, it will be calculated by the fucntion
+    FastSolve boolean, shuold the Fastsolve of Armadillo by enabled?
+    DisplayWarnings boolean, should warning about convergence be displayed?
+    FinalEnergy string indicating the final elastic emergy associated with the configuration. Currently it can be "Base" or "Penalized"
+    alpha positive numeric, the value of the alpha parameter of the penalized elastic energy
+    beta positive numeric, the value of the beta parameter of the penalized elastic energy
+    prob numeric between 0 and 1. If less than 1 point will be sampled at each iteration. Prob indicate the probability of
+    using each points. This is an *experimental* feature, which may helps speeding up the computation if a large number of points is present.
+
+    @return
+
+
+    @examples
     """
 
     if prob < 1:
@@ -580,7 +548,9 @@ def PrimitiveElasticGraphBarycentricEmbedment(
         # )
         # move_data_idx = np.where(~np.isin(partition, range(len(FixNodesAtPoints))))[0]
 
-        move_data_idx = [i for i in range(len(X)) if i not in flat_FixNodesAtPoints]
+        move_data_idx = [
+            i for i in range(len(X)) if i not in flat_FixNodesAtPoints
+        ]
         move_nodes_idx = np.arange(len(FixNodesAtPoints), len(NodePositions))
     else:
         move_data_idx = np.arange(len(X))
@@ -640,7 +610,9 @@ def PrimitiveElasticGraphBarycentricEmbedment(
             )
 
         if Mode == 1:
-            diff = ComputeRelativeChangeOfNodePositions(NodePositions, NewNodePositions)
+            diff = ComputeRelativeChangeOfNodePositions(
+                NodePositions, NewNodePositions
+            )
         elif Mode == 2:
             diff = (OldElasticEnergy - ElasticEnergy) / ElasticEnergy
 
@@ -717,7 +689,12 @@ def PrimitiveElasticGraphBarycentricEmbedment(
             )
 
         elif FinalEnergy == "Penalized":
-            ElasticEnergy, MSE, EP, RP = ComputePenalizedPrimitiveGraphElasticEnergy(
+            (
+                ElasticEnergy,
+                MSE,
+                EP,
+                RP,
+            ) = ComputePenalizedPrimitiveGraphElasticEnergy(
                 NewNodePositions, ElasticMatrix, dists, alpha, beta
             )
 
@@ -745,34 +722,34 @@ def PrimitiveElasticGraphEmbedment(
 ):
 
     """
-    #' Function fitting a primitive elastic graph to the data
-    #'
-    #' @param X is n-by-m matrix containing the positions of the n points in the m-dimensional space
-    #' @param NodePositions is k-by-m matrix of positions of the graph nodes in the same space as X
-    #' @param ElasticMatrix is a k-by-k symmetric matrix describing the connectivity and the elastic
-    #' properties of the graph. Star elasticities (mu coefficients) are along the main diagonal
-    #' (non-zero entries only for star centers), and the edge elasticity moduli are at non-diagonal elements.
-    #' @param MaxNumberOfIterations is an integer number indicating the maximum number of iterations for the EM algorithm
-    #' @param TrimmingRadius is a real value indicating the trimming radius, a parameter required for robust principal graphs
-    #' (see https://github.com/auranic/Elastic-principal-graphs/wiki/Robust-principal-graphs)
-    #' @param eps a real number indicating the minimal relative change in the nodenpositions
-    #' to be considered the graph embedded (convergence criteria)
-    #' @param verbose is a boolean indicating whether diagnostig informations should be plotted
-    #' @param Mode integer, the energy mode. It can be 1 (difference is computed using the position of the nodes) and
-    #' 2 (difference is computed using the changes in elestic energy of the configuraztions)
-    #' @param SquaredX the sum (by node) of X squared. It not specified, it will be calculated by the fucntion
-    #' @param FastSolve boolean, shuold the Fastsolve of Armadillo by enabled?
-    #' @param DisplayWarnings boolean, should warning about convergence be displayed?
-    #' @param FinalEnergy string indicating the final elastic emergy associated with the configuration. Currently it can be "Base" or "Penalized"
-    #' @param alpha positive numeric, the value of the alpha parameter of the penalized elastic energy
-    #' @param beta positive numeric, the value of the beta parameter of the penalized elastic energy
-    #' @param prob numeric between 0 and 1. If less than 1 point will be sampled at each iteration. Prob indicate the probability of
-    #' using each points. This is an *experimental* feature, which may helps speeding up the computation if a large number of points is present.
-    #'
-    #' @return
-    #' @export
-    #'
-    #' @examples
+    Function fitting a primitive elastic graph to the data
+
+    X is n-by-m matrix containing the positions of the n points in the m-dimensional space
+    NodePositions is k-by-m matrix of positions of the graph nodes in the same space as X
+    ElasticMatrix is a k-by-k symmetric matrix describing the connectivity and the elastic
+    properties of the graph. Star elasticities (mu coefficients) are along the main diagonal
+    (non-zero entries only for star centers), and the edge elasticity moduli are at non-diagonal elements.
+    MaxNumberOfIterations is an integer number indicating the maximum number of iterations for the EM algorithm
+    TrimmingRadius is a real value indicating the trimming radius, a parameter required for robust principal graphs
+    (see https://github.com/auranic/Elastic-principal-graphs/wiki/Robust-principal-graphs)
+    eps a real number indicating the minimal relative change in the nodenpositions
+    to be considered the graph embedded (convergence criteria)
+    verbose is a boolean indicating whether diagnostig informations should be plotted
+    Mode integer, the energy mode. It can be 1 (difference is computed using the position of the nodes) and
+    2 (difference is computed using the changes in elestic energy of the configuraztions)
+    SquaredX the sum (by node) of X squared. It not specified, it will be calculated by the fucntion
+    FastSolve boolean, shuold the Fastsolve of Armadillo by enabled?
+    DisplayWarnings boolean, should warning about convergence be displayed?
+    FinalEnergy string indicating the final elastic emergy associated with the configuration. Currently it can be "Base" or "Penalized"
+    alpha positive numeric, the value of the alpha parameter of the penalized elastic energy
+    beta positive numeric, the value of the beta parameter of the penalized elastic energy
+    prob numeric between 0 and 1. If less than 1 point will be sampled at each iteration. Prob indicate the probability of
+    using each points. This is an *experimental* feature, which may helps speeding up the computation if a large number of points is present.
+
+    @return
+
+
+    @examples
     """
 
     if prob < 1:
@@ -797,7 +774,9 @@ def PrimitiveElasticGraphEmbedment(
         # )
         # move_data_idx = np.where(~np.isin(partition, range(len(FixNodesAtPoints))))[0]
 
-        move_data_idx = [i for i in range(len(X)) if i not in flat_FixNodesAtPoints]
+        move_data_idx = [
+            i for i in range(len(X)) if i not in flat_FixNodesAtPoints
+        ]
         move_nodes_idx = np.arange(len(FixNodesAtPoints), len(NodePositions))
     else:
         move_data_idx = np.arange(len(X))
@@ -856,7 +835,9 @@ def PrimitiveElasticGraphEmbedment(
             )
 
         if Mode == 1:
-            diff = ComputeRelativeChangeOfNodePositions(NodePositions, NewNodePositions)
+            diff = ComputeRelativeChangeOfNodePositions(
+                NodePositions, NewNodePositions
+            )
         elif Mode == 2:
             diff = (OldElasticEnergy - ElasticEnergy) / ElasticEnergy
 
@@ -932,7 +913,12 @@ def PrimitiveElasticGraphEmbedment(
             )
 
         elif FinalEnergy == "Penalized":
-            ElasticEnergy, MSE, EP, RP = ComputePenalizedPrimitiveGraphElasticEnergy_v2(
+            (
+                ElasticEnergy,
+                MSE,
+                EP,
+                RP,
+            ) = ComputePenalizedPrimitiveGraphElasticEnergy_v2(
                 NewNodePositions,
                 ElasticMatrix,
                 dists,
@@ -967,34 +953,34 @@ def PrimitiveElasticGraphEmbedment_cp(
 ):
 
     """
-    #' Function fitting a primitive elastic graph to the data
-    #'
-    #' @param X is n-by-m matrix containing the positions of the n points in the m-dimensional space
-    #' @param NodePositions is k-by-m matrix of positions of the graph nodes in the same space as X
-    #' @param ElasticMatrix is a k-by-k symmetric matrix describing the connectivity and the elastic
-    #' properties of the graph. Star elasticities (mu coefficients) are along the main diagonal
-    #' (non-zero entries only for star centers), and the edge elasticity moduli are at non-diagonal elements.
-    #' @param MaxNumberOfIterations is an integer number indicating the maximum number of iterations for the EM algorithm
-    #' @param TrimmingRadius is a real value indicating the trimming radius, a parameter required for robust principal graphs
-    #' (see https://github.com/auranic/Elastic-principal-graphs/wiki/Robust-principal-graphs)
-    #' @param eps a real number indicating the minimal relative change in the nodenpositions
-    #' to be considered the graph embedded (convergence criteria)
-    #' @param verbose is a boolean indicating whether diagnostig informations should be plotted
-    #' @param Mode integer, the energy mode. It can be 1 (difference is computed using the position of the nodes) and
-    #' 2 (difference is computed using the changes in elestic energy of the configuraztions)
-    #' @param SquaredX the sum (by node) of X squared. It not specified, it will be calculated by the fucntion
-    #' @param FastSolve boolean, shuold the Fastsolve of Armadillo by enabled?
-    #' @param DisplayWarnings boolean, should warning about convergence be displayed?
-    #' @param FinalEnergy string indicating the final elastic emergy associated with the configuration. Currently it can be "Base" or "Penalized"
-    #' @param alpha positive numeric, the value of the alpha parameter of the penalized elastic energy
-    #' @param beta positive numeric, the value of the beta parameter of the penalized elastic energy
-    #' @param prob numeric between 0 and 1. If less than 1 point will be sampled at each iteration. Prob indicate the probability of
-    #' using each points. This is an *experimental* feature, which may helps speeding up the computation if a large number of points is present.
-    #'
-    #' @return
-    #' @export
-    #'
-    #' @examples
+    Function fitting a primitive elastic graph to the data
+
+    X is n-by-m matrix containing the positions of the n points in the m-dimensional space
+    NodePositions is k-by-m matrix of positions of the graph nodes in the same space as X
+    ElasticMatrix is a k-by-k symmetric matrix describing the connectivity and the elastic
+    properties of the graph. Star elasticities (mu coefficients) are along the main diagonal
+    (non-zero entries only for star centers), and the edge elasticity moduli are at non-diagonal elements.
+    MaxNumberOfIterations is an integer number indicating the maximum number of iterations for the EM algorithm
+    TrimmingRadius is a real value indicating the trimming radius, a parameter required for robust principal graphs
+    (see https://github.com/auranic/Elastic-principal-graphs/wiki/Robust-principal-graphs)
+    eps a real number indicating the minimal relative change in the nodenpositions
+    to be considered the graph embedded (convergence criteria)
+    verbose is a boolean indicating whether diagnostig informations should be plotted
+    Mode integer, the energy mode. It can be 1 (difference is computed using the position of the nodes) and
+    2 (difference is computed using the changes in elestic energy of the configuraztions)
+    SquaredX the sum (by node) of X squared. It not specified, it will be calculated by the fucntion
+    FastSolve boolean, shuold the Fastsolve of Armadillo by enabled?
+    DisplayWarnings boolean, should warning about convergence be displayed?
+    FinalEnergy string indicating the final elastic emergy associated with the configuration. Currently it can be "Base" or "Penalized"
+    alpha positive numeric, the value of the alpha parameter of the penalized elastic energy
+    beta positive numeric, the value of the beta parameter of the penalized elastic energy
+    prob numeric between 0 and 1. If less than 1 point will be sampled at each iteration. Prob indicate the probability of
+    using each points. This is an *experimental* feature, which may helps speeding up the computation if a large number of points is present.
+
+    @return
+
+
+    @examples
     """
 
     if prob < 1:
@@ -1027,7 +1013,13 @@ def PrimitiveElasticGraphEmbedment_cp(
         move_nodes_idx = np.arange(len(NodePositions))
 
     # fitted subset
-    (move_X, move_Xcp, move_PointWeights, move_SquaredXcp, move_NodePositions,) = (
+    (
+        move_X,
+        move_Xcp,
+        move_PointWeights,
+        move_SquaredXcp,
+        move_NodePositions,
+    ) = (
         X[move_data_idx, :],
         Xcp[move_data_idx, :],
         PointWeights[move_data_idx],
@@ -1080,7 +1072,9 @@ def PrimitiveElasticGraphEmbedment_cp(
             )
 
         if Mode == 1:
-            diff = ComputeRelativeChangeOfNodePositions(NodePositions, NewNodePositions)
+            diff = ComputeRelativeChangeOfNodePositions(
+                NodePositions, NewNodePositions
+            )
         elif Mode == 2:
             diff = (OldElasticEnergy - ElasticEnergy) / ElasticEnergy
 
@@ -1156,7 +1150,12 @@ def PrimitiveElasticGraphEmbedment_cp(
             )
 
         elif FinalEnergy == "Penalized":
-            ElasticEnergy, MSE, EP, RP = ComputePenalizedPrimitiveGraphElasticEnergy_v2(
+            (
+                ElasticEnergy,
+                MSE,
+                EP,
+                RP,
+            ) = ComputePenalizedPrimitiveGraphElasticEnergy_v2(
                 NewNodePositions,
                 ElasticMatrix,
                 dists,
@@ -1194,34 +1193,34 @@ def PrimitiveElasticGraphEmbedment_v2(
 ):
 
     """
-    #' Function fitting a primitive elastic graph to the data
-    #'
-    #' @param X is n-by-m matrix containing the positions of the n points in the m-dimensional space
-    #' @param NodePositions is k-by-m matrix of positions of the graph nodes in the same space as X
-    #' @param ElasticMatrix is a k-by-k symmetric matrix describing the connectivity and the elastic
-    #' properties of the graph. Star elasticities (mu coefficients) are along the main diagonal
-    #' (non-zero entries only for star centers), and the edge elasticity moduli are at non-diagonal elements.
-    #' @param MaxNumberOfIterations is an integer number indicating the maximum number of iterations for the EM algorithm
-    #' @param TrimmingRadius is a real value indicating the trimming radius, a parameter required for robust principal graphs
-    #' (see https://github.com/auranic/Elastic-principal-graphs/wiki/Robust-principal-graphs)
-    #' @param eps a real number indicating the minimal relative change in the nodenpositions
-    #' to be considered the graph embedded (convergence criteria)
-    #' @param verbose is a boolean indicating whether diagnostig informations should be plotted
-    #' @param Mode integer, the energy mode. It can be 1 (difference is computed using the position of the nodes) and
-    #' 2 (difference is computed using the changes in elestic energy of the configuraztions)
-    #' @param SquaredX the sum (by node) of X squared. It not specified, it will be calculated by the fucntion
-    #' @param FastSolve boolean, shuold the Fastsolve of Armadillo by enabled?
-    #' @param DisplayWarnings boolean, should warning about convergence be displayed?
-    #' @param FinalEnergy string indicating the final elastic emergy associated with the configuration. Currently it can be "Base" or "Penalized"
-    #' @param alpha positive numeric, the value of the alpha parameter of the penalized elastic energy
-    #' @param beta positive numeric, the value of the beta parameter of the penalized elastic energy
-    #' @param prob numeric between 0 and 1. If less than 1 point will be sampled at each iteration. Prob indicate the probability of
-    #' using each points. This is an *experimental* feature, which may helps speeding up the computation if a large number of points is present.
-    #'
-    #' @return
-    #' @export
-    #'
-    #' @examples
+    Function fitting a primitive elastic graph to the data
+
+    X is n-by-m matrix containing the positions of the n points in the m-dimensional space
+    NodePositions is k-by-m matrix of positions of the graph nodes in the same space as X
+    ElasticMatrix is a k-by-k symmetric matrix describing the connectivity and the elastic
+    properties of the graph. Star elasticities (mu coefficients) are along the main diagonal
+    (non-zero entries only for star centers), and the edge elasticity moduli are at non-diagonal elements.
+    MaxNumberOfIterations is an integer number indicating the maximum number of iterations for the EM algorithm
+    TrimmingRadius is a real value indicating the trimming radius, a parameter required for robust principal graphs
+    (see https://github.com/auranic/Elastic-principal-graphs/wiki/Robust-principal-graphs)
+    eps a real number indicating the minimal relative change in the nodenpositions
+    to be considered the graph embedded (convergence criteria)
+    verbose is a boolean indicating whether diagnostig informations should be plotted
+    Mode integer, the energy mode. It can be 1 (difference is computed using the position of the nodes) and
+    2 (difference is computed using the changes in elestic energy of the configuraztions)
+    SquaredX the sum (by node) of X squared. It not specified, it will be calculated by the fucntion
+    FastSolve boolean, shuold the Fastsolve of Armadillo by enabled?
+    DisplayWarnings boolean, should warning about convergence be displayed?
+    FinalEnergy string indicating the final elastic emergy associated with the configuration. Currently it can be "Base" or "Penalized"
+    alpha positive numeric, the value of the alpha parameter of the penalized elastic energy
+    beta positive numeric, the value of the beta parameter of the penalized elastic energy
+    prob numeric between 0 and 1. If less than 1 point will be sampled at each iteration. Prob indicate the probability of
+    using each points. This is an *experimental* feature, which may helps speeding up the computation if a large number of points is present.
+
+    @return
+
+
+    @examples
     """
 
     if prob < 1:
@@ -1248,7 +1247,9 @@ def PrimitiveElasticGraphEmbedment_v2(
         #    SquaredX,
         #    TrimmingRadius,
         # )
-        move_data_idx = np.where(~np.isin(partition, range(len(FixNodesAtPoints))))[0]
+        move_data_idx = np.where(
+            ~np.isin(partition, range(len(FixNodesAtPoints)))
+        )[0]
 
         # move_data_idx = [i for i in range(len(X)) if i not in flat_FixNodesAtPoints]
         move_nodes_idx = np.arange(len(FixNodesAtPoints), len(NodePositions))
@@ -1261,7 +1262,10 @@ def PrimitiveElasticGraphEmbedment_v2(
             precomp_d=precomp_d,
             SquaredX=None,
         )
-        move_partition, move_dists = partition[move_data_idx], dists[move_data_idx]
+        move_partition, move_dists = (
+            partition[move_data_idx],
+            dists[move_data_idx],
+        )
     else:
         move_data_idx = np.arange(len(X))
         move_nodes_idx = np.arange(len(NodePositions))
@@ -1314,7 +1318,9 @@ def PrimitiveElasticGraphEmbedment_v2(
             )
 
         if Mode == 1:
-            diff = ComputeRelativeChangeOfNodePositions(NodePositions, NewNodePositions)
+            diff = ComputeRelativeChangeOfNodePositions(
+                NodePositions, NewNodePositions
+            )
         elif Mode == 2:
             diff = (OldElasticEnergy - ElasticEnergy) / ElasticEnergy
 
@@ -1390,7 +1396,12 @@ def PrimitiveElasticGraphEmbedment_v2(
             )
 
         elif FinalEnergy == "Penalized":
-            ElasticEnergy, MSE, EP, RP = ComputePenalizedPrimitiveGraphElasticEnergy_v2(
+            (
+                ElasticEnergy,
+                MSE,
+                EP,
+                RP,
+            ) = ComputePenalizedPrimitiveGraphElasticEnergy_v2(
                 NewNodePositions,
                 ElasticMatrix,
                 dists,
@@ -1428,34 +1439,34 @@ def PrimitiveElasticGraphEmbedment_v3(
 ):
 
     """
-    #' Function fitting a primitive elastic graph to the data
-    #'
-    #' @param X is n-by-m matrix containing the positions of the n points in the m-dimensional space
-    #' @param NodePositions is k-by-m matrix of positions of the graph nodes in the same space as X
-    #' @param ElasticMatrix is a k-by-k symmetric matrix describing the connectivity and the elastic
-    #' properties of the graph. Star elasticities (mu coefficients) are along the main diagonal
-    #' (non-zero entries only for star centers), and the edge elasticity moduli are at non-diagonal elements.
-    #' @param MaxNumberOfIterations is an integer number indicating the maximum number of iterations for the EM algorithm
-    #' @param TrimmingRadius is a real value indicating the trimming radius, a parameter required for robust principal graphs
-    #' (see https://github.com/auranic/Elastic-principal-graphs/wiki/Robust-principal-graphs)
-    #' @param eps a real number indicating the minimal relative change in the nodenpositions
-    #' to be considered the graph embedded (convergence criteria)
-    #' @param verbose is a boolean indicating whether diagnostig informations should be plotted
-    #' @param Mode integer, the energy mode. It can be 1 (difference is computed using the position of the nodes) and
-    #' 2 (difference is computed using the changes in elestic energy of the configuraztions)
-    #' @param SquaredX the sum (by node) of X squared. It not specified, it will be calculated by the fucntion
-    #' @param FastSolve boolean, shuold the Fastsolve of Armadillo by enabled?
-    #' @param DisplayWarnings boolean, should warning about convergence be displayed?
-    #' @param FinalEnergy string indicating the final elastic emergy associated with the configuration. Currently it can be "Base" or "Penalized"
-    #' @param alpha positive numeric, the value of the alpha parameter of the penalized elastic energy
-    #' @param beta positive numeric, the value of the beta parameter of the penalized elastic energy
-    #' @param prob numeric between 0 and 1. If less than 1 point will be sampled at each iteration. Prob indicate the probability of
-    #' using each points. This is an *experimental* feature, which may helps speeding up the computation if a large number of points is present.
-    #'
-    #' @return
-    #' @export
-    #'
-    #' @examples
+    Function fitting a primitive elastic graph to the data
+
+    X is n-by-m matrix containing the positions of the n points in the m-dimensional space
+    NodePositions is k-by-m matrix of positions of the graph nodes in the same space as X
+    ElasticMatrix is a k-by-k symmetric matrix describing the connectivity and the elastic
+    properties of the graph. Star elasticities (mu coefficients) are along the main diagonal
+    (non-zero entries only for star centers), and the edge elasticity moduli are at non-diagonal elements.
+    MaxNumberOfIterations is an integer number indicating the maximum number of iterations for the EM algorithm
+    TrimmingRadius is a real value indicating the trimming radius, a parameter required for robust principal graphs
+    (see https://github.com/auranic/Elastic-principal-graphs/wiki/Robust-principal-graphs)
+    eps a real number indicating the minimal relative change in the nodenpositions
+    to be considered the graph embedded (convergence criteria)
+    verbose is a boolean indicating whether diagnostig informations should be plotted
+    Mode integer, the energy mode. It can be 1 (difference is computed using the position of the nodes) and
+    2 (difference is computed using the changes in elestic energy of the configuraztions)
+    SquaredX the sum (by node) of X squared. It not specified, it will be calculated by the fucntion
+    FastSolve boolean, shuold the Fastsolve of Armadillo by enabled?
+    DisplayWarnings boolean, should warning about convergence be displayed?
+    FinalEnergy string indicating the final elastic emergy associated with the configuration. Currently it can be "Base" or "Penalized"
+    alpha positive numeric, the value of the alpha parameter of the penalized elastic energy
+    beta positive numeric, the value of the beta parameter of the penalized elastic energy
+    prob numeric between 0 and 1. If less than 1 point will be sampled at each iteration. Prob indicate the probability of
+    using each points. This is an *experimental* feature, which may helps speeding up the computation if a large number of points is present.
+
+    @return
+
+
+    @examples
     """
 
     if prob < 1:
@@ -1482,7 +1493,9 @@ def PrimitiveElasticGraphEmbedment_v3(
             SquaredX,
             TrimmingRadius,
         )
-        move_data_idx = np.where(~np.isin(partition, range(len(FixNodesAtPoints))))[0]
+        move_data_idx = np.where(
+            ~np.isin(partition, range(len(FixNodesAtPoints)))
+        )[0]
 
         # move_data_idx = [i for i in range(len(X)) if i not in flat_FixNodesAtPoints]
         move_nodes_idx = np.arange(len(FixNodesAtPoints), len(NodePositions))
@@ -1545,7 +1558,9 @@ def PrimitiveElasticGraphEmbedment_v3(
             )
 
         if Mode == 1:
-            diff = ComputeRelativeChangeOfNodePositions(NodePositions, NewNodePositions)
+            diff = ComputeRelativeChangeOfNodePositions(
+                NodePositions, NewNodePositions
+            )
         elif Mode == 2:
             diff = (OldElasticEnergy - ElasticEnergy) / ElasticEnergy
 
@@ -1621,7 +1636,12 @@ def PrimitiveElasticGraphEmbedment_v3(
             )
 
         elif FinalEnergy == "Penalized":
-            ElasticEnergy, MSE, EP, RP = ComputePenalizedPrimitiveGraphElasticEnergy_v3(
+            (
+                ElasticEnergy,
+                MSE,
+                EP,
+                RP,
+            ) = ComputePenalizedPrimitiveGraphElasticEnergy_v3(
                 NewNodePositions,
                 ElasticMatrix,
                 partition.flatten(),
@@ -1664,34 +1684,34 @@ def PrimitiveElasticGraphEmbedment_cp_v2(
 ):
 
     """
-    #' Function fitting a primitive elastic graph to the data
-    #'
-    #' @param X is n-by-m matrix containing the positions of the n points in the m-dimensional space
-    #' @param NodePositions is k-by-m matrix of positions of the graph nodes in the same space as X
-    #' @param ElasticMatrix is a k-by-k symmetric matrix describing the connectivity and the elastic
-    #' properties of the graph. Star elasticities (mu coefficients) are along the main diagonal
-    #' (non-zero entries only for star centers), and the edge elasticity moduli are at non-diagonal elements.
-    #' @param MaxNumberOfIterations is an integer number indicating the maximum number of iterations for the EM algorithm
-    #' @param TrimmingRadius is a real value indicating the trimming radius, a parameter required for robust principal graphs
-    #' (see https://github.com/auranic/Elastic-principal-graphs/wiki/Robust-principal-graphs)
-    #' @param eps a real number indicating the minimal relative change in the nodenpositions
-    #' to be considered the graph embedded (convergence criteria)
-    #' @param verbose is a boolean indicating whether diagnostig informations should be plotted
-    #' @param Mode integer, the energy mode. It can be 1 (difference is computed using the position of the nodes) and
-    #' 2 (difference is computed using the changes in elestic energy of the configuraztions)
-    #' @param SquaredX the sum (by node) of X squared. It not specified, it will be calculated by the fucntion
-    #' @param FastSolve boolean, shuold the Fastsolve of Armadillo by enabled?
-    #' @param DisplayWarnings boolean, should warning about convergence be displayed?
-    #' @param FinalEnergy string indicating the final elastic emergy associated with the configuration. Currently it can be "Base" or "Penalized"
-    #' @param alpha positive numeric, the value of the alpha parameter of the penalized elastic energy
-    #' @param beta positive numeric, the value of the beta parameter of the penalized elastic energy
-    #' @param prob numeric between 0 and 1. If less than 1 point will be sampled at each iteration. Prob indicate the probability of
-    #' using each points. This is an *experimental* feature, which may helps speeding up the computation if a large number of points is present.
-    #'
-    #' @return
-    #' @export
-    #'
-    #' @examples
+    Function fitting a primitive elastic graph to the data
+
+    X is n-by-m matrix containing the positions of the n points in the m-dimensional space
+    NodePositions is k-by-m matrix of positions of the graph nodes in the same space as X
+    ElasticMatrix is a k-by-k symmetric matrix describing the connectivity and the elastic
+    properties of the graph. Star elasticities (mu coefficients) are along the main diagonal
+    (non-zero entries only for star centers), and the edge elasticity moduli are at non-diagonal elements.
+    MaxNumberOfIterations is an integer number indicating the maximum number of iterations for the EM algorithm
+    TrimmingRadius is a real value indicating the trimming radius, a parameter required for robust principal graphs
+    (see https://github.com/auranic/Elastic-principal-graphs/wiki/Robust-principal-graphs)
+    eps a real number indicating the minimal relative change in the nodenpositions
+    to be considered the graph embedded (convergence criteria)
+    verbose is a boolean indicating whether diagnostig informations should be plotted
+    Mode integer, the energy mode. It can be 1 (difference is computed using the position of the nodes) and
+    2 (difference is computed using the changes in elestic energy of the configuraztions)
+    SquaredX the sum (by node) of X squared. It not specified, it will be calculated by the fucntion
+    FastSolve boolean, shuold the Fastsolve of Armadillo by enabled?
+    DisplayWarnings boolean, should warning about convergence be displayed?
+    FinalEnergy string indicating the final elastic emergy associated with the configuration. Currently it can be "Base" or "Penalized"
+    alpha positive numeric, the value of the alpha parameter of the penalized elastic energy
+    beta positive numeric, the value of the beta parameter of the penalized elastic energy
+    prob numeric between 0 and 1. If less than 1 point will be sampled at each iteration. Prob indicate the probability of
+    using each points. This is an *experimental* feature, which may helps speeding up the computation if a large number of points is present.
+
+    @return
+
+
+    @examples
     """
 
     if prob < 1:
@@ -1718,7 +1738,9 @@ def PrimitiveElasticGraphEmbedment_cp_v2(
         #    SquaredX,
         #    TrimmingRadius,
         # )
-        move_data_idx = np.where(~np.isin(partition, range(len(FixNodesAtPoints))))[0]
+        move_data_idx = np.where(
+            ~np.isin(partition, range(len(FixNodesAtPoints)))
+        )[0]
 
         # move_data_idx = [i for i in range(len(X)) if i not in flat_FixNodesAtPoints]
         move_nodes_idx = np.arange(len(FixNodesAtPoints), len(NodePositions))
@@ -1731,7 +1753,10 @@ def PrimitiveElasticGraphEmbedment_cp_v2(
             precomp_d=precomp_d,
             SquaredX=None,
         )
-        move_partition, move_dists = partition[move_data_idx], dists[move_data_idx]
+        move_partition, move_dists = (
+            partition[move_data_idx],
+            dists[move_data_idx],
+        )
     else:
         move_data_idx = np.arange(len(X))
         move_nodes_idx = np.arange(len(NodePositions))
@@ -1739,7 +1764,13 @@ def PrimitiveElasticGraphEmbedment_cp_v2(
         move_dists = dists
 
     # fitted subset
-    move_X, move_Xcp, move_PointWeights, move_SquaredXcp, move_NodePositions = (
+    (
+        move_X,
+        move_Xcp,
+        move_PointWeights,
+        move_SquaredXcp,
+        move_NodePositions,
+    ) = (
         X[move_data_idx, :],
         Xcp[move_data_idx, :],
         PointWeights[move_data_idx],
@@ -1798,7 +1829,9 @@ def PrimitiveElasticGraphEmbedment_cp_v2(
             )
 
         if Mode == 1:
-            diff = ComputeRelativeChangeOfNodePositions(NodePositions, NewNodePositions)
+            diff = ComputeRelativeChangeOfNodePositions(
+                NodePositions, NewNodePositions
+            )
         elif Mode == 2:
             diff = (OldElasticEnergy - ElasticEnergy) / ElasticEnergy
 
@@ -1877,7 +1910,12 @@ def PrimitiveElasticGraphEmbedment_cp_v2(
             )
 
         elif FinalEnergy == "Penalized":
-            ElasticEnergy, MSE, EP, RP = ComputePenalizedPrimitiveGraphElasticEnergy_v2(
+            (
+                ElasticEnergy,
+                MSE,
+                EP,
+                RP,
+            ) = ComputePenalizedPrimitiveGraphElasticEnergy_v2(
                 NewNodePositions,
                 ElasticMatrix,
                 dists,

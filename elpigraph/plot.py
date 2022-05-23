@@ -34,18 +34,18 @@ from .src.reporting import project_point_onto_graph, project_point_onto_edge
 
 def find_branches(graph, verbose=0):
     """
-    #' Computes "branches" of the graph, i.e. paths from branch vertex (or terminal vertex)  to branch vertex (or terminal vertex)
-    #' Can process disconnected graphs. Stand-alone point - is "branch".
-    #' Circle is exceptional case - each circle (can be several connected components) is "branch"
-    #'
-    #' @param g - graph (igraph)
-    #' @param verbose - details output
-    #'
-    #' @examples
-    #' import igraph
-    #' g = igraph.Graph.Lattice([3,3], circular = False )
-    #' dict_output = find_branches(g, verbose = 1000)
-    #' print( dict_output['branches'] )
+    Computes "branches" of the graph, i.e. paths from branch vertex (or terminal vertex)  to branch vertex (or terminal vertex)
+    Can process disconnected graphs. Stand-alone point - is "branch".
+    Circle is exceptional case - each circle (can be several connected components) is "branch"
+
+    g - graph (igraph)
+    verbose - details output
+
+    @examples
+    import igraph
+    g = igraph.Graph.Lattice([3,3], circular = False )
+    dict_output = find_branches(g, verbose = 1000)
+    print( dict_output['branches'] )
     """
     # verbose = np.inf
     #
@@ -71,8 +71,8 @@ def find_branches(graph, verbose=0):
 
         def find_start_vertex(g, processed_vertices):
             """
-            #' Find starting vertex for branches-search algorithm.
-            #' It should be either branching vertex (i.e. degree >2) or terminal vertex (i.e. degree 0 or 1), in special case when unprocessed part of graph is union of circles - processed outside function
+            Find starting vertex for branches-search algorithm.
+            It should be either branching vertex (i.e. degree >2) or terminal vertex (i.e. degree 0 or 1), in special case when unprocessed part of graph is union of circles - processed outside function
             """
             n_vertices = n_vertices_input_graph  #  = g.count()#
             if n_vertices == len(processed_vertices):
@@ -248,10 +248,10 @@ def find_branches(graph, verbose=0):
 
 def branch_labler(X, graph, nodes_positions, verbose=0):
     """
-    #' Labels points of the dataset X by "nearest"-"branches" of graph.
-    #'
-    #'
-    #' @examples
+    Labels points of the dataset X by "nearest"-"branches" of graph.
+
+
+    @examples
     # X = np.array( [[0.1,0.1], [0.1,0.2], [1,2],[3,4],[5,0]] )
     # nodes_positions = np.array( [ [0,0], [1,0], [0,1], [1,1] ]  )
     # import igraph
@@ -334,12 +334,12 @@ def branch_labler(X, graph, nodes_positions, verbose=0):
             branch_vertex, vec_labels_by_vertices, all_dists
         ):
             """
-            #' For the branch_vertex re-labels points of dataset which were labeled by it to label by "correct branch".
-            #' "Correct branch" label is a branch 'censored'-nearest to given point.
-            #' Where 'censored'-nearest means the minimal distance between the point  and all points of the branch except the given branch_vertex
-            #'
-            #' Function changes vec_labels_by_branches defined above
-            #' Uses vec_labels_by_vertices defined above - vector of same length as dataset, which contains labels by vertices
+            For the branch_vertex re-labels points of dataset which were labeled by it to label by "correct branch".
+            "Correct branch" label is a branch 'censored'-nearest to given point.
+            Where 'censored'-nearest means the minimal distance between the point  and all points of the branch except the given branch_vertex
+
+            Function changes vec_labels_by_branches defined above
+            Uses vec_labels_by_vertices defined above - vector of same length as dataset, which contains labels by vertices
             """
 
             mask = (
@@ -869,42 +869,42 @@ def pseudo_time_trajectory(traj, ProjStruct):
     return pst, traj_points
 
 
-def extract_trajectories(tree,root_node,verbose=False):
+def extract_trajectories(tree, root_node, verbose=False):
     """
-	Extracting trajectories from ElPiGraph result object tree,
-        starting from a root_node.
-        Extracting trajectories is a required step for quantifying pseudotime 
-        after.
-        Example:
-            all_trajectories,all_trajectories_edges = extract_trajectories(tree,root_node)
-            print(len(all_trajectories),' trajectories found.')
-            ProjStruct = project_on_tree(X,tree)
-            PseudoTimeTraj = quantify_pseudotime(all_trajectories,all_trajectories_edges,ProjStruct)
+    Extracting trajectories from ElPiGraph result object tree,
+    starting from a root_node.
+    Extracting trajectories is a required step for quantifying pseudotime
+    after.
+    Example:
+        all_trajectories,all_trajectories_edges = extract_trajectories(tree,root_node)
+        print(len(all_trajectories),' trajectories found.')
+        ProjStruct = project_on_tree(X,tree)
+        PseudoTimeTraj = quantify_pseudotime(all_trajectories,all_trajectories_edges,ProjStruct)
     """
-    edges = tree['Edges'][0]
-    nodes_positions = tree['NodePositions']
+    edges = tree["Edges"][0]
+    nodes_positions = tree["NodePositions"]
     g = igraph.Graph()
     g.add_vertices(len(nodes_positions))
     g.add_edges(edges)
     degs = g.degree()
-    leaf_nodes = [i for i,d in enumerate(degs) if d==1]
+    leaf_nodes = [i for i, d in enumerate(degs) if d == 1]
     if verbose:
-        print(len(leaf_nodes),'trajectories found')
+        print(len(leaf_nodes), "trajectories found")
     all_trajectories_vertices = []
     all_trajectories_edges = []
     for lf in leaf_nodes:
-        path_vertices=g.get_shortest_paths(root_node,to=lf,output='vpath')
+        path_vertices = g.get_shortest_paths(root_node, to=lf, output="vpath")
         all_trajectories_vertices.append(path_vertices[0])
-        path_edges=g.get_shortest_paths(root_node,to=lf,output='epath')
+        path_edges = g.get_shortest_paths(root_node, to=lf, output="epath")
         all_trajectories_edges.append(path_edges[0])
         if verbose:
-            print('Vertices:',path_vertices)
-            print('Edges:',path_edges)
+            print("Vertices:", path_vertices)
+            print("Edges:", path_edges)
         ped = []
         for ei in path_edges[0]:
-            ped.append((g.get_edgelist()[ei][0],g.get_edgelist()[ei][1]))
+            ped.append((g.get_edgelist()[ei][0], g.get_edgelist()[ei][1]))
         if verbose:
-            print('Edges:',ped)
+            print("Edges:", ped)
         # compute pseudotime along each path
     return all_trajectories_vertices, all_trajectories_edges
 
@@ -1356,35 +1356,35 @@ def PlotPG(
 # ):
 #    """
 #    work in progress, only basic plotting supported
-#    #' Plot data and principal graph(s)
-#    #'
-#    #' @param X numerical 2D matrix, the n-by-m matrix with the position of n m-dimensional points
-#    #' @param TargetPG the main principal graph to plot
-#    #' @param BootPG A list of principal graphs that will be considered as bostrapped curves
-#    #' @param PGCol string, the label to be used for the main principal graph
-#    #' @param PlotProjections string, the plotting mode for the node projection on the principal graph.
-#    #' It can be "none" (no projections will be plotted), "onNodes" (the projections will indicate how points are associated to nodes),
-#    #' and "onEdges" (the projections will indicate how points are projected on edges or nodes of the graph)
-#    #' @param GroupsLab factor or numeric vector. A vector indicating either a category or a numeric value associted with
-#    #' each data point
-#    #' @param PointViz string, the modality to show points. It can be 'points' (data will be represented a dot) or
-#    #' 'density' (the data will be represented by a field)
-#    #' @param Main string, the title of the plot
-#    #' @param p.alpha numeric between 0 and 1, the alpha value of the points. Lower values will prodeuce more transparet points
-#    #' @param PointSize numeric vector, a vector indicating the size to be associted with each node of the graph.
-#    #' If NA points will have size 0.
-#    #' @param NodeLabels string vector, a vector indicating the label to be associted with each node of the graph
-#    #' @param LabMult numeric, a multiplier controlling the size of node labels
-#    #' @param Do_PCA bolean, should the node of the principal graph be used to derive principal component projections and
-#    #' rotate the space? If TRUE the plots will use the "EpG PC" as dimensions, if FALSE, the original dimensions will be used.
-#    #' @param DimToPlot a integer vector specifing the PCs (if Do_PCA=TRUE) or dimension (if Do_PCA=FALSE) to plot. All the
-#    #' combination will be considered, so, for example, if DimToPlot = 1:3, three plot will be produced.
-#    #' @param VizMode vector of string, describing the ElPiGraphs to visualize. Any combination of "Target" and "Boot".
-#    #'
-#    #' @return
-#    #' @export
-#    #'
-#    #' @examples"""
+#    Plot data and principal graph(s)
+#
+#    X numerical 2D matrix, the n-by-m matrix with the position of n m-dimensional points
+#    TargetPG the main principal graph to plot
+#    BootPG A list of principal graphs that will be considered as bostrapped curves
+#    PGCol string, the label to be used for the main principal graph
+#    PlotProjections string, the plotting mode for the node projection on the principal graph.
+#    It can be "none" (no projections will be plotted), "onNodes" (the projections will indicate how points are associated to nodes),
+#    and "onEdges" (the projections will indicate how points are projected on edges or nodes of the graph)
+#    GroupsLab factor or numeric vector. A vector indicating either a category or a numeric value associted with
+#    each data point
+#    PointViz string, the modality to show points. It can be 'points' (data will be represented a dot) or
+#    'density' (the data will be represented by a field)
+#    Main string, the title of the plot
+#    p.alpha numeric between 0 and 1, the alpha value of the points. Lower values will prodeuce more transparet points
+#    PointSize numeric vector, a vector indicating the size to be associted with each node of the graph.
+#    If NA points will have size 0.
+#    NodeLabels string vector, a vector indicating the label to be associted with each node of the graph
+#    LabMult numeric, a multiplier controlling the size of node labels
+#    Do_PCA bolean, should the node of the principal graph be used to derive principal component projections and
+#    rotate the space? If TRUE the plots will use the "EpG PC" as dimensions, if FALSE, the original dimensions will be used.
+#    DimToPlot a integer vector specifing the PCs (if Do_PCA=TRUE) or dimension (if Do_PCA=FALSE) to plot. All the
+#    combination will be considered, so, for example, if DimToPlot = 1:3, three plot will be produced.
+#    VizMode vector of string, describing the ElPiGraphs to visualize. Any combination of "Target" and "Boot".
+#
+#    @return
+#
+#
+#    @examples"""
 #
 #    if len(PGCol) == 1:
 #        PGCol = [PGCol] * len(TargetPG["NodePositions"])
@@ -1706,11 +1706,11 @@ def PlotPG(
 
 #' Plot the MSD VS Energy plot
 #'
-#' @param PrintGraph a struct returned by computeElasticPrincipalGraph
-#' @param Main string, title of the plot
+#' PrintGraph a struct returned by computeElasticPrincipalGraph
+#' Main string, title of the plot
 #'
-#' @return a ggplot plot
-#' @export
+#' Return-------a ggplot plot
+#'
 #'
 #' @examples
 # plotMSDEnergyPlot <- function(ReportTable, Main = ''){
@@ -1733,17 +1733,17 @@ def PlotPG(
 
 #' Accuracy-Complexity plot
 #'
-#' @param Main string, tht title of the plot
-#' @param Mode integer or string, the mode used to identify minima: if 'LocMin', the code of the
+#' Main string, tht title of the plot
+#' Mode integer or string, the mode used to identify minima: if 'LocMin', the code of the
 #' local minima will be plotted, if the number n, the code will be plotted each n configurations.
 #' If NULL, no code will be plotted
-#' @param Xlims a numeric vector of length 2 indicating the minimum and maximum of the x axis. If NULL (the default)
+#' Xlims a numeric vector of length 2 indicating the minimum and maximum of the x axis. If NULL (the default)
 #' the rage of the data will be used
-#' @param ReportTable A report table as returned from an ElPiGraph computation function
-#' @param AdjFactor numeric, the factor used to adjust the values on the y axis (computed as UR*NNODE^AdjFactor)
+#' ReportTable A report table as returned from an ElPiGraph computation function
+#' AdjFactor numeric, the factor used to adjust the values on the y axis (computed as UR*NNODE^AdjFactor)
 #'
-#' @return a ggplot plot
-#' @export
+#' Return-------a ggplot plot
+#'
 #'
 #' @examples
 # accuracyComplexityPlot <- function(ReportTable, AdjFactor=1, Main = '', Mode = 'LocMin', Xlims = NULL){
@@ -1810,11 +1810,11 @@ def PlotPG(
 
 #' Plot a graph with pie chart associated with each node
 #'
-#' @param X numerical 2D matrix, the n-by-m matrix with the position of n m-dimensional points
-#' @param TargetPG the main principal graph to plot
-#' @param Nodes integer, the vector of nodes to plot. If NULL, all the nodes will be plotted.
-#' @param Graph a igraph object of the ElPiGraph, if NULL (the default) it will be computed by the function
-#' @param LayOut the global layout of yhe final network. It can be
+#' X numerical 2D matrix, the n-by-m matrix with the position of n m-dimensional points
+#' TargetPG the main principal graph to plot
+#' Nodes integer, the vector of nodes to plot. If NULL, all the nodes will be plotted.
+#' Graph a igraph object of the ElPiGraph, if NULL (the default) it will be computed by the function
+#' LayOut the global layout of yhe final network. It can be
 #' \itemize{
 #'  \item 'tree', a tree
 #'  \item 'circle', a closed circle
@@ -1824,26 +1824,26 @@ def PlotPG(
 #'  \item 'fr', a topology generated by the Fruchterman-Reingold layout algorithm
 #'  \item 'nicely', the topology will be inferred by igraph
 #' }
-#' @param TreeRoot the id of the node to use as the root of the tree when LayOut = 'tree', multiple nodes are allowed.
-#' @param Main string, the title of the plot
-#' @param ScaleFunction function, a function used to scale the nuumber of points (sqrt by default)
-#' @param NodeSizeMult integer, an adjustment factor to control the size of the pies
-#' @param ColCat string vector, a vector of colors to associate to each category
-#' @param GroupsLab string factor, a vector indicating the category of each data point
-#' @param Partition A vector associating each point to a node of the ElPiGraph. If NULL (the default), this will be computed
-#' @param TrimmingRadius numeric, the trimming radius to use when associting points to nodes when Partition = NULL
-#' @param Leg.cex numeric, a value to adjust the size of the legend
-#' @param distMeth the matric used to compute the distance if LayOut = 'mds'
-#' @param Arrow.size numeric, the size of the arrow
-#' @param LabSize numeric, the size of the node labels
-#' @param LayoutIter numeric, the number of interation of the layout algorithm
-#' @param Leg.pos character, the position of the legend (see the help of the legend function)
-#' @param Leg.horiz boolean, should the legend be plotted in horizontal
-#' @param NodeLabels character vector, the names of the nodes
-#' @param RootLevel numeric, the level of the root(s)
+#' TreeRoot the id of the node to use as the root of the tree when LayOut = 'tree', multiple nodes are allowed.
+#' Main string, the title of the plot
+#' ScaleFunction function, a function used to scale the nuumber of points (sqrt by default)
+#' NodeSizeMult integer, an adjustment factor to control the size of the pies
+#' ColCat string vector, a vector of colors to associate to each category
+#' GroupsLab string factor, a vector indicating the category of each data point
+#' Partition A vector associating each point to a node of the ElPiGraph. If NULL (the default), this will be computed
+#' TrimmingRadius numeric, the trimming radius to use when associting points to nodes when Partition = NULL
+#' Leg.cex numeric, a value to adjust the size of the legend
+#' distMeth the matric used to compute the distance if LayOut = 'mds'
+#' Arrow.size numeric, the size of the arrow
+#' LabSize numeric, the size of the node labels
+#' LayoutIter numeric, the number of interation of the layout algorithm
+#' Leg.pos character, the position of the legend (see the help of the legend function)
+#' Leg.horiz boolean, should the legend be plotted in horizontal
+#' NodeLabels character vector, the names of the nodes
+#' RootLevel numeric, the level of the root(s)
 #'
-#' @return NULL
-#' @export
+#' Return-------NULL
+#'
 #'
 #' @examples
 # plotPieNet <- function(X,

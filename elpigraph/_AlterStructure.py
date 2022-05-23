@@ -21,50 +21,31 @@ def ExtendLeaves(
     # PlotSelected=False,
 ):
     """
-    #' Extend leaves with additional nodes
-    #'
-    #' @param X numeric matrix, the data matrix
-    #' @param TargetPG list, the ElPiGraph structure to extend
-    #' @param LeafIDs integer vector, the id of nodes to extend. If NULL, all the vertices will be extended.
-    #' @param TrimmingRadius positive numeric, the trimming radius used to control distance 
-    #' @param ControlPar positive numeric, the paramter used to control the contribution of the different data points
-    #' @param DoSA bollean, should optimization (via simulated annealing) be performed when Mode = "QuantDists"?
-    #' @param Mode string, the mode used to extend the graph. "QuantCentroid" and "WeigthedCentroid" are currently implemented
-    #' @param PlotSelected boolean, should a diagnostic plot be visualized
-    #'
-    #' @return The extended ElPiGraph structure
-    #'
-    #' The value of ControlPar has a different interpretation depending on the valus of Mode. In each case, for only the extreme points,
-    #' i.e., the points associated with the leaf node that do not have a projection on any edge are considered.
-    #'
-    #' If Mode = "QuantCentroid", for each leaf node, the extreme points are ordered by their distance from the node
-    #' and the centroid of the points farther away than the ControlPar is returned.
-    #'
-    #' If Mode = "WeightedCentroid", for each leaf node, a weight is computed for each points by raising the distance to the ControlPar power.
-    #' Hence, larger values of ControlPar result in a larger influence of points farther from the node
-    #'
-    #' If Mode = "QuantDists", for each leaf node, ... will write it later
-    #'
-    #'
-    #' @export
-    #'
-    #' @examples
-    #'
-    #' TreeEPG <- computeElasticPrincipalTree(X = tree_data, NumNodes = 50,
-    #' drawAccuracyComplexity = FALSE, drawEnergy = FALSE)
-    #'
-    #' ExtStruct <- ExtendLeaves(X = tree_data, TargetPG = TreeEPG[[1]], Mode = "QuantCentroid", ControlPar = .5)
-    #' PlotPG(X = tree_data, TargetPG = ExtStruct)
-    #'
-    #' ExtStruct <- ExtendLeaves(X = tree_data, TargetPG = TreeEPG[[1]], Mode = "QuantCentroid", ControlPar = .9)
-    #' PlotPG(X = tree_data, TargetPG = ExtStruct)
-    #'
-    #' ExtStruct <- ExtendLeaves(X = tree_data, TargetPG = TreeEPG[[1]], Mode = "WeigthedCentroid", ControlPar = .2)
-    #' PlotPG(X = tree_data, TargetPG = ExtStruct)
-    #'
-    #' ExtStruct <- ExtendLeaves(X = tree_data, TargetPG = TreeEPG[[1]], Mode = "WeigthedCentroid", ControlPar = .8)
-    #' PlotPG(X = tree_data, TargetPG = ExtStruct)
-    #'
+    Extend leaves with additional nodes
+
+    X numeric matrix, the data matrix
+    TargetPG list, the ElPiGraph structure to extend
+    LeafIDs integer vector, the id of nodes to extend. If NULL, all the vertices will be extended.
+    TrimmingRadius positive numeric, the trimming radius used to control distance
+    ControlPar positive numeric, the paramter used to control the contribution of the different data points
+    DoSA bollean, should optimization (via simulated annealing) be performed when Mode = "QuantDists"?
+    Mode string, the mode used to extend the graph. "QuantCentroid" and "WeigthedCentroid" are currently implemented
+    PlotSelected boolean, should a diagnostic plot be visualized
+
+    Return
+    -------
+    The extended ElPiGraph structure
+
+    The value of ControlPar has a different interpretation depending on the valus of Mode. In each case, for only the extreme points,
+    i.e., the points associated with the leaf node that do not have a projection on any edge are considered.
+
+    If Mode = "QuantCentroid", for each leaf node, the extreme points are ordered by their distance from the node
+    and the centroid of the points farther away than the ControlPar is returned.
+
+    If Mode = "WeightedCentroid", for each leaf node, a weight is computed for each points by raising the distance to the ControlPar power.
+    Hence, larger values of ControlPar result in a larger influence of points farther from the node
+
+    If Mode = "QuantDists", for each leaf node, ... will write it later
     """
 
     TargetPG = copy.deepcopy(PG)
@@ -83,7 +64,9 @@ def ExtendLeaves(
     Nei = Net.neighborhood(LeafIDs, order=1)
 
     # and put stuff together
-    NeiVect = list(map(lambda x: set(Nei[x]).difference([LeafIDs[x]]), range(len(Nei))))
+    NeiVect = list(
+        map(lambda x: set(Nei[x]).difference([LeafIDs[x]]), range(len(Nei)))
+    )
     NeiVect = np.array([j for i in NeiVect for j in list(i)])
     NodesMat = np.hstack((LeafIDs[:, None], NeiVect[:, None]))
 
@@ -135,7 +118,8 @@ def ExtendLeaves(
 
             print(
                 len(SelPoints),
-                " points selected to compute the centroid while extending node",
+                " points selected to compute the centroid while extending"
+                " node",
                 NodesMat[i, 0],
             )
 
@@ -155,9 +139,15 @@ def ExtendLeaves(
                 )
             else:
                 NNPos = np.vstack((NNPos, NN))
-                NEdgs = np.vstack((NEdgs, np.array([[NodesMat[i, 0], NodeID]])))
+                NEdgs = np.vstack(
+                    (NEdgs, np.array([[NodesMat[i, 0], NodeID]]))
+                )
                 UsedNodes.extend(
-                    list(np.where(PD[0].flatten() == NodesMat[i, 0])[0][SelPoints])
+                    list(
+                        np.where(PD[0].flatten() == NodesMat[i, 0])[0][
+                            SelPoints
+                        ]
+                    )
                 )
 
         if Mode == "WeightedCentroid":
@@ -176,12 +166,16 @@ def ExtendLeaves(
                 NNPos = NN.copy()
                 NEdgs = np.array([NodesMat[i, 0], NodeID])
                 WeiVal = list(Wei)
-                UsedNodes.extend(list(np.where(PD[0].flatten() == NodesMat[i, 0])[0]))
+                UsedNodes.extend(
+                    list(np.where(PD[0].flatten() == NodesMat[i, 0])[0])
+                )
             else:
                 NNPos = np.vstack((NNPos, NN))
                 NEdgs = np.vstack((NEdgs, np.array([NodesMat[i, 0], NodeID])))
 
-                UsedNodes.extend(list(np.where(PD[0].flatten() == NodesMat[i, 0])[0]))
+                UsedNodes.extend(
+                    list(np.where(PD[0].flatten() == NodesMat[i, 0])[0])
+                )
                 WeiVal.extend(list(Wei))
 
         if Mode == "QuantDists":
@@ -198,7 +192,9 @@ def ExtendLeaves(
                             X=tData_Filtered,
                             NodePositions=np.vstack(
                                 (
-                                    TargetPG["NodePositions"][NodesMat[i, 0],],
+                                    TargetPG["NodePositions"][
+                                        NodesMat[i, 0],
+                                    ],
                                     NodePosition,
                                 )
                             ),
@@ -221,7 +217,9 @@ def ExtendLeaves(
 
                 if DoSA:
 
-                    print("Performing simulated annealing. This may take a while")
+                    print(
+                        "Performing simulated annealing. This may take a while"
+                    )
                     StartingPoint = scipy.optimize.dual_annealing(
                         DistFun,
                         bounds=list(
@@ -237,7 +235,10 @@ def ExtendLeaves(
                 Projections = project_point_onto_edge(
                     X=tData_Filtered,
                     NodePositions=np.vstack(
-                        (TargetPG["NodePositions"][NodesMat[i, 0], :], StartingPoint)
+                        (
+                            TargetPG["NodePositions"][NodesMat[i, 0], :],
+                            StartingPoint,
+                        )
                     ),
                     Edge=[0, 1],
                     ExtProj=True,
@@ -246,7 +247,9 @@ def ExtendLeaves(
                 SelId = np.argmax(
                     PartialDistance(
                         Projections["X_Projected"],
-                        np.array([TargetPG["NodePositions"][NodesMat[i, 0], :]]),
+                        np.array(
+                            [TargetPG["NodePositions"][NodesMat[i, 0], :]]
+                        ),
                     )
                 )
 
@@ -259,11 +262,17 @@ def ExtendLeaves(
                 init = True
                 NNPos = StartingPoint[None].copy()
                 NEdgs = np.array([[NodesMat[i, 0], NodeID]])
-                UsedNodes.extend(list(np.where(PD[0].flatten() == NodesMat[i, 0])[0]))
+                UsedNodes.extend(
+                    list(np.where(PD[0].flatten() == NodesMat[i, 0])[0])
+                )
             else:
                 NNPos = np.vstack((NNPos, StartingPoint[None]))
-                NEdgs = np.vstack((NEdgs, np.array([[NodesMat[i, 0], NodeID]])))
-                UsedNodes.extend(list(np.where(PD[0].flatten() == NodesMat[i, 0])[0]))
+                NEdgs = np.vstack(
+                    (NEdgs, np.array([[NodesMat[i, 0], NodeID]]))
+                )
+                UsedNodes.extend(
+                    list(np.where(PD[0].flatten() == NodesMat[i, 0])[0])
+                )
 
     # plot(X)
     # points(TargetPG$NodePositions, col="red")
@@ -280,7 +289,9 @@ def ExtendLeaves(
     TargetPG["NodePositions"] = np.vstack((TargetPG["NodePositions"], NNPos))
     TargetPG["Edges"] = [
         np.vstack((TargetPG["Edges"][0], NEdgs)),  # edges
-        np.append(TargetPG["Edges"][1], np.repeat(np.nan, len(NEdgs))),  # lambdas
+        np.append(
+            TargetPG["Edges"][1], np.repeat(np.nan, len(NEdgs))
+        ),  # lambdas
         # np.append(TargetPG["Edges"][2], np.repeat(np.nan, len(NEdgs))),
     ]  ##### mus become lambda in R, bug ??
 
@@ -311,35 +322,34 @@ def CollapseBranches(
     X, PG, Mode="PointNumber", ControlPar=5, TrimmingRadius=float("inf")
 ):
     """
-    #' Filter "small" branches 
-    #'
-    #' @param X numeric matrix, the data matrix
-    #' @param TargetPG list, the ElPiGraph structure to extend
-    #' @param TrimmingRadius positive numeric, the trimming radius used to control distance 
-    #' @param ControlPar positive numeric, the paramter used to control the contribution of the different data points
-    #' @param Mode string, the mode used to extend the graph. "PointNumber", "PointNumber_Extrema", "PointNumber_Leaves",
-    #' "EdgesNumber", and "EdgesLength" are currently implemented
-    #' @param PlotSelected boolean, should a diagnostic plot be visualized (currently not implemented)
-    #'
-    #' @return a list with 2 values: Nodes (a matrix containing the new nodes positions) and Edges (a matrix describing the new edge structure)
-    #'
-    #' The value of ControlPar has a different interpretation depending on the valus of Mode.
-    #'
-    #' If Mode = "PointNumber", branches with less that ControlPar points projected on the branch
-    #' (points projected on the extreme points are not considered) are removed
-    #'
-    #' If Mode = "PointNumber_Extrema", branches with less that ControlPar points projected on the branch or the extreme
-    #' points are removed
-    #'
-    #' If Mode = "PointNumber_Leaves", branches with less that ControlPar points projected on the branch and any leaf points
-    #' (points projected on non-leaf extreme points are not considered) are removed
-    #'
-    #' If Mode = "EdgesNumber", branches with less that ControlPar edges are removed
-    #'
-    #' If Mode = "EdgesLength", branches with with a length smaller than ControlPar are removed
-    #'
-    #' @export
-    #'
+    Filter "small" branches
+
+    X numeric matrix, the data matrix
+    TargetPG list, the ElPiGraph structure to extend
+    TrimmingRadius positive numeric, the trimming radius used to control distance
+    ControlPar positive numeric, the paramter used to control the contribution of the different data points
+    Mode string, the mode used to extend the graph. "PointNumber", "PointNumber_Extrema", "PointNumber_Leaves",
+    "EdgesNumber", and "EdgesLength" are currently implemented
+    PlotSelected boolean, should a diagnostic plot be visualized (currently not implemented)
+
+    Return
+    -------
+    a list with 2 values: Nodes (a matrix containing the new nodes positions) and Edges (a matrix describing the new edge structure)
+
+    The value of ControlPar has a different interpretation depending on the valus of Mode.
+
+    If Mode = "PointNumber", branches with less that ControlPar points projected on the branch
+    (points projected on the extreme points are not considered) are removed
+
+    If Mode = "PointNumber_Extrema", branches with less that ControlPar points projected on the branch or the extreme
+    points are removed
+
+    If Mode = "PointNumber_Leaves", branches with less that ControlPar points projected on the branch and any leaf points
+    (points projected on non-leaf extreme points are not considered) are removed
+
+    If Mode = "EdgesNumber", branches with less that ControlPar edges are removed
+
+    If Mode = "EdgesLength", branches with with a length smaller than ControlPar are removed
     """
     TargetPG = copy.deepcopy(PG)
     # Generate net
@@ -379,22 +389,24 @@ def CollapseBranches(
         NodeNames = np.array(BrNodes)
 
         # Get the points on the extrema
-        StartEdg = np.where(np.any(ProjStruct["Edges"] == NodeNames[0], axis=1))[0]
+        StartEdg = np.where(
+            np.any(ProjStruct["Edges"] == NodeNames[0], axis=1)
+        )[0]
 
         StartOnNode = np.array([False] * len(ProjStruct["EdgeID"]))
 
         SelPoints = np.isin(ProjStruct["EdgeID"], StartEdg)
-        StartOnNode[SelPoints] = (ProjStruct["ProjectionValues"][SelPoints] > 1) | (
-            ProjStruct["ProjectionValues"][SelPoints] < 0
-        )
+        StartOnNode[SelPoints] = (
+            ProjStruct["ProjectionValues"][SelPoints] > 1
+        ) | (ProjStruct["ProjectionValues"][SelPoints] < 0)
 
         # EndEdg = np.where(np.any(ProjStruct["Edges"] == NodeNames[-1], axis=1))[0]
         EndOnNode = np.array([False] * len(ProjStruct["EdgeID"]))
 
         SelPoints = np.isin(ProjStruct["EdgeID"], EndOnNode)
-        EndOnNode[SelPoints] = (ProjStruct["ProjectionValues"][SelPoints] > 1) | (
-            ProjStruct["ProjectionValues"][SelPoints] < 0
-        )
+        EndOnNode[SelPoints] = (
+            ProjStruct["ProjectionValues"][SelPoints] > 1
+        ) | (ProjStruct["ProjectionValues"][SelPoints] < 0)
 
         EdgLen = 0
 
@@ -405,7 +417,9 @@ def CollapseBranches(
             WorkingEdg = np.where(
                 list(
                     map(
-                        lambda x: all(np.isin(x, NodeNames[range((i - 1), i + 1)])),
+                        lambda x: all(
+                            np.isin(x, NodeNames[range((i - 1), i + 1)])
+                        ),
                         ProjStruct["Edges"],
                     )
                 )
@@ -419,7 +433,10 @@ def CollapseBranches(
 
             # Is the edge in the right direction?
             if all(
-                ProjStruct["Edges"][WorkingEdg,] == NodeNames[range((i - 1), i + 1)]
+                ProjStruct["Edges"][
+                    WorkingEdg,
+                ]
+                == NodeNames[range((i - 1), i + 1)]
             ):
                 Reverse = False
             else:
@@ -468,7 +485,9 @@ def CollapseBranches(
         AllBrInfo.append(
             dict(
                 PointsOnEdges=sum(PotentialPoints),
-                PointsOnEdgeExtBoth=sum(PotentialPoints | StartOnNode | EndOnNode),
+                PointsOnEdgeExtBoth=sum(
+                    PotentialPoints | StartOnNode | EndOnNode
+                ),
                 PointsOnEdgesLeaf=sum(PointsOnEdgesLeaf),
                 EdgesCount=len(BrNodes) - 1,
                 EdgesLen=EdgLen,
@@ -478,13 +497,20 @@ def CollapseBranches(
     # Now all the information has been pre-computed and it is possible to filter
 
     if Mode == "PointNumber":
-        ToFilter = np.array([i["PointsOnEdges"] for i in AllBrInfo]) < ControlPar
+        ToFilter = (
+            np.array([i["PointsOnEdges"] for i in AllBrInfo]) < ControlPar
+        )
 
     if Mode == "PointNumber_Extrema":
-        ToFilter = np.array([i["PointsOnEdgeExtBoth"] for i in AllBrInfo]) < ControlPar
+        ToFilter = (
+            np.array([i["PointsOnEdgeExtBoth"] for i in AllBrInfo])
+            < ControlPar
+        )
 
     if Mode == "PointNumber_Leaves":
-        ToFilter = np.array([i["PointsOnEdgesLeaf"] for i in AllBrInfo]) < ControlPar
+        ToFilter = (
+            np.array([i["PointsOnEdgesLeaf"] for i in AllBrInfo]) < ControlPar
+        )
 
     if Mode == "EdgesNumber":
         ToFilter = np.array([i["EdgesCount"] for i in AllBrInfo]) < ControlPar
@@ -494,7 +520,9 @@ def CollapseBranches(
 
     # Nothing to filter
     if sum(ToFilter) == 0:
-        return dict(Edges=TargetPG["Edges"][0], Nodes=TargetPG["NodePositions"])
+        return dict(
+            Edges=TargetPG["Edges"][0], Nodes=TargetPG["NodePositions"]
+        )
 
     # TargetPG_New = TargetPG
     # NodesToRemove = None
@@ -523,7 +551,9 @@ def CollapseBranches(
                     NodeNames_Ext = NodeNames
                 # Set edges to be removed
                 for e in range(0, len(NodeNames_Ext), 2):
-                    rm_eid = Net.get_eid(NodeNames_Ext[e], NodeNames_Ext[e + 1])
+                    rm_eid = Net.get_eid(
+                        NodeNames_Ext[e], NodeNames_Ext[e + 1]
+                    )
                     Net.es[rm_eid]["status"] = "remove"
 
             else:
@@ -603,8 +633,8 @@ def CollapseBranches(
 
 #' Title
 #'
-#' @param TargetPG
-#' @param NodesToRemove
+#' TargetPG
+#' NodesToRemove
 #'
 #' @return
 #'
@@ -661,24 +691,26 @@ def ShiftBranching(
     TrimmingRadius=float("inf"),
 ):
     """
-    #' Move branching nodes to areas with higher point density
-    #'
-    #' @param X numeric matrix, the data matrix
-    #' @param TargetPG list, the ElPiGraph structure to extend
-    #' @param TrimmingRadius positive numeric, the trimming radius used to control distance 
-    #' @param SelectionMode string, the mode to use to shift the branching points. The "NodePoints" and "NodeDensity" modes are currently supported
-    #' @param DensityRadius positive numeric, the radius to be used when computing point density if SelectionMode = "NodeDensity"
-    #' @param MaxShift positive integer, the maxium distance (as number of edges) to consider when exploring the branching point neighborhood
-    #' @param Compensate booelan, should new points be included to compensate for olter one being removed (currently not implemented)
-    #' @param BrIds integer vector, the id of the branching points to consider. Id not associted with node possessing degree > 2 will be ignored
-    #'
-    #' @return a list with two components: NodePositions (Containing the new nodes positions) and Edges (containing the new edges)
-    #'
-    #' The function explore the neighborhood of branching point for nodes with higher point density. It such point is found, to graph will be
-    #' modified so that the new found node will be the new branching point of the neighborhood. 
-    #'
-    #' @examples
-    #' @export
+    Move branching nodes to areas with higher point density
+
+    X numeric matrix, the data matrix
+    TargetPG list, the ElPiGraph structure to extend
+    TrimmingRadius positive numeric, the trimming radius used to control distance
+    SelectionMode string, the mode to use to shift the branching points. The "NodePoints" and "NodeDensity" modes are currently supported
+    DensityRadius positive numeric, the radius to be used when computing point density if SelectionMode = "NodeDensity"
+    MaxShift positive integer, the maxium distance (as number of edges) to consider when exploring the branching point neighborhood
+    Compensate booelan, should new points be included to compensate for olter one being removed (currently not implemented)
+    BrIds integer vector, the id of the branching points to consider. Id not associted with node possessing degree > 2 will be ignored
+
+    Return
+    -------
+    a list with two components: NodePositions (Containing the new nodes positions) and Edges (containing the new edges)
+
+    The function explore the neighborhood of branching point for nodes with higher point density. It such point is found, to graph will be
+    modified so that the new found node will be the new branching point of the neighborhood.
+
+    @examples
+
     """
 
     TargetPG = copy.deepcopy(PG)
@@ -712,7 +744,8 @@ def ShiftBranching(
 
             if DensityRadius is None:
                 raise ValueError(
-                    "DensityRadius needs to be specified when SelectionMode = 'NodeDensity'"
+                    "DensityRadius needs to be specified when SelectionMode ="
+                    " 'NodeDensity'"
                 )
 
             else:
@@ -733,7 +766,9 @@ def ShiftBranching(
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 # get paths from the new branching point to the old nodes
-                AllPath = Net.get_shortest_paths(NewBR, to=ToReconnect, output="epath")
+                AllPath = Net.get_shortest_paths(
+                    NewBR, to=ToReconnect, output="epath"
+                )
                 AllPath_vpath = Net.get_shortest_paths(
                     NewBR, to=ToReconnect, output="vpath"
                 )
@@ -745,7 +780,9 @@ def ShiftBranching(
 
             # reconnect the old nodes to the new branching points, excep for any node found in the previuos operation
             ToReconnect = list(
-                set(ToReconnect).difference([j for i in AllPath_vpath for j in i])
+                set(ToReconnect).difference(
+                    [j for i in AllPath_vpath for j in i]
+                )
             )
             Net.add_edges([(NewBR, i) for i in ToReconnect])
 
@@ -762,12 +799,12 @@ def ShiftBranching(
 
 #' Filter cliques
 #'
-#' @param TargetPG
-#' @param MaxClZize
-#' @param DistThr
+#' TargetPG
+#' MaxClZize
+#' DistThr
 #'
 #' @return
-#' @export
+#'
 #'
 #' @examples
 # CollapseCliques <- function(TargetPG, MaxClZize = NULL, DistThr = NULL, Compensate = 3) {
@@ -856,10 +893,10 @@ def ShiftBranching(
 #'
 #' #' Title
 #' #'
-#' #' @param variables
+#' #' variables
 #' #'
 #' #' @return
-#' #' @export
+#' #'
 #' #'
 #' #' @examples
 #' RewireBranches <- function(X,

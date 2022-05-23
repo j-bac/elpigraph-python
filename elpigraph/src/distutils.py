@@ -34,12 +34,14 @@ def ComputePrimitiveGraphElasticEnergy(
     //' This function computes the elastic energy associated to a set of points and graph embedded
     //' into them.
     //'
-    //' @param NodePositions A numeric k-by-m matrix containing the position of the k nodes of the embedded graph
-    //' @param ElasticMatrix A numeric l-by-l matrix containing the elastic parameters associates with the edge
+    //' NodePositions A numeric k-by-m matrix containing the position of the k nodes of the embedded graph
+    //' ElasticMatrix A numeric l-by-l matrix containing the elastic parameters associates with the edge
     //' of the embedded graph
-    //' @param dists A numeric vector containind the squared distance of the data points to the closest node of the graph
+    //' dists A numeric vector containind the squared distance of the data points to the closest node of the graph
     //'
-    //' @return A list with four elements:
+    //' Return
+    -------
+    A list with four elements:
     //' * ElasticEnergy is the total energy
     //' * MSE is the MSE component of the energy
     //' * EP is the EP component of the energy
@@ -77,7 +79,9 @@ def ComputePrimitiveGraphElasticEnergy(
 def RadialCount(A, B, A_squared, Dvect):
     Dvect = Dvect ** 2
     distances = (
-        -2 * np.matmul(A, np.transpose(B)) + np.sum(np.square(B), axis=1) + A_squared
+        -2 * np.matmul(A, np.transpose(B))
+        + np.sum(np.square(B), axis=1)
+        + A_squared
     )
 
     idx = np.array([np.where(distances < dist)[0] for dist in Dvect])
@@ -128,14 +132,16 @@ def ComputePenalizedPrimitiveGraphElasticEnergy(
     //' This function computes the elastic energy associated to a set of points and graph embedded
     //' into them.
     //'
-    //' @param NodePositions A numeric k-by-m matrix containing the position of the k nodes of the embedded graph
-    //' @param ElasticMatrix A numeric l-by-l matrix containing the elastic parameters associates with the edge
+    //' NodePositions A numeric k-by-m matrix containing the position of the k nodes of the embedded graph
+    //' ElasticMatrix A numeric l-by-l matrix containing the elastic parameters associates with the edge
     //' of the embedded graph
-    //' @param dists A numeric vector containing the squared distance of the data points to the closest node of the graph
-    //' @param alpha
-    //' @param beta
+    //' dists A numeric vector containing the squared distance of the data points to the closest node of the graph
+    //' alpha
+    //' beta
     //'
-    //' @return A list with four elements:
+    //' Return
+    -------
+    A list with four elements:
     //' * ElasticEnergy is the total energy
     //' * MSE is the MSE component of the energy
     //' * EP is the EP component of the energy
@@ -192,14 +198,16 @@ def ComputePenalizedPrimitiveGraphElasticEnergy_v2(
     //' This function computes the elastic energy associated to a set of points and graph embedded
     //' into them.
     //'
-    //' @param NodePositions A numeric k-by-m matrix containing the position of the k nodes of the embedded graph
-    //' @param ElasticMatrix A numeric l-by-l matrix containing the elastic parameters associates with the edge
+    //' NodePositions A numeric k-by-m matrix containing the position of the k nodes of the embedded graph
+    //' ElasticMatrix A numeric l-by-l matrix containing the elastic parameters associates with the edge
     //' of the embedded graph
-    //' @param dists A numeric vector containing the squared distance of the data points to the closest node of the graph
-    //' @param alpha
-    //' @param beta
+    //' dists A numeric vector containing the squared distance of the data points to the closest node of the graph
+    //' alpha
+    //' beta
     //'
-    //' @return A list with four elements:
+    //' Return
+    -------
+    A list with four elements:
     //' * ElasticEnergy is the total energy
     //' * MSE is the MSE component of the energy
     //' * EP is the EP component of the energy
@@ -266,14 +274,16 @@ def ComputePenalizedPrimitiveGraphElasticEnergy_v3(
     //' This function computes the elastic energy associated to a set of points and graph embedded
     //' into them.
     //'
-    //' @param NodePositions A numeric k-by-m matrix containing the position of the k nodes of the embedded graph
-    //' @param ElasticMatrix A numeric l-by-l matrix containing the elastic parameters associates with the edge
+    //' NodePositions A numeric k-by-m matrix containing the position of the k nodes of the embedded graph
+    //' ElasticMatrix A numeric l-by-l matrix containing the elastic parameters associates with the edge
     //' of the embedded graph
-    //' @param dists A numeric vector containing the squared distance of the data points to the closest node of the graph
-    //' @param alpha
-    //' @param beta
+    //' dists A numeric vector containing the squared distance of the data points to the closest node of the graph
+    //' alpha
+    //' beta
     //'
-    //' @return A list with four elements:
+    //' Return
+    -------
+    A list with four elements:
     //' * ElasticEnergy is the total energy
     //' * MSE is the MSE component of the energy
     //' * EP is the EP component of the energy
@@ -378,14 +388,17 @@ def ComputeWeightedAverage(X, partition, PointWeights, NumberOfNodes):
     # Calculate total weights
     TotalWeight = PointWeights.sum()
     # Calculate weights for Relative size
-    tmp = np.bincount(part, weights=PointWeights.ravel(), minlength=NumberOfNodes + 1)
+    tmp = np.bincount(
+        part, weights=PointWeights.ravel(), minlength=NumberOfNodes + 1
+    )
     NodeClusterRelativeSize = tmp[1:] / TotalWeight
     # To prevent dividing by 0
     tmp[tmp == 0] = 1
     NodeClusterCenters = np.zeros((NumberOfNodes + 1, X.shape[1]))
     for k in range(M):
         NodeClusterCenters[:, k] = (
-            np.bincount(part, weights=X[:, k], minlength=NumberOfNodes + 1) / tmp
+            np.bincount(part, weights=X[:, k], minlength=NumberOfNodes + 1)
+            / tmp
         )
     return (
         NodeClusterCenters[
@@ -395,7 +408,9 @@ def ComputeWeightedAverage(X, partition, PointWeights, NumberOfNodes):
     )
 
 
-def FitGraph2DataGivenPartition(X, PointWeights, SpringLaplacianMatrix, partition):
+def FitGraph2DataGivenPartition(
+    X, PointWeights, SpringLaplacianMatrix, partition
+):
     """
     # Solves the SLAU to find new node positions
     """
@@ -403,7 +418,9 @@ def FitGraph2DataGivenPartition(X, PointWeights, SpringLaplacianMatrix, partitio
     NodeClusterCenters, NodeClusterRelativeSize = ComputeWeightedAverage(
         X, partition, PointWeights, NumberOfNodes
     )
-    SLAUMatrix = np.diag(NodeClusterRelativeSize.transpose()[0]) + SpringLaplacianMatrix
+    SLAUMatrix = (
+        np.diag(NodeClusterRelativeSize.transpose()[0]) + SpringLaplacianMatrix
+    )
     NewNodePositions = np.linalg.solve(
         SLAUMatrix, NodeClusterRelativeSize * NodeClusterCenters
     )
@@ -430,7 +447,10 @@ def FitSubGraph2DataGivenPartition(
     NewNodePositions = np.zeros(NodePositions.shape)
 
     # weighted average of moving nodes
-    (move_NodeClusterCenters, move_NodeClusterRelativeSize,) = ComputeWeightedAverage(
+    (
+        move_NodeClusterCenters,
+        move_NodeClusterRelativeSize,
+    ) = ComputeWeightedAverage(
         move_X, move_partition, move_PointWeights, NumberOfNodesToFit
     )
 
@@ -476,7 +496,10 @@ def FitSubGraph2DataGivenPartition_v2(
     NewNodePositions = np.zeros(NodePositions.shape)
 
     # weighted average of moving nodes
-    (move_NodeClusterCenters, move_NodeClusterRelativeSize,) = ComputeWeightedAverage(
+    (
+        move_NodeClusterCenters,
+        move_NodeClusterRelativeSize,
+    ) = ComputeWeightedAverage(
         move_X, move_partition, move_PointWeights, NumberOfNodesToFit
     )
 
@@ -546,7 +569,9 @@ def LabelLoss(Label, LabelLambda, part, EM):
 
     entropy = 0
     for i in range(len(branches)):
-        entropy += normalized_entropy_times_cardinality(Label[branches_dataidx[i]])
+        entropy += normalized_entropy_times_cardinality(
+            Label[branches_dataidx[i]]
+        )
         # normalize 0/1
     LL = LabelLambda * entropy / len(part)
     # ElasticEn * (1 + LabelLoss)

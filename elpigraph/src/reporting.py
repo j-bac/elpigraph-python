@@ -23,35 +23,37 @@ def getPrimitiveGraphStructureBarCode(ElasticMatrix):
 
 def project_point_onto_graph(X, NodePositions, Edges, Partition=None):
     """
-    #' Project data points on the precipal graph
-    #'
-    #' @param X numerical matrix containg points on the rows and dimensions on the columns
-    #' @param NodePositions numerical matrix containg the positions of the nodes on the rows
-    #' (must have the same dimensionality of X)
-    #' @param Edges a 2-dimensional matrix containing edges as pairs of integers. The integers much
-    #' match the rows of NodePositions
-    #' @param Partition a Partition vector associating points to at most one of the nodes of the graph.
-    #' It can be NULL, in which case it will be computed by the algorithm
-    #'
-    #' @return A list with several elements:
-    #' \itemize{
-    #'  \item{"X_projected "}{A matrix containing the projection of the points (on rows) on the edges of the graph}
-    #'  \item{"MSEP "}{The mean squared error (distance) of the points from the graph}
-    #'  \item{"ProjectionValues "}{The normalized position of the point on its associted edge.
-    #'  A value <0 indicates a projection before the initial position of the node.
-    #'  A value >1 indicates a projection after the final position of the node.
-    #'  A value betwen 0 and 1 indicates at which percentage of the edge length the point is being projected,
-    #'  e.g., a value of 0.3 indicates the 30\%.}
-    #'  \item{"EdgeID "}{An integer indicating the id of the edge on which each point has been projected. Note that
-    #'  if a point is projected on a node, this id will indicate one of the edges connected to that node.}
-    #'  \item{"EdgeLen "}{The length of the edges described by the Edges input matrix}
-    #'  \item{"NodePositions "}{the NodePositions input matrix}
-    #'  \item{"Edges "}{the Edges input matrix}
-    #' }
-    #'
-    #' @export
-    #'
-    #' @examples
+    Project data points on the precipal graph
+
+    X numerical matrix containg points on the rows and dimensions on the columns
+    NodePositions numerical matrix containg the positions of the nodes on the rows
+    (must have the same dimensionality of X)
+    Edges a 2-dimensional matrix containing edges as pairs of integers. The integers much
+    match the rows of NodePositions
+    Partition a Partition vector associating points to at most one of the nodes of the graph.
+    It can be NULL, in which case it will be computed by the algorithm
+
+    Return
+    -------
+    A list with several elements:
+    \itemize{
+     \item{"X_projected "}{A matrix containing the projection of the points (on rows) on the edges of the graph}
+     \item{"MSEP "}{The mean squared error (distance) of the points from the graph}
+     \item{"ProjectionValues "}{The normalized position of the point on its associted edge.
+     A value <0 indicates a projection before the initial position of the node.
+     A value >1 indicates a projection after the final position of the node.
+     A value betwen 0 and 1 indicates at which percentage of the edge length the point is being projected,
+     e.g., a value of 0.3 indicates the 30\%.}
+     \item{"EdgeID "}{An integer indicating the id of the edge on which each point has been projected. Note that
+     if a point is projected on a node, this id will indicate one of the edges connected to that node.}
+     \item{"EdgeLen "}{The length of the edges described by the Edges input matrix}
+     \item{"NodePositions "}{the NodePositions input matrix}
+     \item{"Edges "}{the Edges input matrix}
+    }
+
+
+
+    @examples
     """
     if Partition is None:
         Partition = PartitionData(
@@ -87,14 +89,18 @@ def project_point_onto_graph(X, NodePositions, Edges, Partition=None):
                 ToFill,
             ]
             try:
-                ProjectionValues[Idxs[ToFill]] = PrjStruct["Projection_Value"][ToFill]
+                ProjectionValues[Idxs[ToFill]] = PrjStruct["Projection_Value"][
+                    ToFill
+                ]
             except:
                 ### only one index and proj value
                 ProjectionValues[Idxs[ToFill]] = np.array(
                     [PrjStruct["Projection_Value"]]
                 )[ToFill]
 
-            Distances_squared[Idxs[ToFill]] = PrjStruct["Distance_Squared"][ToFill]
+            Distances_squared[Idxs[ToFill]] = PrjStruct["Distance_Squared"][
+                ToFill
+            ]
             EdgeID[Idxs[ToFill]] = i
 
         EdgeLen[i] = np.sqrt(PrjStruct["EdgeLen_Squared"])
@@ -112,16 +118,16 @@ def project_point_onto_graph(X, NodePositions, Edges, Partition=None):
 
 def project_point_onto_edge(X, NodePositions, Edge, ExtProj=False):
     """
-    #' Title
-    #'
-    #' @param X
-    #' @param NodePositions
-    #' @param Edge
-    #'
-    #' @return
-    #' @export
-    #'
-    #' @examples
+    Title
+
+    X
+    NodePositions
+    Edge
+
+    @return
+
+
+    @examples
     """
 
     vec = (NodePositions[Edge[1], :] - NodePositions[Edge[0], :])[:, None]
@@ -148,9 +154,13 @@ def project_point_onto_edge(X, NodePositions, Edge, ExtProj=False):
 
     if np.any(OnEdge):
         UExp = np.reshape(
-            np.repeat(u[OnEdge], len(vec)), (len(vec), int(np.sum(OnEdge))), order="F"
+            np.repeat(u[OnEdge], len(vec)),
+            (len(vec), int(np.sum(OnEdge))),
+            order="F",
         )
-        X_Projected[OnEdge, :] = (UExp * vec + NodePositions[Edge[0]][:, None]).T
+        X_Projected[OnEdge, :] = (
+            UExp * vec + NodePositions[Edge[0]][:, None]
+        ).T
 
     distance_squared = np.sum((X_Projected - X) * (X_Projected - X), axis=1)
 
@@ -163,7 +173,12 @@ def project_point_onto_edge(X, NodePositions, Edge, ExtProj=False):
 
 
 def ReportOnPrimitiveGraphEmbedment(
-    X, NodePositions, ElasticMatrix, PartData=None, ComputeMSEP=False, PointWeights=None
+    X,
+    NodePositions,
+    ElasticMatrix,
+    PartData=None,
+    ComputeMSEP=False,
+    PointWeights=None,
 ):
     """
     # %   This function computes various measurements concerning a primitive
@@ -243,7 +258,10 @@ def ReportOnPrimitiveGraphEmbedment(
 
     if ComputeMSEP:
         NodeProj = project_point_onto_graph(
-            X, NodePositions=NodePositions, Edges=DecodedMat[0], Partition=PartData[0]
+            X,
+            NodePositions=NodePositions,
+            Edges=DecodedMat[0],
+            Partition=PartData[0],
         )
         MSEP = NodeProj["MSEP"]
         FVEP = (TotalVariance - MSEP) / TotalVariance
