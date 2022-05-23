@@ -44,3 +44,4 @@ Feel free to report an `issue <https://github.com/j-bac/elpigraph-python/issues/
    :hidden:
 
    basics
+   graph_editing
