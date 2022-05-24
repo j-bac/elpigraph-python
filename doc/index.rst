@@ -7,8 +7,8 @@
 .. |DOI10.3390/e2203029| image:: https://img.shields.io/badge/DOI-10.3390%2Fe22030296-blue
 ..  _DOI10.3390/e2203029: https://doi.org/10.3390/e22030296
 
-elpigraph-python - Intrinsic dimension estimation in Python
-===========================================================
+elpigraph-python - Principal elastic graphs in Python
+=====================================================
 
 **elpigraph-python** is a Python module to fit principal graphs to data.
 
