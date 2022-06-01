@@ -40,9 +40,7 @@ def _isBetween(a, b, c):
     if dotproduct < 0:
         return False
 
-    squaredlengthba = (b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (
-        b[1] - a[1]
-    )
+    squaredlengthba = (b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1])
     if dotproduct > squaredlengthba:
         return False
     return True
@@ -122,9 +120,7 @@ def remove_intersections(nodep, edges):
                         new_edges.append([n, len(new_nodep) - 1])
                     break
 
-        multiline = MultiLineString(
-            [LineString(new_nodep[e]) for e in new_edges]
-        )
+        multiline = MultiLineString([LineString(new_nodep[e]) for e in new_edges])
         lnodep = new_nodep.tolist()
     return new_nodep, np.array(new_edges)
 
@@ -298,10 +294,7 @@ def findPaths(
     leaves = [k for k, v in epg.degree if v == 1]
     edge_lengths = np.sqrt(
         np.sum(
-            (
-                init_nodes_pos[init_edges[:, 0], :]
-                - init_nodes_pos[init_edges[:, 1], :]
-            )
+            (init_nodes_pos[init_edges[:, 0], :] - init_nodes_pos[init_edges[:, 1], :])
             ** 2,
             axis=1,
         )
@@ -360,9 +353,7 @@ def findPaths(
         root_branch = [b for b in branches if leaves[i] in b][0]
 
         if allow_same_branch:
-            _cand_nodes = [
-                node for b in branches for node in b if node in ind[i]
-            ]
+            _cand_nodes = [node for b in branches for node in b if node in ind[i]]
         else:
             _cand_nodes = [
                 node
@@ -396,9 +387,7 @@ def findPaths(
         for c in candidate_nodes[i]:
 
             clus = (part == c) | (part == l)
-            X_fit = np.vstack(
-                (init_nodes_pos[c], init_nodes_pos[l], X[clus.flat])
-            )
+            X_fit = np.vstack((init_nodes_pos[c], init_nodes_pos[l], X[clus.flat]))
             try:
                 pg = elpigraph.computeElasticPrincipalCurve(
                     X_fit,
@@ -416,8 +405,7 @@ def findPaths(
                 loop_leaves.append(np.inf)
                 # candidate curve has infinite energy, ignore error
                 if e.args == (
-                    "local variable 'NewNodePositions' referenced before"
-                    " assignment",
+                    "local variable 'NewNodePositions' referenced before" " assignment",
                 ):
                     continue
                 else:
@@ -437,15 +425,13 @@ def findPaths(
 
             cycle_nodes = find_all_cycles(nx.Graph(_merged_edges.tolist()))[0]
 
-            ElasticMatrix = (
-                elpigraph.src.core.MakeUniformElasticMatrix_with_cycle(
-                    _merged_edges,
-                    Lambda=Lambda,
-                    Mu=Mu,
-                    cycle_Lambda=cycle_Lambda,
-                    cycle_Mu=cycle_Mu,
-                    cycle_nodes=cycle_nodes,
-                )
+            ElasticMatrix = elpigraph.src.core.MakeUniformElasticMatrix_with_cycle(
+                _merged_edges,
+                Lambda=Lambda,
+                Mu=Mu,
+                cycle_Lambda=cycle_Lambda,
+                cycle_Mu=cycle_Mu,
+                cycle_nodes=cycle_nodes,
             )
 
             (
@@ -486,9 +472,7 @@ def findPaths(
                 cycle_points = np.isin(cent_part.flat, cycle_nodes)
 
                 if X.shape[1] > 2:
-                    pca = PCA(n_components=2, svd_solver="arpack").fit(
-                        X[cycle_points]
-                    )
+                    pca = PCA(n_components=2, svd_solver="arpack").fit(X[cycle_points])
                     X_cycle_2d = pca.transform(X[cycle_points])
                     cycle_2d = pca.transform(cycle_nodep)
                 else:
@@ -517,19 +501,13 @@ def findPaths(
                     if type(shrunk_cycle_2d) == MultiPolygon:
                         in_shrunk_cycle = np.ones(len(X_inside), dtype=bool)
                     else:
-                        shrunk_cycle_2d = np.array(
-                            shrunk_cycle_2d.exterior.coords
-                        )
+                        shrunk_cycle_2d = np.array(shrunk_cycle_2d.exterior.coords)
 
                         # prevent bug when self-intersection
                         if len(shrunk_cycle_2d) == 0:
-                            in_shrunk_cycle = np.ones(
-                                len(X_inside), dtype=bool
-                            )
+                            in_shrunk_cycle = np.ones(len(X_inside), dtype=bool)
                         else:
-                            in_shrunk_cycle = in_hull(
-                                shrunk_cycle_2d, X_inside
-                            )
+                            in_shrunk_cycle = in_hull(shrunk_cycle_2d, X_inside)
                     idx_close = in_shrunk_cycle | (w < 1)
                     w = 1 - w / w.max()
                     w[idx_close] = 1
@@ -543,10 +521,7 @@ def findPaths(
                 if init_nodes_pos.shape[1] == 2:
                     intersect = not (
                         MultiLineString(
-                            [
-                                LineString(_merged_nodep[e])
-                                for e in _merged_edges
-                            ]
+                            [LineString(_merged_nodep[e]) for e in _merged_edges]
                         ).is_simple
                     )
                     if intersect:
@@ -568,12 +543,8 @@ def findPaths(
                     or (
                         inner_fraction > max_inner_fraction
                     )  # if high fraction of points inside
-                    or (
-                        not np.isfinite(inner_fraction)
-                    )  # prevent no points error
-                    or (
-                        np.sum(idx_close) > max_n_points
-                    )  # if too many points inside
+                    or (not np.isfinite(inner_fraction))  # prevent no points error
+                    or (np.sum(idx_close) > max_n_points)  # if too many points inside
                     or pp_compactness(cycle_2d) < min_compactness
                 ):  # if loop is very narrow
                     valid = False
@@ -592,10 +563,7 @@ def findPaths(
 
             # ---> valid cycle, compute graph energy
             else:
-                (
-                    _merged_part,
-                    _merged_part_dist,
-                ) = elpigraph.src.core.PartitionData(
+                (_merged_part, _merged_part_dist,) = elpigraph.src.core.PartitionData(
                     X, _merged_nodep, 10 ** 6, SquaredX=SquaredX
                 )
                 proj = elpigraph.src.reporting.project_point_onto_graph(
@@ -611,9 +579,7 @@ def findPaths(
                 energies.append(MSE)
                 merged_edges.append(_merged_edges)
                 merged_nodep.append(_merged_nodep)
-                merged_part.append(
-                    np.where(np.isin(_merged_part.flat, cycle_nodes))[0]
-                )
+                merged_part.append(np.where(np.isin(_merged_part.flat, cycle_nodes))[0])
                 loop_edges.append(edges)
                 loop_nodep.append(nodep[2:])
                 loop_leaves.append([c, l])
@@ -647,18 +613,14 @@ def findPaths(
                     # ----- cycle test
                     G = nx.Graph(_merged_edges.tolist())
                     cycle_nodes = find_all_cycles(G)[0]
-                    cycle_nodep = np.array(
-                        [_merged_nodep[e] for e in cycle_nodes]
-                    )
+                    cycle_nodep = np.array([_merged_nodep[e] for e in cycle_nodes])
                     cent_part, cent_dists = elpigraph.src.core.PartitionData(
                         X, _merged_nodep, 10 ** 6, SquaredX=SquaredX
                     )
                     cycle_points = np.isin(cent_part.flat, cycle_nodes)
 
                     if X.shape[1] > 2:
-                        pca = PCA(n_components=2, svd_solver="arpack").fit(
-                            cycle_nodep
-                        )
+                        pca = PCA(n_components=2, svd_solver="arpack").fit(cycle_nodep)
                         cycle_2d = pca.transform(cycle_nodep)
                         X_cycle_2d = pca.transform(X[cycle_points])
                     else:
@@ -683,19 +645,13 @@ def findPaths(
                     if type(shrunk_cycle_2d) == MultiPolygon:
                         in_shrunk_cycle = np.ones(len(X_inside), dtype=bool)
                     else:
-                        shrunk_cycle_2d = np.array(
-                            shrunk_cycle_2d.exterior.coords
-                        )
+                        shrunk_cycle_2d = np.array(shrunk_cycle_2d.exterior.coords)
 
                         # prevent bug when self-intersection
                         if len(shrunk_cycle_2d) == 0:
-                            in_shrunk_cycle = np.ones(
-                                len(X_inside), dtype=bool
-                            )
+                            in_shrunk_cycle = np.ones(len(X_inside), dtype=bool)
                         else:
-                            in_shrunk_cycle = in_hull(
-                                shrunk_cycle_2d, X_inside
-                            )
+                            in_shrunk_cycle = in_hull(shrunk_cycle_2d, X_inside)
                     idx_close = in_shrunk_cycle | (w < 1)
                     w = 1 - w / w.max()
                     w[idx_close] = 1
@@ -718,9 +674,7 @@ def findPaths(
                             c="k",
                         )
 
-                    _ = plt.scatter(
-                        *X[cycle_points][inside_idx, :2].T, c=w.flat, s=5
-                    )
+                    _ = plt.scatter(*X[cycle_points][inside_idx, :2].T, c=w.flat, s=5)
                     plt.colorbar(_)
 
                     plt.show()
@@ -733,10 +687,7 @@ def findPaths(
                 len(np.intersect1d(new_part[i], new_part[j]))
                 / max(len(new_part[i]), len(new_part[j]))
             ) > (2 / 3):
-                if (
-                    np.argmin([new_inner_fraction[i], new_inner_fraction[j]])
-                    == 0
-                ):
+                if np.argmin([new_inner_fraction[i], new_inner_fraction[j]]) == 0:
                     valid[i] = 0
                 else:
                     valid[j] = 0
@@ -746,9 +697,7 @@ def findPaths(
     new_leaves = [e for i, e in enumerate(new_leaves) if valid[i]]
     new_part = [e for i, e in enumerate(new_part) if valid[i]]
     new_energy = [e for i, e in enumerate(new_energy) if valid[i]]
-    new_inner_fraction = [
-        e for i, e in enumerate(new_inner_fraction) if valid[i]
-    ]
+    new_inner_fraction = [e for i, e in enumerate(new_inner_fraction) if valid[i]]
 
     ### form graph with all valid loops found ###
     if (new_edges == []) or (sum(valid) == 0):
@@ -757,16 +706,12 @@ def findPaths(
 
     for i, loop_edges in enumerate(new_edges):
         if i == 0:
-            loop_edges[(loop_edges != 0) & (loop_edges != 1)] += (
-                init_edges.max() - 1
-            )
+            loop_edges[(loop_edges != 0) & (loop_edges != 1)] += init_edges.max() - 1
             loop_edges[loop_edges == 0] = new_leaves[i][0]
             loop_edges[loop_edges == 1] = new_leaves[i][1]
             merged_edges = np.concatenate((init_edges, loop_edges))
         else:
-            loop_edges[(loop_edges != 0) & (loop_edges != 1)] += (
-                merged_edges.max() - 1
-            )
+            loop_edges[(loop_edges != 0) & (loop_edges != 1)] += merged_edges.max() - 1
             loop_edges[loop_edges == 0] = new_leaves[i][0]
             loop_edges[loop_edges == 1] = new_leaves[i][1]
             merged_edges = np.concatenate((merged_edges, loop_edges))
@@ -774,9 +719,7 @@ def findPaths(
 
     ### optionally refit the entire graph ###
     if fit_loops:
-        cycle_nodes = np.concatenate(
-            find_all_cycles(nx.Graph(merged_edges.tolist()))
-        )
+        cycle_nodes = np.concatenate(find_all_cycles(nx.Graph(merged_edges.tolist())))
 
         ElasticMatrix = elpigraph.src.core.MakeUniformElasticMatrix_with_cycle(
             merged_edges,
@@ -882,9 +825,9 @@ def addPath(
     if Lambda is None:
         Lambda = _PG["Lambda"]
     if cycle_Mu is None:
-        cycle_Mu = Mu / 10
+        cycle_Mu = Mu
     if cycle_Lambda is None:
-        cycle_Lambda = Lambda / 10
+        cycle_Lambda = Lambda
     if n_nodes is None:
         n_nodes = min(16, max(6, len(init_nodes_pos) / 20))
 
@@ -893,9 +836,7 @@ def addPath(
         X, init_nodes_pos, 10 ** 6, SquaredX=SquaredX
     )
     clus = (part == source) | (part == target)
-    X_fit = np.vstack(
-        (init_nodes_pos[source], init_nodes_pos[target], X[clus.flat])
-    )
+    X_fit = np.vstack((init_nodes_pos[source], init_nodes_pos[target], X[clus.flat]))
 
     # --- fit path
     PG_path = elpigraph.computeElasticPrincipalCurve(
@@ -991,9 +932,9 @@ def delPath(
     if Lambda is None:
         Lambda = _PG["Lambda"]
     if cycle_Mu is None:
-        cycle_Mu = Mu / 10
+        cycle_Mu = Mu
     if cycle_Lambda is None:
-        cycle_Lambda = Lambda / 10
+        cycle_Lambda = Lambda
 
     # --- get path to remove
     epg_edge = _PG["Edges"][0]
@@ -1005,18 +946,12 @@ def delPath(
 
     if nodes_to_include is None:
         # nodes on the shortest path
-        nodes_sp = nx.shortest_path(
-            G, source=source, target=target, weight="len"
-        )
+        nodes_sp = nx.shortest_path(G, source=source, target=target, weight="len")
     else:
-        assert isinstance(
-            nodes_to_include, list
-        ), "`nodes_to_include` must be list"
+        assert isinstance(nodes_to_include, list), "`nodes_to_include` must be list"
         # lists of simple paths, in order from shortest to longest
         list_paths = list(
-            nx.shortest_simple_paths(
-                G, source=source, target=target, weight="len"
-            )
+            nx.shortest_simple_paths(G, source=source, target=target, weight="len")
         )
         flag_exist = False
         for p in list_paths:
