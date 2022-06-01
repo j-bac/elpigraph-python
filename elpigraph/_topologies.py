@@ -198,6 +198,7 @@ def computeElasticPrincipalCircle(
         InitNodes=InitNodes,
         Lambda=Lambda,
         Mu=Mu,
+        GrammarOptimization=GrammarOptimization,
         GrowGrammars=np.array([["bisectedge"]]),
         ShrinkGrammars=np.array([]),
         MaxNumberOfIterations=MaxNumberOfIterations,
@@ -441,6 +442,7 @@ def computeElasticPrincipalTree(
         InitNodes=InitNodes,
         Lambda=Lambda,
         Mu=Mu,
+        GrammarOptimization=GrammarOptimization,
         GrowGrammars=np.array(
             [["bisectedge", "addnode2node"], ["bisectedge", "addnode2node"]]
         ),
@@ -691,6 +693,7 @@ def computeElasticPrincipalCurve(
         InitNodes=InitNodes,
         Lambda=Lambda,
         Mu=Mu,
+        GrammarOptimization=GrammarOptimization,
         GrowGrammars=np.array([["bisectedge"]]),
         ShrinkGrammars=np.array([]),
         MaxNumberOfIterations=MaxNumberOfIterations,

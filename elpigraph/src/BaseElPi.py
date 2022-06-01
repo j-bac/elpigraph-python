@@ -269,9 +269,7 @@ def ElPrincGraph(
 
     # now we grow the graph up to NumNodes
 
-    if (UpdatedPG["NodePositions"].shape[0] >= NumNodes) and not (
-        GrammarOptimization
-    ):
+    if (UpdatedPG["NodePositions"].shape[0] >= NumNodes) and not (GrammarOptimization):
         FinalReport = ReportOnPrimitiveGraphEmbedment(
             X=X,
             NodePositions=UpdatedPG["NodePositions"],
@@ -294,6 +292,14 @@ def ElPrincGraph(
             FinalReport=FinalReport,
             Lambda=Lambda,
             Mu=Mu,
+            Mode=Mode,
+            MaxNumberOfIterations=MaxNumberOfIterations,
+            eps=eps,
+            times={},
+            AllNodePositions={},
+            AllElasticMatrices={},
+            AllMergedElasticMatrices={},
+            AllMergedNodePositions={},
         )
 
     FailedOperations = 0
@@ -307,13 +313,10 @@ def ElPrincGraph(
     AllNodePositions = {}
     AllElasticMatrices = {}
 
-    while (
-        UpdatedPG["NodePositions"].shape[0] < NumNodes
-    ) or GrammarOptimization:
+    while (UpdatedPG["NodePositions"].shape[0] < NumNodes) or GrammarOptimization:
         nEdges = len(np.triu(UpdatedPG["ElasticMatrix"], 1).nonzero()[0])
         if (
-            ((UpdatedPG["NodePositions"].shape[0]) >= NumNodes)
-            or (nEdges >= NumEdges)
+            ((UpdatedPG["NodePositions"].shape[0]) >= NumNodes) or (nEdges >= NumEdges)
         ) and not GrammarOptimization:
             break
 
@@ -374,9 +377,7 @@ def ElPrincGraph(
                             inds = np.where(
                                 np.sum(
                                     UpdatedPG["ElasticMatrix"]
-                                    - np.diag(
-                                        np.diag(UpdatedPG["ElasticMatrix"])
-                                    )
+                                    - np.diag(np.diag(UpdatedPG["ElasticMatrix"]))
                                     > 0,
                                     axis=0,
                                 )
@@ -486,15 +487,15 @@ def ElPrincGraph(
             AllNodePositions[UpdatedPG["NodePositions"].shape[0]] = UpdatedPG[
                 "NodePositions"
             ]
-            AllElasticMatrices[
-                UpdatedPG["NodePositions"].shape[0]
-            ] = UpdatedPG["ElasticMatrix"]
-            AllMergedElasticMatrices[
-                UpdatedPG["NodePositions"].shape[0]
-            ] = UpdatedPG["StoreMergedElasticMatrix"]
-            AllMergedNodePositions[
-                UpdatedPG["NodePositions"].shape[0]
-            ] = UpdatedPG["StoreMergedNodePositions"]
+            AllElasticMatrices[UpdatedPG["NodePositions"].shape[0]] = UpdatedPG[
+                "ElasticMatrix"
+            ]
+            AllMergedElasticMatrices[UpdatedPG["NodePositions"].shape[0]] = UpdatedPG[
+                "StoreMergedElasticMatrix"
+            ]
+            AllMergedNodePositions[UpdatedPG["NodePositions"].shape[0]] = UpdatedPG[
+                "StoreMergedNodePositions"
+            ]
 
     if not verbose:
         if not CompileReport:
@@ -706,10 +707,7 @@ def computeElasticPrincipalGraph(
 
     elif not Do_PCA:
         if verbose:
-            print(
-                "Cannot reduce dimensionality witout doing PCA (parameter"
-                " Do_PCA)"
-            )
+            print("Cannot reduce dimensionality witout doing PCA (parameter" " Do_PCA)")
             print("Dimensionality reduction will be ignored")
         ReduceDimension = np.array(range(np.min(Data.shape)))
 
@@ -733,8 +731,7 @@ def computeElasticPrincipalGraph(
                 ReduceDimension = range(
                     np.min(
                         np.where(
-                            np.cumsum(explainedVariances)
-                            / explainedVariances.sum()
+                            np.cumsum(explainedVariances) / explainedVariances.sum()
                             >= ReduceDimension
                         )
                     )
@@ -748,9 +745,7 @@ def computeElasticPrincipalGraph(
 
                 InitNodePositions = InitNodePositions.dot(vglobal)
             else:
-                raise ValueError(
-                    "if ReduceDimension is a single value it must be < 1"
-                )
+                raise ValueError("if ReduceDimension is a single value it must be < 1")
 
         else:
             if max(ReduceDimension + 1) > min(Data.shape):
@@ -835,14 +830,10 @@ def computeElasticPrincipalGraph(
 
         if ElasticMatrix is not None:
             InitEdges, _, _ = DecodeElasticMatrix(ElasticMatrix)
-        AddEdges = np.vstack(
-            (np.arange(nFixedNodes), closest_node + nFixedNodes)
-        ).T
+        AddEdges = np.vstack((np.arange(nFixedNodes), closest_node + nFixedNodes)).T
 
         # concatenate
-        InitNodePositions = np.concatenate(
-            (FixedNodePositions, InitNodePositions)
-        )
+        InitNodePositions = np.concatenate((FixedNodePositions, InitNodePositions))
         InitEdges = np.concatenate((AddEdges, InitEdges + nFixedNodes))
         ElasticMatrix = MakeUniformElasticMatrix(
             Edges=InitEdges, Lambda=Lambda_Initial, Mu=Mu_Initial
@@ -948,9 +939,7 @@ def computeElasticPrincipalGraph(
         ):
             AllNodePositions[k] = nodep.dot(vglobal[:, ReduceDimension].T)
             if AllMergedNodePositions[k] is not None:
-                AllMergedNodePositions[k] = allnodep.dot(
-                    vglobal[:, ReduceDimension].T
-                )
+                AllMergedNodePositions[k] = allnodep.dot(vglobal[:, ReduceDimension].T)
 
     EndTimer = time.time() - t
     if verbose:

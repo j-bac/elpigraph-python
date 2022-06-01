@@ -21,7 +21,7 @@ def computeElasticPrincipalGraphWithGrammars(
     ShrinkGrammars,
     NumNodes,
     NumEdges=float("inf"),
-    InitNodes=2,
+    InitNodes=3,
     Lambda=0.01,
     Mu=0.1,
     GrammarOptimization=False,
@@ -167,6 +167,8 @@ def computeElasticPrincipalGraphWithGrammars(
     # Be default we are using a predefined initial configuration
     ComputeIC = False
 
+    if InitNodes<3:
+        raise ValueError('InitNodes must be >=3')
     # Generate a dummy subset is not specified
     if Subsets == list():
         Subsets = [np.array(range(X.shape[1]))]
