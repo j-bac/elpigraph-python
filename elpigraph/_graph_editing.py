@@ -14,6 +14,14 @@ from shapely.geometry.multipolygon import MultiPolygon
 from sklearn.neighbors import NearestNeighbors
 
 
+def flatten(S):
+    if S == []:
+        return S
+    if isinstance(S[0], list):
+        return flatten(S[0]) + flatten(S[1:])
+    return S[:1] + flatten(S[1:])
+
+
 @nb.njit
 def _get_intersect_inner(a1, a2, b1, b2):
     """
@@ -108,9 +116,7 @@ def remove_intersections(nodep, edges):
             if line1.intersects(line2):
                 if list(np.array(line1.intersection(line2))) not in lnodep:
                     new_nodep = np.append(
-                        new_nodep,
-                        np.array(line1.intersection(line2))[None],
-                        axis=0,
+                        new_nodep, np.array(line1.intersection(line2))[None], axis=0,
                     )
                     intersects_idx = [list(new_edges[i]), list(new_edges[j])]
                     new_edges.pop(new_edges.index(intersects_idx[0]))
@@ -390,11 +396,7 @@ def findPaths(
             X_fit = np.vstack((init_nodes_pos[c], init_nodes_pos[l], X[clus.flat]))
             try:
                 pg = elpigraph.computeElasticPrincipalCurve(
-                    X_fit,
-                    nnodes,
-                    Lambda=Lambda,
-                    Mu=Mu,
-                    FixNodesAtPoints=[[0], [1]],
+                    X_fit, nnodes, Lambda=Lambda, Mu=Mu, FixNodesAtPoints=[[0], [1]],
                 )[0]
             except Exception as e:
                 energies.append(np.inf)
@@ -535,8 +537,7 @@ def findPaths(
                 if (
                     any(
                         np.bincount(
-                            cent_part[ix_outside].flat,
-                            minlength=len(_merged_nodep),
+                            cent_part[ix_outside].flat, minlength=len(_merged_nodep),
                         )[len(init_nodes_pos) :]
                         < min_node_n_points
                     )  # if empty cycle node
@@ -739,11 +740,7 @@ def findPaths(
             _,
             _,
         ) = elpigraph.src.core.PrimitiveElasticGraphEmbedment(
-            X,
-            merged_nodep,
-            ElasticMatrix,
-            PointWeights=weights,
-            FixNodesAtPoints=[],
+            X, merged_nodep, ElasticMatrix, PointWeights=weights, FixNodesAtPoints=[],
         )
         # check intersection
         if merged_nodep.shape[1] == 2:
@@ -840,11 +837,7 @@ def addPath(
 
     # --- fit path
     PG_path = elpigraph.computeElasticPrincipalCurve(
-        X_fit,
-        NumNodes=n_nodes,
-        Lambda=Lambda,
-        Mu=Mu,
-        FixNodesAtPoints=[[0], [1]],
+        X_fit, NumNodes=n_nodes, Lambda=Lambda, Mu=Mu, FixNodesAtPoints=[[0], [1]],
     )[0]
 
     # --- get nodep, edges, create new graph with added loop
@@ -860,7 +853,10 @@ def addPath(
     if refit_graph:
         cycle_nodes = elpigraph._graph_editing.find_all_cycles(
             nx.Graph(_merged_edges.tolist())
-        )[0]
+        )
+
+        if len(cycle_nodes) > 0:
+            cycle_nodes = flatten(cycle_nodes)
 
         ElasticMatrix = elpigraph.src.core.MakeUniformElasticMatrix_with_cycle(
             _merged_edges,
@@ -880,11 +876,7 @@ def addPath(
             _,
             _,
         ) = elpigraph.src.core.PrimitiveElasticGraphEmbedment(
-            X,
-            _merged_nodep,
-            ElasticMatrix,
-            PointWeights=weights,
-            FixNodesAtPoints=[],
+            X, _merged_nodep, ElasticMatrix, PointWeights=weights, FixNodesAtPoints=[],
         )
 
     # check intersection
@@ -976,9 +968,9 @@ def delPath(
     if refit_graph:
         nodep, edges = _PG["NodePositions"], _PG["Edges"][0]
 
-        cycle_nodes = elpigraph._graph_editing.find_all_cycles(
-            nx.Graph(edges.tolist())
-        )[0]
+        cycle_nodes = elpigraph._graph_editing.find_all_cycles(nx.Graph(edges.tolist()))
+        if len(cycle_nodes) > 0:
+            cycle_nodes = flatten(cycle_nodes)
 
         ElasticMatrix = elpigraph.src.core.MakeUniformElasticMatrix_with_cycle(
             edges,
@@ -1004,47 +996,50 @@ def delPath(
         return _PG
 
 
-def refitGraph(X,PG,shift_nodes_pos = {},PointWeights=None,Mu=None,Lambda=None,cycle_Mu=None,cycle_Lambda=None,):
+def refitGraph(
+    X,
+    PG,
+    shift_nodes_pos={},
+    PointWeights=None,
+    Mu=None,
+    Lambda=None,
+    cycle_Mu=None,
+    cycle_Lambda=None,
+):
 
-    init_nodes_pos, init_edges = (
-        PG['NodePositions'],
-        PG['Edges'][0]
-    )
+    init_nodes_pos, init_edges = (PG["NodePositions"], PG["Edges"][0])
 
     # --- Init parameters, variables
     if Mu is None:
-        Mu = PG['Mu']
+        Mu = PG["Mu"]
     if Lambda is None:
-        Lambda = PG['Lambda']
+        Lambda = PG["Lambda"]
     if cycle_Mu is None:
         cycle_Mu = Mu
     if cycle_Lambda is None:
         cycle_Lambda = Lambda
 
-        
-    #---Modify node pos order (first nodes are fixed)
-    for k,v in shift_nodes_pos.items():
-        init_nodes_pos[k]=v
+    # ---Modify node pos order (first nodes are fixed)
+    for k, v in shift_nodes_pos.items():
+        init_nodes_pos[k] = v
     fix_nodes = list(shift_nodes_pos.keys())
     fix_order = np.arange(len(init_nodes_pos))
     fix_edges = init_edges.copy()
-    for i,ifix in enumerate(fix_nodes):
-        n1, n2 = fix_order==i, fix_order==ifix
-        e1, e2 = fix_edges==i, fix_edges==ifix
-        fix_order[n1], fix_order[n2] = ifix, i 
+    for i, ifix in enumerate(fix_nodes):
+        n1, n2 = fix_order == i, fix_order == ifix
+        e1, e2 = fix_edges == i, fix_edges == ifix
+        fix_order[n1], fix_order[n2] = ifix, i
         fix_edges[e1], fix_edges[e2] = ifix, i
     fix_nodes_pos = init_nodes_pos[fix_order]
-   
+
     SquaredX = np.sum(X ** 2, axis=1, keepdims=1)
     part, part_dist = elpigraph.src.core.PartitionData(
         X, fix_nodes_pos, 10 ** 6, SquaredX=SquaredX
     )
 
-    cycle_nodes = find_all_cycles(
-        nx.Graph(fix_edges.tolist())
-    )
-    if len(cycle_nodes):
-        cycle_nodes=cycle_nodes[0]
+    cycle_nodes = find_all_cycles(nx.Graph(fix_edges.tolist()))
+    if len(cycle_nodes) > 0:
+        cycle_nodes = flatten(cycle_nodes)
 
     ElasticMatrix = elpigraph.src.core.MakeUniformElasticMatrix_with_cycle(
         fix_edges,
@@ -1068,13 +1063,14 @@ def refitGraph(X,PG,shift_nodes_pos = {},PointWeights=None,Mu=None,Lambda=None,c
         fix_nodes_pos,
         ElasticMatrix,
         PointWeights=PointWeights,
-        FixNodesAtPoints = [[] for i in range(len(fix_nodes))]
+        FixNodesAtPoints=[[] for i in range(len(fix_nodes))],
     )
-    
-    #---Revert to initial node ordering
-    for i,ifix in enumerate(fix_nodes):
-        e1, e2 = fix_edges==i, fix_edges==ifix
+
+    # ---Revert to initial node ordering
+    for i, ifix in enumerate(fix_nodes):
+        e1, e2 = fix_edges == i, fix_edges == ifix
         fix_edges[e1], fix_edges[e2] = ifix, i
     new_nodes_pos = new_nodes_pos[fix_order]
 
-    PG['NodePositions'] = new_nodes_pos
+    PG["NodePositions"] = new_nodes_pos
+
