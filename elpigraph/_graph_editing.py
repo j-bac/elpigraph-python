@@ -1023,7 +1023,7 @@ def refitGraph(
     # ---Modify node pos order (first nodes are fixed)
     for k, v in shift_nodes_pos.items():
         init_nodes_pos[k] = v
-    fix_nodes = list(shift_nodes_pos.keys())
+    fix_nodes = sorted(list(shift_nodes_pos.keys()), reverse=True)
     fix_order = np.arange(len(init_nodes_pos))
     fix_edges = init_edges.copy()
     for i, ifix in enumerate(fix_nodes):
