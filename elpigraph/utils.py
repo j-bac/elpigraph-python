@@ -403,11 +403,3 @@ def proj2embedding(X_elpi,X_embed,NodePositions):
     ).A
     proj = (np.dot(X_embed.T, R) / R.sum(axis=0)).T
     return proj
-
-
-def stream2elpi(adata,key='epg'):
-    PG={'NodePositions':adata.uns[key]['node_pos'].astype(float),
-        'Edges':[adata.uns[key]['edge'],np.repeat(adata.uns[key]['params']['epg_lambda'],len(adata.uns[key]['node_pos']))],
-        "Lambda":adata.uns[key]['params']['epg_lambda'],
-        "Mu":adata.uns[key]['params']['epg_mu']}
-    return PG
