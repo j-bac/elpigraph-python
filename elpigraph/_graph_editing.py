@@ -1002,3 +1002,79 @@ def delPath(
         )
         _PG["NodePositions"] = newnodep
         return _PG
+
+
+def refitGraph(X,PG,shift_nodes_pos = {},PointWeights=None,Mu=None,Lambda=None,cycle_Mu=None,cycle_Lambda=None,):
+
+    init_nodes_pos, init_edges = (
+        PG['NodePositions'],
+        PG['Edges'][0]
+    )
+
+    # --- Init parameters, variables
+    if Mu is None:
+        Mu = PG['Mu']
+    if Lambda is None:
+        Lambda = PG['Lambda']
+    if cycle_Mu is None:
+        cycle_Mu = Mu
+    if cycle_Lambda is None:
+        cycle_Lambda = Lambda
+
+        
+    #---Modify node pos order (first nodes are fixed)
+    for k,v in shift_nodes_pos.items():
+        init_nodes_pos[k]=v
+    fix_nodes = list(shift_nodes_pos.keys())
+    fix_order = np.arange(len(init_nodes_pos))
+    fix_edges = init_edges.copy()
+    for i,ifix in enumerate(fix_nodes):
+        n1, n2 = fix_order==i, fix_order==ifix
+        e1, e2 = fix_edges==i, fix_edges==ifix
+        fix_order[n1], fix_order[n2] = ifix, i 
+        fix_edges[e1], fix_edges[e2] = ifix, i
+    fix_nodes_pos = init_nodes_pos[fix_order]
+   
+    SquaredX = np.sum(X ** 2, axis=1, keepdims=1)
+    part, part_dist = elpigraph.src.core.PartitionData(
+        X, fix_nodes_pos, 10 ** 6, SquaredX=SquaredX
+    )
+
+    cycle_nodes = find_all_cycles(
+        nx.Graph(fix_edges.tolist())
+    )
+    if len(cycle_nodes):
+        cycle_nodes=cycle_nodes[0]
+
+    ElasticMatrix = elpigraph.src.core.MakeUniformElasticMatrix_with_cycle(
+        fix_edges,
+        Lambda=Lambda,
+        Mu=Mu,
+        cycle_Lambda=cycle_Lambda,
+        cycle_Mu=cycle_Mu,
+        cycle_nodes=cycle_nodes,
+    )
+
+    (
+        new_nodes_pos,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+    ) = elpigraph.src.core.PrimitiveElasticGraphEmbedment(
+        X,
+        fix_nodes_pos,
+        ElasticMatrix,
+        PointWeights=PointWeights,
+        FixNodesAtPoints = [[] for i in range(len(fix_nodes))]
+    )
+    
+    #---Revert to initial node ordering
+    for i,ifix in enumerate(fix_nodes):
+        e1, e2 = fix_edges==i, fix_edges==ifix
+        fix_edges[e1], fix_edges[e2] = ifix, i
+    new_nodes_pos = new_nodes_pos[fix_order]
+
+    PG['NodePositions'] = new_nodes_pos

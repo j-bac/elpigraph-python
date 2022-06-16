@@ -393,3 +393,21 @@ def geodesic_pseudotime(X, k, root, g=None):
     lengths = nx.single_source_dijkstra_path_length(g, root)
     pseudotime = np.array(pd.Series(lengths).sort_index())
     return pseudotime
+
+
+def proj2embedding(X_elpi,X_embed,NodePositions):
+    part,dis = PartitionData(X_elpi,NodePositions,50000,np.sum(X_elpi**2,axis=1,keepdims=1))
+    # Hard assigment
+    R = scipy.sparse.csr_matrix(
+        (np.ones(len(X_elpi)), (range(len(X_elpi)), part.flat)), (len(X_elpi),len(NodePositions))
+    ).A
+    proj = (np.dot(X_embed.T, R) / R.sum(axis=0)).T
+    return proj
+
+
+def stream2elpi(adata,key='epg'):
+    PG={'NodePositions':adata.uns[key]['node_pos'].astype(float),
+        'Edges':[adata.uns[key]['edge'],np.repeat(adata.uns[key]['params']['epg_lambda'],len(adata.uns[key]['node_pos']))],
+        "Lambda":adata.uns[key]['params']['epg_lambda'],
+        "Mu":adata.uns[key]['params']['epg_mu']}
+    return PG

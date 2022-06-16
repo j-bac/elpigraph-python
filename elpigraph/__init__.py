@@ -1,7 +1,7 @@
 from ._AlterStructure import ExtendLeaves, CollapseBranches, ShiftBranching
 from ._BaseElPiWrapper import computeElasticPrincipalGraphWithGrammars
 from ._EMAdjustment import AdjustByConstant
-from ._graph_editing import findPaths, addPath, delPath
+from ._graph_editing import findPaths, addPath, delPath, refitGraph
 from ._topologies import (
     computeElasticPrincipalCircle,
     computeElasticPrincipalTree,

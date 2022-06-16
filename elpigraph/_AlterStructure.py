@@ -688,6 +688,7 @@ def ShiftBranching(
     MaxShift=3,
     Compensate=False,
     BrIds=None,
+    BrIdsTarget=None,
     TrimmingRadius=float("inf"),
 ):
     """
@@ -731,29 +732,36 @@ def ShiftBranching(
         SquaredX=np.sum(X ** 2, axis=1, keepdims=1),
     )
 
-    for br in BrIds:
+       
+            
+    for i,br in enumerate(BrIds):
 
         Neis = Net.neighborhood(br, order=MaxShift)
         # Neis = setdiff(as.integer(Neis), br)
+        if SelectionMode == "Manual":
+            if not(BrIdsTarget[i] in Neis):
+                raise ValueError(f'New branching node is not a MaxShift={MaxShift} neighbor of the old branching node')
+            NewBR = BrIdsTarget[i]
+            
+        else:
+            if SelectionMode == "NodePoints":
+                Neival = np.array(list(map(lambda x: np.sum(PD[0] == x), Neis)))
 
-        if SelectionMode == "NodePoints":
-            Neival = np.array(list(map(lambda x: np.sum(PD[0] == x), Neis)))
+            if SelectionMode == "NodeDensity":
+                Dists = PartialDistance(X, TargetPG["NodePositions"][Neis])
 
-        if SelectionMode == "NodeDensity":
-            Dists = PartialDistance(X, TargetPG["NodePositions"][Neis])
+                if DensityRadius is None:
+                    raise ValueError(
+                        "DensityRadius needs to be specified when SelectionMode ="
+                        " 'NodeDensity'"
+                    )
 
-            if DensityRadius is None:
-                raise ValueError(
-                    "DensityRadius needs to be specified when SelectionMode ="
-                    " 'NodeDensity'"
-                )
+                else:
+                    Neival = np.sum(Dists < DensityRadius, axis=0)
 
-            else:
-                Neival = np.sum(Dists < DensityRadius, axis=0)
-
-        NeiDist = np.array(Net.shortest_paths(br, Neis, mode="all"))
-        Neival = Neival[np.argsort(NeiDist, kind="mergesort")]
-        NewBR = Neis[np.min(np.where(Neival.squeeze() == np.max(Neival))[0])]
+            NeiDist = np.array(Net.shortest_paths(br, Neis, mode="all"))
+            Neival = Neival[np.argsort(NeiDist, kind="mergesort")]
+            NewBR = Neis[np.min(np.where(Neival.squeeze() == np.max(Neival))[0])]
 
         if NewBR != br:
 
