@@ -994,7 +994,7 @@ def delPath(
             X, nodep, ElasticMatrix, PointWeights=weights, FixNodesAtPoints=[]
         )
         _PG["NodePositions"] = newnodep
-        return _PG
+    return _PG
 
 
 def refitGraph(
