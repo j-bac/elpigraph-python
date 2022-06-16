@@ -933,7 +933,7 @@ def delPath(
     del _PG["projection"]
 
     G = nx.Graph()
-    G.add_nodes_from(range(_PG["Nodepositions"].shape[0]))
+    G.add_nodes_from(range(_PG["NodePositions"].shape[0]))
     edges_weighted = list(zip(epg_edge[:, 0], epg_edge[:, 1], epg_edge_len))
     G.add_weighted_edges_from(edges_weighted, weight="len")
 
