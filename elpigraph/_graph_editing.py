@@ -916,8 +916,7 @@ def delPath(
 
     """
     _PG = deepcopy(PG)
-    if "projection" in _PG.keys():
-        del _PG["projection"]
+
     # --- Init parameters, variables
     if Mu is None:
         Mu = _PG["Mu"]
@@ -930,7 +929,9 @@ def delPath(
 
     # --- get path to remove
     epg_edge = _PG["Edges"][0]
-    epg_edge_len = _PG["projection"]["edge_len"]
+    epg_edge_len = _PG["projection"]["edge_len"].copy()
+    del _PG["projection"]
+
     G = nx.Graph()
     G.add_nodes_from(range(_PG["Nodepositions"].shape[0]))
     edges_weighted = list(zip(epg_edge[:, 0], epg_edge[:, 1], epg_edge_len))
