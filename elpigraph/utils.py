@@ -403,3 +403,70 @@ def proj2embedding(X_elpi,X_embed,NodePositions):
     ).A
     proj = (np.dot(X_embed.T, R) / R.sum(axis=0)).T
     return proj
+
+
+def _propagate_labels(Xs,Xt,ys,flavor,n_neighbors,reg_e=0.01,reg_m=0.08):
+    if 'ot' in flavor:
+        try: import ot
+        except: raise ImportError('Install Python OT to use this function'+
+            '(pip install POT or conda install -c conda-forge pot)')
+            
+    if flavor=='ot':
+        coupling = ot.sinkhorn([], [], ot.da.cost_normalization(ot.dist(Xs,Xt),'max'),reg=reg_e,numItermax=1000000)
+    elif flavor=='ot_unbalanced':
+        coupling = ot.sinkhorn_unbalanced([], [], ot.da.cost_normalization(ot.dist(Xs,Xt),'max'),reg_e,reg_m,numItermax=1000000)
+    elif flavor=='ot_equal':
+        ws=np.ones(len(ys))
+        ws[ys==0]/=sum(ys==0)
+        ws[ys==1]/=sum(ys==1)
+        ws/=sum(ws)
+        coupling = ot.sinkhorn(ws, [], ot.da.cost_normalization(ot.dist(Xs,Xt),'max'), reg=reg_e,numItermax=1000000)
+    elif flavor=='knn':
+        coupling = NearestNeighbors(n_neighbors=n_neighbors).fit(Xs).kneighbors_graph(Xt).toarray().T
+    else: 
+        raise ValueError('method must be ot, ot_unbalanced, ot_equal, knn')
+        
+    labels=[]
+    for j,coup in enumerate(coupling.T):
+        nz=coup>0
+        labels.append(np.bincount(ys[nz],weights=coup[nz].flat).argmax())
+        #labels.append(ys[coup.argmax()])
+
+    return labels
+
+def early_groups(X, PG, branch_nodes, source, target, nodes_to_include = None,
+                 flavor='ot_unbalanced', n_windows = 20, n_neighbors=20, ot_reg_e=0.01,ot_reg_m=0.001):
+
+    getPseudotime(X, PG, source, target=target, nodes_to_include=nodes_to_include, project=True)
+    ix=~np.isnan(PG['pseudotime'])
+    
+    y = -np.ones(len(X),dtype=int)
+
+    bnodes_ix = np.zeros(len(X),dtype=bool)
+    for i,bn in enumerate(branch_nodes):
+        nix = PG['projection']['node_id']==bn
+        bnodes_ix[nix] = True
+        y[nix] = i
+        
+    Xpath, ypath = X[ix].copy(), y[ix].copy() # points from path 
+    Xbranch, ybranch = X[bnodes_ix].copy(), y[bnodes_ix].copy() # points from branch
+    
+    #propagate labels
+    bpseudotime = PG['pseudotime'][ix]
+    count, bins = np.histogram(bpseudotime, bins=n_windows)
+    clusters = np.digitize(bpseudotime, bins[1:], right=True)
+
+    #init 
+    cnext = clusters==clusters.max()
+    ypath[cnext] = _propagate_labels(Xs=Xbranch,Xt=Xpath[cnext],ys=ybranch,flavor=flavor,n_neighbors=n_neighbors)
+
+    for c in np.arange(1,n_windows)[::-1]:
+        cprev = clusters==c
+        cnext = clusters==(c-1)
+        ypath[cnext] = _propagate_labels(Xs=Xpath[cprev],Xt=Xpath[cnext],ys=ypath[cprev],
+                                    flavor=flavor,n_neighbors=n_neighbors,reg_e=ot_reg_e,reg_m=ot_reg_m)
+        
+    s = '-'.join(str(x) for x in branch_nodes)
+    
+    y[ix] = ypath
+    PG[f'early_groups_{source}->{s}']=y
