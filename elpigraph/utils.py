@@ -443,10 +443,10 @@ def early_groups(X, PG, branch_nodes, source, target, nodes_to_include = None,
     y = -np.ones(len(X),dtype=int)
 
     bnodes_ix = np.zeros(len(X),dtype=bool)
-    for i,bn in enumerate(branch_nodes):
+    for bn in branch_nodes:
         nix = PG['projection']['node_id']==bn
         bnodes_ix[nix] = True
-        y[nix] = i
+        y[nix] = bn
         
     Xpath, ypath = X[ix].copy(), y[ix].copy() # points from path 
     Xbranch, ybranch = X[bnodes_ix].copy(), y[bnodes_ix].copy() # points from branch
@@ -469,4 +469,6 @@ def early_groups(X, PG, branch_nodes, source, target, nodes_to_include = None,
     s = '-'.join(str(x) for x in branch_nodes)
     
     y[ix] = ypath
-    PG[f'early_groups_{source}->{s}']=y
+    PG[f'early_groups_{source}->{s}']=y.astype(str)
+    y[ix] = clusters
+    PG[f'early_groups_{source}->{s}_clusters']=y.astype(str)
