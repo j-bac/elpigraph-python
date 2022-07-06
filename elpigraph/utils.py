@@ -470,5 +470,5 @@ def early_groups(X, PG, branch_nodes, source, target, nodes_to_include = None,
     
     y[ix] = ypath
     PG[f'early_groups_{source}->{s}']=y.astype(str)
-    y[ix] = clusters
-    PG[f'early_groups_{source}->{s}_clusters']=y.astype(str)
+    y[ix] = ['c'+c for c in clusters.astype(str)]
+    PG[f'early_groups_{source}->{s}_clusters']=y
