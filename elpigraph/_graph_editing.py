@@ -814,9 +814,13 @@ def addPath(
     _PG = deepcopy(PG)
     if "projection" in _PG.keys():
         del _PG["projection"]
+
     init_nodes_pos, init_edges = _PG["NodePositions"], _PG["Edges"][0]
 
     # --- Init parameters, variables
+    if len(target):
+        init_nodes_pos = np.vstack((init_nodes_pos,target))
+        target = len(init_nodes_pos)-1
     if Mu is None:
         Mu = _PG["Mu"]
     if Lambda is None:
