@@ -816,10 +816,12 @@ def addPath(
         del _PG["projection"]
 
     init_nodes_pos, init_edges = _PG["NodePositions"], _PG["Edges"][0]
+    init_edges_max = init_edges.max()
 
     # --- Init parameters, variables
     if not isinstance(target,int):
         init_nodes_pos = np.vstack((init_nodes_pos,target))
+        init_edges_max+= 1
         target = len(init_nodes_pos)-1
     if Mu is None:
         Mu = _PG["Mu"]
@@ -848,7 +850,7 @@ def addPath(
     nodep, edges = PG_path["NodePositions"], PG_path["Edges"][0]
 
     _edges = edges.copy()
-    _edges[(edges != 0) & (edges != 1)] += init_edges.max() - 1
+    _edges[(edges != 0) & (edges != 1)] += init_edges_max - 1
     _edges[edges == 0] = source
     _edges[edges == 1] = target
     _merged_edges = np.concatenate((init_edges, _edges))
@@ -1012,7 +1014,7 @@ def refitGraph(
     cycle_Lambda=None,
 ):
 
-    init_nodes_pos, init_edges = (PG["NodePositions"], PG["Edges"][0])
+    init_nodes_pos, init_edges = PG["NodePositions"], PG["Edges"][0]
 
     # --- Init parameters, variables
     if Mu is None:
@@ -1024,18 +1026,16 @@ def refitGraph(
     if cycle_Lambda is None:
         cycle_Lambda = Lambda
 
-    # ---Modify node pos order (first nodes are fixed)
+    # ---Modify node pos values and order (first nodes are fixed)
     for k, v in shift_nodes_pos.items():
         init_nodes_pos[k] = v
+
     fix_nodes = sorted(list(shift_nodes_pos.keys()), reverse=True)
-    fix_order = np.arange(len(init_nodes_pos))
-    fix_edges = init_edges.copy()
-    for i, ifix in enumerate(fix_nodes):
-        n1, n2 = fix_order == i, fix_order == ifix
-        e1, e2 = fix_edges == i, fix_edges == ifix
-        fix_order[n1], fix_order[n2] = ifix, i
-        fix_edges[e1], fix_edges[e2] = ifix, i
+    fix_order = np.array(fix_nodes+[i for i in range(len(init_nodes_pos)) if i not in fix_nodes])
     fix_nodes_pos = init_nodes_pos[fix_order]
+    fix_edges = init_edges.copy()
+    for i, ifix in enumerate(fix_order):
+        fix_edges[init_edges == ifix] = i
 
     SquaredX = np.sum(X ** 2, axis=1, keepdims=1)
     part, part_dist = elpigraph.src.core.PartitionData(
@@ -1072,10 +1072,5 @@ def refitGraph(
     )
 
     # ---Revert to initial node ordering
-    for i, ifix in enumerate(fix_nodes):
-        e1, e2 = fix_edges == i, fix_edges == ifix
-        fix_edges[e1], fix_edges[e2] = ifix, i
-    new_nodes_pos = new_nodes_pos[fix_order]
-
-    PG["NodePositions"] = new_nodes_pos
+    PG["NodePositions"] = new_nodes_pos[np.argsort(fix_order)]
 
