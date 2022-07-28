@@ -240,7 +240,6 @@ def findPaths(
     max_inner_fraction=0.1,
     min_node_n_points=2,
     max_n_points=None,
-    # max_empty_curve_fraction=.2,
     min_compactness=0.5,
     radius=None,
     allow_same_branch=True,
@@ -436,32 +435,16 @@ def findPaths(
                 cycle_nodes=cycle_nodes,
             )
 
-            (
-                _merged_nodep,
-                _,
-                _,
-                _,
-                _,
-                _,
-                _,
-            ) = elpigraph.src.core.PrimitiveElasticGraphEmbedment(
+            _merged_nodep = elpigraph.src.core.PrimitiveElasticGraphEmbedment(
                 X,
                 _merged_nodep,
                 ElasticMatrix,
                 PointWeights=weights,
                 FixNodesAtPoints=[],
-            )
+            )[0]
 
             ### candidate validity tests ###
             valid = True
-            # --- curve validity test
-            # if (max_empty_curve_fraction is not None) and valid: # if X_fit projected to curve has long gaps
-            #    infer_pseudotime(_adata,source=0)
-            #    sorted_X_proj=_adata.obsm['X_epg_proj'][_adata.obs['epg_pseudotime'].argsort()]
-            #    dist = np.sqrt((np.diff(sorted_X_proj,axis=0)**2).sum(axis=1))
-            #    curve_len = np.sum(_adata.uns['epg']['edge_len'])
-            #    if np.max(dist) > (curve_len * max_empty_curve_fraction):
-            #        valid = False
 
             # --- cycle validity test
             if valid:
@@ -546,8 +529,8 @@ def findPaths(
                     )  # if high fraction of points inside
                     or (not np.isfinite(inner_fraction))  # prevent no points error
                     or (np.sum(idx_close) > max_n_points)  # if too many points inside
-                    or pp_compactness(cycle_2d) < min_compactness
-                ):  # if loop is very narrow
+                    or pp_compactness(cycle_2d) < min_compactness # if loop is very narrow
+                ):  
                     valid = False
 
             # ---> if cycle is invalid, continue
@@ -571,11 +554,6 @@ def findPaths(
                     X, _merged_nodep, _merged_edges, _merged_part
                 )
                 MSE = proj["MSEP"]
-                # dist2proj = np.sum(np.square(X - X_proj), axis=1)
-                # ElasticMatrix = elpigraph.src.core.Encode2ElasticMatrix(_merged_edges, Lambdas=Lambda, Mus=Mu)
-                # ElasticEnergy, MSE, EP, RP = elpigraph.src.core.ComputePenalizedPrimitiveGraphElasticEnergy(_merged_nodep,
-                #                                                                                            ElasticMatrix,
-                #                                                                                            dist2proj,alpha=0.01,beta=0)
                 inner_fractions.append(inner_fraction)
                 energies.append(MSE)
                 merged_edges.append(_merged_edges)
@@ -705,17 +683,12 @@ def findPaths(
         print("Found no valid path to add")
         return None
 
+    merged_edges=init_edges.copy()
     for i, loop_edges in enumerate(new_edges):
-        if i == 0:
-            loop_edges[(loop_edges != 0) & (loop_edges != 1)] += init_edges.max() - 1
-            loop_edges[loop_edges == 0] = new_leaves[i][0]
-            loop_edges[loop_edges == 1] = new_leaves[i][1]
-            merged_edges = np.concatenate((init_edges, loop_edges))
-        else:
-            loop_edges[(loop_edges != 0) & (loop_edges != 1)] += merged_edges.max() - 1
-            loop_edges[loop_edges == 0] = new_leaves[i][0]
-            loop_edges[loop_edges == 1] = new_leaves[i][1]
-            merged_edges = np.concatenate((merged_edges, loop_edges))
+        loop_edges[(loop_edges != 0) & (loop_edges != 1)] += merged_edges.max() - 1
+        ix0, ix1 = loop_edges == 0, loop_edges == 1
+        loop_edges[ix0],loop_edges[ix1] = new_leaves[i][0], new_leaves[i][1]
+        merged_edges = np.concatenate((merged_edges, loop_edges))
     merged_nodep = np.concatenate((init_nodes_pos, *new_nodep))
 
     ### optionally refit the entire graph ###
@@ -731,17 +704,9 @@ def findPaths(
             cycle_nodes=cycle_nodes,
         )
 
-        (
-            merged_nodep,
-            _,
-            _,
-            _,
-            _,
-            _,
-            _,
-        ) = elpigraph.src.core.PrimitiveElasticGraphEmbedment(
-            X, merged_nodep, ElasticMatrix, PointWeights=weights, FixNodesAtPoints=[],
-        )
+        merged_nodep = elpigraph.src.core.PrimitiveElasticGraphEmbedment(
+        X, merged_nodep, ElasticMatrix, PointWeights=weights, FixNodesAtPoints=[])[0]
+
         # check intersection
         if merged_nodep.shape[1] == 2:
             intersect = not (
@@ -763,6 +728,8 @@ def findPaths(
     _PG["addLoopsdict"] = dict(
         new_edges=new_edges,
         new_nodep=new_nodep,
+        merged_nodep=merged_nodep,
+        merged_edges=merged_edges,
         new_leaves=new_leaves,
         new_part=new_part,
         new_energy=new_energy,
