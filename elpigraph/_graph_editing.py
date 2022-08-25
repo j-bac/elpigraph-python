@@ -249,6 +249,7 @@ def findPaths(
     cycle_Lambda=None,
     cycle_Mu=None,
     weights=None,
+    ignore_equivalent=False,
     plot=False,
     verbose=False,
 ):
@@ -278,10 +279,8 @@ def findPaths(
     plot: bool, default=False
         Whether to plot selected candidate paths
     verbose: bool, default=False
-    copy: bool, default=False
-    use_weights: bool, default=False
+    weights: bool, default=False
         Whether to use point weights
-    use_partition: bool or list, default=False
     """
 
     _PG = deepcopy(PG)
@@ -310,9 +309,9 @@ def findPaths(
     if Lambda is None:
         Lambda = _PG["Lambda"]
     if cycle_Mu is None:
-        cycle_Mu = Mu / 10
+        cycle_Mu = Mu 
     if cycle_Lambda is None:
-        cycle_Lambda = Lambda / 10
+        cycle_Lambda = Lambda 
     if radius is None:
         radius = np.mean(edge_lengths) * len(init_nodes_pos) / 10
     if min_path_len is None:
@@ -347,9 +346,9 @@ def findPaths(
         branches = net.get_shortest_paths(leaves[0], leaves[-1])
     else:
         (
-            dict_tree,
+            _,
             dict_branches,
-            dict_branches_single_end,
+            _,
         ) = elpigraph.src.supervised.get_tree(init_edges, leaves[0])
         branches = list(dict_branches.values())
 
@@ -414,9 +413,7 @@ def findPaths(
 
             # ---get nodep, edges, create new graph with added loop
             nodep, edges = pg["NodePositions"], pg["Edges"][0]
-            # _part, _part_dist = elpigraph.src.core.PartitionData(
-            #    X_fit, nodep, 10 ** 6, np.sum(X_fit ** 2, axis=1, keepdims=1)
-            # )
+
             _edges = edges.copy()
             _edges[(edges != 0) & (edges != 1)] += init_edges.max() - 1
             _edges[edges == 0] = c
@@ -482,7 +479,7 @@ def findPaths(
                         cycle_2d, factor=0.1
                     )
 
-                    # prevent shapely bugs when multi-polygon is returned. Fall back to mahalanobis
+                    # prevent shapely edge case bug when multi-polygon is returned. Fall back to mahalanobis
                     if type(shrunk_cycle_2d) == MultiPolygon:
                         in_shrunk_cycle = np.ones(len(X_inside), dtype=bool)
                     else:
@@ -496,11 +493,6 @@ def findPaths(
                     idx_close = in_shrunk_cycle | (w < 1)
                     w = 1 - w / w.max()
                     w[idx_close] = 1
-
-                    # cycle_nodes_array = np.append(np.array(list(zip(range(len(cycle_2d)-1),
-                    #                                  range(1,len(cycle_2d))))),[[len(cycle_2d)-1,0]],axis=0)
-                    # w, idx_close = get_weights_lineproj(X_inside,cycle_2d,cycle_nodes_array,cycle_centroid[0],threshold=.2)
-
                     inner_fraction = np.sum(w) / np.sum(cycle_points)
 
                 if init_nodes_pos.shape[1] == 2:
@@ -660,23 +652,34 @@ def findPaths(
 
     # ignore equivalent loops (with more than 2/3 shared points and nodes)
     valid = np.ones(len(new_part))
-    for i in range(len(new_part) - 1):
-        for j in range(i + 1, len(new_part)):
-            if (
-                len(np.intersect1d(new_part[i], new_part[j]))
-                / max(len(new_part[i]), len(new_part[j]))
-            ) > (2 / 3):
-                if np.argmin([new_inner_fraction[i], new_inner_fraction[j]]) == 0:
-                    valid[i] = 0
-                else:
-                    valid[j] = 0
 
-    new_edges = [e for i, e in enumerate(new_edges) if valid[i]]
-    new_nodep = [e for i, e in enumerate(new_nodep) if valid[i]]
-    new_leaves = [e for i, e in enumerate(new_leaves) if valid[i]]
-    new_part = [e for i, e in enumerate(new_part) if valid[i]]
-    new_energy = [e for i, e in enumerate(new_energy) if valid[i]]
-    new_inner_fraction = [e for i, e in enumerate(new_inner_fraction) if valid[i]]
+    if ignore_equivalent:
+        for i in range(len(new_part) - 1):
+            for j in range(i + 1, len(new_part)):
+                if (
+                    len(np.intersect1d(new_part[i], new_part[j]))
+                    / max(len(new_part[i]), len(new_part[j]))
+                ) > (2 / 3):
+
+                    #all_leaves_i = np.isin(new_leaves[i],leaves).all()
+                    #all_leaves_j = np.isin(new_leaves[j],leaves).all()
+                    ## prioritize connecting leaves
+                    #if all_leaves_j and not(all_leaves_i):
+                    #    valid[i] = 0
+                    #elif all_leaves_i and not(all_leaves_j):
+                    #    valid[j] = 0
+                    # else take lowest energy
+                    if np.argmin([new_energy[i], new_energy[j]]) == 0:
+                        valid[j] = 0
+                    else:
+                        valid[i] = 0
+
+        new_edges = [e for i, e in enumerate(new_edges) if valid[i]]
+        new_nodep = [e for i, e in enumerate(new_nodep) if valid[i]]
+        new_leaves = [e for i, e in enumerate(new_leaves) if valid[i]]
+        new_part = [e for i, e in enumerate(new_part) if valid[i]]
+        new_energy = [e for i, e in enumerate(new_energy) if valid[i]]
+        new_inner_fraction = [e for i, e in enumerate(new_inner_fraction) if valid[i]]
 
     ### form graph with all valid loops found ###
     if (new_edges == []) or (sum(valid) == 0):

@@ -174,8 +174,7 @@ def getWeights(
     exponent: density values are raised to the power of exponent
     """
     if method == "sklearn":
-        kde = KernelDensity(
-            kernel="gaussian", bandwidth=bandwidth, **kwargs
+        kde = KernelDensity(bandwidth=bandwidth, **kwargs
         ).fit(X)
         scores = kde.score_samples(X)
         scores = np.exp(scores)[:, None]
@@ -183,7 +182,7 @@ def getWeights(
     elif method == "fft":
         import KDEpy
 
-        kde = KDEpy.FFTKDE(**kwargs).fit(X)
+        kde = KDEpy.FFTKDE(bw=bandwidth,**kwargs).fit(X)
         x, y = kde.evaluate(griddelta)
         scores = scipy.interpolate.griddata(x, y, X)
 
@@ -475,3 +474,39 @@ def early_groups(X, PG, branch_nodes, source, target, nodes_to_include = None,
     y_clus = y.astype(str)
     y_clus[ix] = ['c'+c for c in clusters.astype(str)]
     PG[f'early_groups_{source}->{s}_clusters'] = y_clus.copy()
+
+def residuals(X, Xr, nodep, r2_threshold=.5):
+
+    partition = PartitionData(
+        X=Xr,
+        NodePositions=nodep,
+        MaxBlockSize=100000,
+        TrimmingRadius=np.inf,
+        SquaredX=np.sum(Xr ** 2, axis=1, keepdims=1),
+    )[0]
+
+    means, residue_matrix, r2scores = _residuals_matrix(X, partition.flatten(), len(nodep))
+    ind = np.where(r2scores > r2_threshold)[0]
+    return (means, residue_matrix, r2scores, ind)
+
+def _residuals_matrix(X, partition, n_nodes):
+    # Building mapping partition -> set of points
+    inds = [[] for _ in range(n_nodes)]
+    for i in range(X.shape[0]):
+        inds[partition[i]].append(i)
+    if any([len(ind) == 0 for ind in inds]):
+        print("Warning: empty nodes.")
+
+    # Computing barycenter of each cluster
+    means = np.array(
+        [
+            (np.mean(X[ind, :], axis=0) if len(ind) > 0 else np.zeros((X.shape[1],)))
+            for ind in inds
+        ]
+    )
+
+    # Computing residuals
+    residue_matrix = means[partition, :]
+    r2_scores = np.var(residue_matrix, axis=0) / np.var(X, axis=0)
+    
+    return((means, residue_matrix, r2_scores))
