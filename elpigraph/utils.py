@@ -15,7 +15,7 @@ def getProjection(X, PG):
 
     G = nx.Graph()
     G.add_edges_from(PG["Edges"][0].tolist(), weight=1)
-    mat_conn = nx.to_scipy_sparse_matrix(
+    mat_conn = nx.to_scipy_sparse_array(
         G, nodelist=np.arange(len(PG["NodePositions"])), weight="weight"
     )
 
@@ -379,11 +379,11 @@ def geodesic_pseudotime(X, k, root, g=None):
     """pseudotime as graph distance from root point"""
     if g is None:
         nn = NearestNeighbors(n_neighbors=k, n_jobs=8).fit(X)
-        g = nx.convert_matrix.from_scipy_sparse_matrix(
+        g = nx.convert_matrix.from_scipy_sparse_array(
             nn.kneighbors_graph(mode="distance")
         )
     else:
-        g = nx.convert_matrix.from_scipy_sparse_matrix(g)
+        g = nx.convert_matrix.from_scipy_sparse_array(g)
     if len(list(nx.connected_components(g))) > 1:
         raise ValueError(
             f"detected more than 1 components with k={k} neighbors. Please"
