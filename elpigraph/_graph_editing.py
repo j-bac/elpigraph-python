@@ -111,7 +111,7 @@ def remove_intersections(nodep, edges):
     while not (multiline.is_simple):  # while intersections in graph
 
         # find an intersection, update edges, break, update graph
-        for i, j in itertools.combinations(range(len(multiline)), 2):
+        for i, j in itertools.combinations(range(len(multiline.geoms)), 2):
             line1, line2 = multiline[i], multiline[j]
             if line1.intersects(line2):
                 if list(np.array(line1.intersection(line2))) not in lnodep:
