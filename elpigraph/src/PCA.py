@@ -41,7 +41,7 @@ def PCA(data):
 
 def TruncPCA(X, n_components, algorithm="arpack"):
     svd = TruncatedSVD(algorithm=algorithm, n_components=n_components)
-    prcomp = svd.fit_transform(X)
+    prcomp = np.asarray(svd.fit_transform(X))
     s = svd.singular_values_
     Vt = svd.components_
     U = prcomp / s
