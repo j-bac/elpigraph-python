@@ -358,7 +358,7 @@ def AddNode2Node(
             # Calculate new node position
             NewNodePosition = 2 * NodePositions[i,] - NodePositions[ineighbour,]
             # Complete Elasticity Matrix
-            MuProt[i] = Mus[ineighbour]
+            MuProt[i] = Mus[ineighbour].item()
         else:
             # Add node to a star
             # if 0 data points associated with this star
